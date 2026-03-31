@@ -63,3 +63,9 @@ On load, cycles through:
 3. `SCAN THE QRCODE AND TRY YOURSELF`
 
 Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢 X BOARDS LIVE` (counts active paired sessions only).
+
+## Workflow Notes
+
+**UI work:** Always invoke the `frontend-design` skill before making any UI/CSS/HTML changes.
+
+**Visual QA:** Use Puppeteer to take screenshots for verification. Run `npm run screenshot` (requires server running on port 3000). Screenshots save to `.screenshots/` and Claude can read them directly to check for layout or rendering issues.

@@ -5,7 +5,10 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "nodemon server/index.js"
+    "dev": "nodemon server/index.js",
+    "screenshot": "node scripts/screenshot.js",
+    "screenshot:board": "node scripts/screenshot.js board",
+    "screenshot:controller": "node scripts/screenshot.js controller"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -14,6 +17,7 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "puppeteer": "^22.0.0"
   }
 }

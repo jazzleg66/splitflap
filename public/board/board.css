@@ -1,1 +1,136 @@
-/* placeholder */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #1B1B1B;
+  color: #E8D5A3;
+  font-family: 'SplitFlapFont', 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+#board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+#board-controls {
+  display: flex;
+  gap: 0.75rem;
+}
+
+#board-controls button {
+  background: transparent;
+  border: 1px solid #E8D5A350;
+  color: #E8D5A3;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#board-controls button:hover {
+  background: #E8D5A320;
+}
+
+/* ── Board grid ─────────────────────────────────────────────────────────────── */
+#board-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+#board-grid {
+  display: grid;
+  grid-template-columns: repeat(22, 1fr);
+  grid-template-rows: repeat(6, auto);
+  gap: 3px;
+  background: #111;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 0 40px #00000080;
+}
+
+/* ── Pair panel (bottom-right overlay) ──────────────────────────────────────── */
+#pair-panel {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: #111111cc;
+  border: 1px solid #E8D5A330;
+  border-radius: 4px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+}
+
+#qr-img {
+  width: 120px;
+  height: 120px;
+  image-rendering: pixelated;
+}
+
+/* ── Approval overlay ───────────────────────────────────────────────────────── */
+#approval-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000000cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#approval-overlay[hidden] {
+  display: none;
+}
+
+#approval-inner {
+  border: 1px solid #E8D5A3;
+  padding: 2rem 3rem;
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+  line-height: 2;
+}
+
+#approval-inner kbd {
+  border: 1px solid #E8D5A380;
+  padding: 0.1em 0.4em;
+  font-size: 0.9em;
+  border-radius: 2px;
+}
+
+/* ── Click-to-start overlay ─────────────────────────────────────────────────── */
+#click-to-start {
+  position: fixed;
+  inset: 0;
+  background: #000000cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  cursor: pointer;
+  z-index: 200;
+}

@@ -1,1 +1,274 @@
-/* placeholder */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #111111;
+  --surface: #1B1B1B;
+  --border: #333333;
+  --text: #E8D5A3;
+  --text-dim: #8a7d60;
+  --accent: #E8D5A3;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'SplitFlapFont', 'Courier New', monospace;
+  font-size: 14px;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: 80px; /* space for fixed footer */
+}
+
+/* ── Connection screen ──────────────────────────────────────────────────────── */
+#connect-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+  z-index: 200;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+#ctrl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+#ctrl-header h1 {
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+}
+
+#ctrl-status {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+/* ── Preview ────────────────────────────────────────────────────────────────── */
+#preview-section {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+#preview-wrapper {
+  /* Fixed height to prevent layout collapse from scaled content */
+  height: 72px;
+  overflow: hidden;
+  position: relative;
+}
+
+#board-preview {
+  transform: scale(0.35);
+  transform-origin: top left;
+  white-space: nowrap;
+}
+
+/* Override tile sizing for preview — they inherit .tile sizing from splitflap.css */
+#board-preview .tile {
+  /* Keep defaults — scale handles the size reduction */
+}
+
+#board-preview #board-grid {
+  gap: 2px;
+  padding: 4px;
+  background: #0a0a0a;
+}
+
+/* ── Mode selector ──────────────────────────────────────────────────────────── */
+#mode-section {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.mode-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+}
+
+.mode-label input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+/* ── Messages section ───────────────────────────────────────────────────────── */
+#messages-section {
+  padding: 0.75rem 1rem;
+}
+
+.message-row {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: var(--surface);
+  position: relative;
+}
+
+.message-row.active {
+  border-color: var(--text-dim);
+}
+
+.row-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 0.4rem;
+}
+
+.row-input {
+  background: #0d0d0d;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  padding: 0.25rem 0.4rem;
+  text-transform: uppercase;
+  width: 100%;
+  outline: none;
+}
+
+.row-input:focus {
+  border-color: var(--text-dim);
+}
+
+.row-color-picker {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.color-btn {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.color-btn:active {
+  transform: scale(0.9);
+}
+
+.btn-delete-message {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+}
+
+.btn-delete-message:hover {
+  color: var(--text);
+}
+
+#btn-add-message {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+#btn-add-message:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+#btn-add-message:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+#loop-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+#timer-slider {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+#global-controls {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  z-index: 100;
+}
+
+#global-controls button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  padding: 1rem 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#global-controls button:last-child {
+  border-right: none;
+}
+
+#global-controls button:hover:not(:disabled) {
+  background: #ffffff10;
+}
+
+#global-controls button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+#btn-play.playing {
+  color: #00cc44;
+}

@@ -8,7 +8,39 @@
   <link rel="stylesheet" href="board.css">
 </head>
 <body>
-  <!-- placeholder -->
+
+  <header id="board-header">
+    <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
+    <div id="board-controls">
+      <button id="btn-skip">SKIP</button>
+      <button id="btn-mute">MUTE</button>
+      <button id="btn-fullscreen">&#x26F6;</button>
+    </div>
+  </header>
+
+  <main id="board-container">
+    <!-- 6×22 tile grid injected by board.js -->
+  </main>
+
+  <div id="pair-panel">
+    <div id="pair-code"></div>
+    <img id="qr-img" alt="QR Code" hidden>
+  </div>
+
+  <div id="approval-overlay" hidden>
+    <div id="approval-inner">
+      <p>CONNECTION REQUEST</p>
+      <p>APPROVE? <kbd>ENTER</kbd></p>
+      <p>REJECT? <kbd>ESC</kbd></p>
+    </div>
+  </div>
+
+  <div id="click-to-start" aria-label="Click to start">
+    <span>CLICK TO START</span>
+  </div>
+
+  <audio id="sfx" src="/assets/audio/pragotron_split-flap-display.wav" loop preload="auto"></audio>
+
   <script type="module" src="board.js"></script>
 </body>
 </html>

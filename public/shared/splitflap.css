@@ -1,1 +1,143 @@
-/* placeholder */
+@font-face {
+  font-family: 'SplitFlapFont';
+  src: url('/assets/font/splitflap.woff2') format('woff2');
+  font-display: block;
+}
+
+/* ── Tile base ────────────────────────────────────────────────────────────── */
+.tile {
+  position: relative;
+  width: 2.2rem;
+  height: 3rem;
+  background: #1B1B1B;
+  border-radius: 2px;
+  overflow: hidden;
+  perspective: 400px;
+  flex-shrink: 0;
+}
+
+/* Top and bottom halves */
+.tile-top,
+.tile-bottom {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tile-top {
+  top: 0;
+  align-items: flex-end;
+  padding-bottom: 1px;
+  border-bottom: 1px solid #3a3a3a; /* flap seam */
+  z-index: 1;
+}
+
+.tile-bottom {
+  bottom: 0;
+  align-items: flex-start;
+  padding-top: 1px;
+}
+
+/* Characters inside tiles */
+.tile-char {
+  font-family: 'SplitFlapFont', 'Courier New', monospace;
+  font-size: 1.5rem;
+  color: #E8D5A3;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+  display: block;
+  /* Shift char so top/bottom halves line up correctly */
+  transform: translateY(50%);
+}
+
+.tile-bottom .tile-char {
+  transform: translateY(-50%);
+}
+
+/* ── Flip animation panels ─────────────────────────────────────────────────── */
+/*
+  Each tile has four absolutely-positioned spans:
+    .tf  = top front    (visible, current char top half)
+    .tb  = top back     (hidden behind, next char top half)
+    .bf  = bottom front (visible, current char bottom half)
+    .bb  = bottom back  (hidden behind, next char bottom half)
+
+  Flip sequence per step:
+    1. Set .tb and .bb content to next char.
+    2. Add .flipping class — triggers animations below.
+    3. On animationend: swap front content to next char, remove .flipping.
+*/
+
+.tile-top .tf,
+.tile-top .tb,
+.tile-bottom .bf,
+.tile-bottom .bb {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+}
+
+/* Back panels start rotated so they're invisible at rest */
+.tile-top .tb {
+  transform-origin: bottom center;
+  transform: rotateX(180deg);
+}
+.tile-bottom .bb {
+  transform-origin: top center;
+  transform: rotateX(-180deg);
+}
+
+/* Flip animations — triggered by .flipping class */
+.tile.flipping .tile-top .tf {
+  animation: flipTopFront var(--flip-ms, 60ms) linear forwards;
+  transform-origin: bottom center;
+}
+.tile.flipping .tile-top .tb {
+  animation: flipTopBack var(--flip-ms, 60ms) linear forwards;
+  transform-origin: bottom center;
+}
+.tile.flipping .tile-bottom .bf {
+  animation: flipBotFront var(--flip-ms, 60ms) linear forwards;
+  transform-origin: top center;
+}
+.tile.flipping .tile-bottom .bb {
+  animation: flipBotBack var(--flip-ms, 60ms) linear forwards;
+  transform-origin: top center;
+}
+
+@keyframes flipTopFront {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(-90deg); }
+}
+@keyframes flipTopBack {
+  from { transform: rotateX(180deg); }
+  to   { transform: rotateX(90deg); }  /* lands at 90 — JS then swaps to 0 */
+}
+@keyframes flipBotFront {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(90deg); }
+}
+@keyframes flipBotBack {
+  from { transform: rotateX(-180deg); }
+  to   { transform: rotateX(-90deg); }
+}
+
+/* ── Color tile overrides ──────────────────────────────────────────────────── */
+.tile.color-tile .tile-top,
+.tile.color-tile .tile-bottom {
+  background: var(--tile-color);
+  border-color: transparent;
+}
+.tile.color-tile .tile-char {
+  display: none;
+}

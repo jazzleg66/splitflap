@@ -8,7 +8,62 @@
   <link rel="stylesheet" href="controller.css">
 </head>
 <body>
-  <!-- placeholder -->
+
+  <!-- Connection screen (shown until approved) -->
+  <div id="connect-screen">
+    <div id="connect-status">CONNECTING...</div>
+  </div>
+
+  <!-- Main controller UI (hidden until approved) -->
+  <div id="controller-ui" hidden>
+
+    <header id="ctrl-header">
+      <h1>DIGITAL SOLARI</h1>
+      <div id="ctrl-status">CONNECTED</div>
+    </header>
+
+    <!-- Board preview -->
+    <section id="preview-section">
+      <div id="preview-wrapper">
+        <div id="board-preview">
+          <!-- 6×22 mini tiles injected by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Mode selector -->
+    <section id="mode-section">
+      <label class="mode-label">
+        <input type="radio" name="mode" value="message" checked>
+        <span>MESSAGE</span>
+      </label>
+      <label class="mode-label">
+        <input type="radio" name="mode" value="clock">
+        <span>CLOCK</span>
+      </label>
+    </section>
+
+    <!-- Messages (hidden in clock mode) -->
+    <section id="messages-section">
+      <div id="message-list">
+        <!-- message rows injected by JS -->
+      </div>
+      <button id="btn-add-message">+ ADD MESSAGE</button>
+      <div id="loop-timer-row">
+        <label>LOOP EVERY <span id="timer-value">7</span>S</label>
+        <input type="range" id="timer-slider" min="5" max="60" value="7">
+      </div>
+    </section>
+
+    <!-- Sticky footer -->
+    <footer id="global-controls">
+      <button id="btn-play">PLAY</button>
+      <button id="btn-next">NEXT</button>
+      <button id="btn-reset">RESET</button>
+    </footer>
+
+  </div>
+
   <script type="module" src="controller.js"></script>
 </body>
 </html>
