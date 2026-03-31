@@ -4,56 +4,39 @@
   padding: 0;
 }
 
+:root {
+  --bg:   #1B1B1B;
+  --text: #E8D5A3;
+  --dim:  #5a5040;
+  --mono: 'Courier New', Courier, monospace;
+}
+
 body {
-  background: #1B1B1B;
-  color: #E8D5A3;
-  font-family: 'SplitFlapFont', 'Courier New', monospace;
-  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-/* ── Header ─────────────────────────────────────────────────────────────────── */
+/* ── Header: live counter only ───────────────────────────────────────────────── */
 #board-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  opacity: 0.7;
+  padding: 0.45rem 1rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
   flex-shrink: 0;
 }
 
-#board-controls {
-  display: flex;
-  gap: 0.75rem;
-}
-
-#board-controls button {
-  background: transparent;
-  border: 1px solid #E8D5A350;
-  color: #E8D5A3;
-  font-family: inherit;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  padding: 0.2rem 0.5rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-#board-controls button:hover {
-  background: #E8D5A320;
-}
-
-/* ── Board grid ─────────────────────────────────────────────────────────────── */
+/* ── Board grid ──────────────────────────────────────────────────────────────── */
 #board-container {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.5rem 1rem;
+  min-height: 0;
 }
 
 #board-grid {
@@ -63,38 +46,103 @@ body {
   gap: 3px;
   background: #111;
   padding: 8px;
-  border-radius: 4px;
-  box-shadow: 0 0 40px #00000080;
+  border-radius: 3px;
+  width: 100%;
+  max-width: 1200px;
+  box-shadow: 0 0 0 1px #2a2a2a;
 }
 
-/* ── Pair panel (bottom-right overlay) ──────────────────────────────────────── */
+/* ── Demo controls — below board ─────────────────────────────────────────────── */
+#demo-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem 0.8rem;
+  flex-shrink: 0;
+}
+
+#demo-controls button {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+#demo-controls button:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* ── Pair panel: full-screen centered overlay ────────────────────────────────── */
 #pair-panel {
   position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  background: #111111cc;
-  border: 1px solid #E8D5A330;
-  border-radius: 4px;
-  padding: 0.75rem;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+#pair-panel[hidden] {
+  display: none;
+}
+
+#pair-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.2rem;
-  letter-spacing: 0.2em;
+  gap: 1.25rem;
+  border: 1px solid #3a3a3a;
+  padding: 2rem 2.5rem;
+  background: #131313;
+}
+
+#pair-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--dim);
 }
 
 #qr-img {
-  width: 120px;
-  height: 120px;
+  width: 200px;
+  height: 200px;
   image-rendering: pixelated;
+  display: block;
+  background: #fff; /* QR needs white background */
+  padding: 8px;
 }
 
-/* ── Approval overlay ───────────────────────────────────────────────────────── */
+#pair-code-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#pair-hint {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: #3a3a3a;
+}
+
+#pair-code {
+  font-size: 2rem;
+  letter-spacing: 0.45em;
+  color: var(--text);
+  padding-left: 0.45em; /* compensate for letter-spacing on last char */
+}
+
+/* ── Approval overlay ────────────────────────────────────────────────────────── */
 #approval-overlay {
   position: fixed;
   inset: 0;
-  background: #000000cc;
+  background: rgba(0, 0, 0, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,31 +154,52 @@ body {
 }
 
 #approval-inner {
-  border: 1px solid #E8D5A3;
+  border: 1px solid var(--text);
   padding: 2rem 3rem;
   text-align: center;
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   letter-spacing: 0.15em;
-  line-height: 2;
+  line-height: 2.2;
 }
 
 #approval-inner kbd {
-  border: 1px solid #E8D5A380;
-  padding: 0.1em 0.4em;
-  font-size: 0.9em;
+  border: 1px solid #666;
+  padding: 0.1em 0.45em;
+  font-size: 0.85em;
   border-radius: 2px;
+  font-family: var(--mono);
 }
 
-/* ── Click-to-start overlay ─────────────────────────────────────────────────── */
+/* ── Click-to-start overlay ──────────────────────────────────────────────────── */
 #click-to-start {
   position: fixed;
   inset: 0;
-  background: #000000cc;
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  letter-spacing: 0.3em;
   cursor: pointer;
   z-index: 200;
+  transition: opacity 0.3s;
+}
+
+#cts-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #3a3a3a;
+  padding: 2rem 3.5rem;
+}
+
+#cts-label {
+  font-size: 1.1rem;
+  letter-spacing: 0.35em;
+  color: var(--text);
+}
+
+#cts-sub {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--dim);
 }

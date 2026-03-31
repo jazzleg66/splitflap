@@ -1,19 +1,19 @@
 import {
-  SPOOL, initGrid, setTargets, stepAll, snapToTargets,
+  initGrid, setTargets, stepAll, snapToTargets,
   isColorChar, COLOR_MAP,
 } from '/shared/spool.js';
+import WsClient from '/shared/wsClient.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;
 const COLS = 22;
-const FLIP_INTERVAL_MS = 60; // ms between spool steps (mechanical cadence)
-const DEMO_HOLD_MS = 7000;   // pause between demo messages after settling
+const FLIP_INTERVAL_MS = 60;
+const DEMO_HOLD_MS = 7000;
 
-// ── Demo messages (each row padded to exactly 22 chars) ───────────────────────
 const DEMO_MESSAGES = [
   [
     ' IMPOSSIBLE IS NOTHING',
-    '         - ADIDAS     ',
+    '          - ADIDAS    ',
     '                      ',
     '                      ',
     '                      ',
@@ -40,7 +40,7 @@ const DEMO_MESSAGES = [
 const DISCONNECTED_ROWS = [
   '                      ',
   '                      ',
-  '    DISCONNECTED      ',
+  '     DISCONNECTED     ',
   '                      ',
   '                      ',
   '                      ',
@@ -57,23 +57,21 @@ const STANDBY_ROWS = [
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const grid = initGrid(ROWS, COLS);
-const tileEls = []; // tileEls[row][col] → DOM element
+const tileEls = [];
 
 let animRunning = false;
 let lastFlipTime = 0;
 let onSettledCallback = null;
 
-// Demo
 let demoActive = false;
 let demoIndex = 0;
 let demoTimer = null;
 
-// Audio
 const sfx = document.getElementById('sfx');
 let audioMuted = false;
 let audioUnlocked = false;
 
-// ── DOM: build 6×22 grid ──────────────────────────────────────────────────────
+// ── Build grid DOM ────────────────────────────────────────────────────────────
 function buildGrid() {
   const container = document.createElement('div');
   container.id = 'board-grid';
@@ -83,10 +81,6 @@ function buildGrid() {
     for (let c = 0; c < COLS; c++) {
       const tile = document.createElement('div');
       tile.className = 'tile';
-      tile.dataset.row = r;
-      tile.dataset.col = c;
-
-      // Four panels: top-front, top-back, bottom-front, bottom-back
       tile.innerHTML = `
         <div class="tile-top">
           <span class="tile-char tf"> </span>
@@ -96,7 +90,6 @@ function buildGrid() {
           <span class="tile-char bf"> </span>
           <span class="tile-char bb"> </span>
         </div>`;
-
       container.appendChild(tile);
       tileEls[r][c] = tile;
     }
@@ -113,7 +106,6 @@ function applyTileChar(tileEl, char) {
   } else {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
-    // Update all four panels to current char content
     tileEl.querySelector('.tf').textContent = char;
     tileEl.querySelector('.tb').textContent = char;
     tileEl.querySelector('.bf').textContent = char;
@@ -122,7 +114,6 @@ function applyTileChar(tileEl, char) {
 }
 
 function renderDirtyTiles(dirtyTiles) {
-  // dirtyTiles: array of { r, c, prevChar, newChar }
   for (const { r, c, newChar } of dirtyTiles) {
     const tileEl = tileEls[r][c];
 
@@ -134,26 +125,17 @@ function renderDirtyTiles(dirtyTiles) {
 
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
-
-    // Set back panels to new char, trigger flip
     tileEl.querySelector('.tb').textContent = newChar;
     tileEl.querySelector('.bb').textContent = newChar;
-    tileEl.classList.remove('flipping'); // reset in case of re-trigger
-
-    // Force reflow so the class removal registers before re-adding
+    tileEl.classList.remove('flipping');
     // eslint-disable-next-line no-unused-expressions
     tileEl.offsetHeight;
-
     tileEl.classList.add('flipping');
-
-    // After animation completes, swap front panels to new char
-    const onEnd = () => {
+    tileEl.addEventListener('animationend', () => {
       tileEl.classList.remove('flipping');
       tileEl.querySelector('.tf').textContent = newChar;
       tileEl.querySelector('.bf').textContent = newChar;
-      tileEl.removeEventListener('animationend', onEnd);
-    };
-    tileEl.addEventListener('animationend', onEnd, { once: true });
+    }, { once: true });
   }
 }
 
@@ -162,83 +144,52 @@ function animLoop(timestamp) {
   if (!animRunning) return;
 
   if (timestamp - lastFlipTime >= FLIP_INTERVAL_MS) {
-    // Collect tiles that will change this step
-    const dirtyTiles = [];
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (grid[r][c].stepsLeft > 0) {
-          dirtyTiles.push({ r, c, newChar: null }); // newChar filled after stepAll
-        }
-      }
-    }
+    const dirty = [];
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (grid[r][c].stepsLeft > 0) dirty.push({ r, c });
 
     const { anyChanged, allSettled } = stepAll(grid);
 
     if (anyChanged) {
-      // Fill in newChar after stepping
-      for (const d of dirtyTiles) {
-        d.newChar = grid[d.r][d.c].current;
-      }
-      renderDirtyTiles(dirtyTiles);
+      for (const d of dirty) d.newChar = grid[d.r][d.c].current;
+      renderDirtyTiles(dirty);
     }
 
     if (allSettled) {
       animRunning = false;
       stopAudio();
-      if (onSettledCallback) {
-        const cb = onSettledCallback;
-        onSettledCallback = null;
-        cb();
-      }
+      if (onSettledCallback) { const cb = onSettledCallback; onSettledCallback = null; cb(); }
       return;
     }
-
     lastFlipTime = timestamp;
   }
 
   requestAnimationFrame(animLoop);
 }
 
-// ── Public: display target rows ───────────────────────────────────────────────
 export function displayRows(targetRows, onSettled) {
   setTargets(grid, targetRows);
-
-  // Check if anything actually needs to move
   let anyWork = false;
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (grid[r][c].stepsLeft > 0) { anyWork = true; break; }
-    }
-    if (anyWork) break;
-  }
+  for (let r = 0; r < ROWS && !anyWork; r++)
+    for (let c = 0; c < COLS && !anyWork; c++)
+      if (grid[r][c].stepsLeft > 0) anyWork = true;
 
-  if (!anyWork) {
-    if (onSettled) onSettled();
-    return;
-  }
+  if (!anyWork) { if (onSettled) onSettled(); return; }
 
   onSettledCallback = onSettled || null;
   startAudio();
-
-  if (!animRunning) {
-    animRunning = true;
-    lastFlipTime = 0;
-    requestAnimationFrame(animLoop);
-  }
+  if (!animRunning) { animRunning = true; lastFlipTime = 0; requestAnimationFrame(animLoop); }
 }
 
-// Instantly snap grid to target (no animation) — used for hard reset
 export function snapDisplay(targetRows) {
   setTargets(grid, targetRows);
   snapToTargets(grid);
   animRunning = false;
   onSettledCallback = null;
-  // Re-render all tiles
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
       applyTileChar(tileEls[r][c], grid[r][c].current);
-    }
-  }
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
@@ -246,19 +197,14 @@ function startAudio() {
   if (audioMuted || !audioUnlocked) return;
   sfx.play().catch(() => {});
 }
-
-function stopAudio() {
-  sfx.pause();
-}
-
+function stopAudio() { sfx.pause(); }
 function toggleMute() {
   audioMuted = !audioMuted;
-  const btn = document.getElementById('btn-mute');
-  btn.textContent = audioMuted ? 'UNMUTE' : 'MUTE';
+  document.getElementById('btn-mute').textContent = audioMuted ? 'UNMUTE' : 'MUTE';
   if (audioMuted) stopAudio();
 }
 
-// ── Demo mode ─────────────────────────────────────────────────────────────────
+// ── Demo ──────────────────────────────────────────────────────────────────────
 function startDemo() {
   demoActive = true;
   showDemoMessage();
@@ -286,12 +232,23 @@ function skipDemo() {
   startDemo();
 }
 
-// ── WebSocket client ──────────────────────────────────────────────────────────
-import WsClient from '/shared/wsClient.js';
+// ── Pair panel helpers ────────────────────────────────────────────────────────
+function showPairPanel(pairCode, sessionId) {
+  // Format code as ABC-123
+  document.getElementById('pair-code').textContent =
+    pairCode.slice(0, 3) + '-' + pairCode.slice(3);
+  document.getElementById('qr-img').src = `/qr/${sessionId}`;
+  document.getElementById('pair-panel').hidden = false;
+}
 
+function hidePairPanel() {
+  document.getElementById('pair-panel').hidden = true;
+}
+
+// ── WebSocket client ──────────────────────────────────────────────────────────
 let sessionId = localStorage.getItem('solari_session_id') || null;
+
 const ws = new WsClient(() => {
-  // Called on (re)connect — send hello
   ws.send({ type: 'tv_hello', sessionId });
 });
 
@@ -300,27 +257,23 @@ ws.onMessage(msg => {
     case 'tv_paired':
       sessionId = msg.sessionId;
       localStorage.setItem('solari_session_id', sessionId);
-      showPairCode(msg.pairCode);
-      showQR(sessionId);
+      showPairPanel(msg.pairCode, msg.sessionId);
       break;
 
     case 'phone_request':
+      hidePairPanel();
       document.getElementById('approval-overlay').hidden = false;
       break;
 
     case 'phone_approved':
-      // Phone connected — stop demo, show standby
-      stopDemo();
       document.getElementById('approval-overlay').hidden = true;
+      hidePairPanel();
+      stopDemo();
       displayRows(STANDBY_ROWS);
       break;
 
     case 'display_update':
       displayRows(msg.rows);
-      break;
-
-    case 'phone_next':
-      // TV-side multi-message is managed by phone; nothing to do here
       break;
 
     case 'hard_reset':
@@ -348,19 +301,6 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape') { overlay.hidden = true; ws.send({ type: 'tv_reject' }); }
 });
 
-// ── Pair panel helpers ────────────────────────────────────────────────────────
-function showPairCode(code) {
-  // Format as ABC-123
-  document.getElementById('pair-code').textContent =
-    code.slice(0, 3) + '-' + code.slice(3);
-}
-
-function showQR(sid) {
-  const img = document.getElementById('qr-img');
-  img.src = `/qr/${sid}`;
-  img.hidden = false;
-}
-
 // ── Controls ──────────────────────────────────────────────────────────────────
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
@@ -377,12 +317,13 @@ document.addEventListener('fullscreenchange', () => {
 const clickToStart = document.getElementById('click-to-start');
 clickToStart.addEventListener('pointerdown', () => {
   audioUnlocked = true;
-  clickToStart.remove();
+  clickToStart.style.opacity = '0';
+  clickToStart.style.pointerEvents = 'none';
+  setTimeout(() => clickToStart.remove(), 300);
   sfx.play().then(() => sfx.pause()).catch(() => {});
   startDemo();
 }, { once: true });
 
-// Wait for font before building grid
 document.fonts.ready.then(() => {
   buildGrid();
   ws.connect(`ws://${location.host}/ws`);

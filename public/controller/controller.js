@@ -9,16 +9,12 @@ const ROWS = 6;
 const COLS = 22;
 const MAX_MESSAGES = 10;
 const DEFAULT_LOOP_S = 7;
+const NEXT_DEBOUNCE_MS = 1500;
 
-const COLOR_CHARS = [
-  { char: 'R', color: '#FF0000' },
-  { char: 'O', color: '#FF7F00' },
-  { char: 'Y', color: '#FFFF00' },
-  { char: 'G', color: '#00AA00' },
-  { char: 'B', color: '#0000FF' },
-  { char: 'P', color: '#800080' },
-  { char: 'W', color: '#FFFFFF' },
-];
+// Default message set — shown on first load (no saved drafts)
+const DEFAULT_MESSAGES = () => ([{
+  rows: ['HELLO WORLD', '', 'HOPE YOU ENJOY', 'CHEERS', '', ''],
+}]);
 
 const STANDBY_ROWS = [
   '                      ',
@@ -29,25 +25,37 @@ const STANDBY_ROWS = [
   '                      ',
 ];
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let messages = [{ rows: Array(ROWS).fill('') }];
-let activeMessageIndex = 0;
-let loopInterval = DEFAULT_LOOP_S;
-let isPlaying = false;
-let playIndex = 0;
-let playTimer = null;
-let currentMode = 'message'; // 'message' | 'clock'
-let clockTimer = null;
-let focusedInput = null;
+const DAY_NAMES   = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
+                     'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 
-// Preview grid (snaps instantly, no animation)
-const previewGrid = initGrid(ROWS, COLS);
+// ── State ─────────────────────────────────────────────────────────────────────
+let messages           = DEFAULT_MESSAGES();
+let activeMessageIndex = 0;
+let loopInterval       = DEFAULT_LOOP_S;
+let isPlaying          = false;
+let playIndex          = 0;
+let playTimer          = null;
+let currentMode        = 'message';
+let clockTimer         = null;
+let focusedInput       = null;
+let currentPairCode    = '';
+let nextDebouncing     = false;
+
+// Preview grid
+const previewGrid   = initGrid(ROWS, COLS);
 const previewTileEls = [];
 
-// ── Load/save drafts ──────────────────────────────────────────────────────────
+// ── Persistence ───────────────────────────────────────────────────────────────
 function saveDrafts() {
   localStorage.setItem('solari_drafts', JSON.stringify({
     messages, activeMessageIndex, loopInterval, currentMode,
+  }));
+}
+
+function savePlayState(playing, index) {
+  localStorage.setItem('solari_play_state', JSON.stringify({
+    wasPlaying: playing, playIndex: index, loopInterval, pairCode: currentPairCode,
   }));
 }
 
@@ -58,9 +66,31 @@ function loadDrafts() {
     const d = JSON.parse(raw);
     if (Array.isArray(d.messages) && d.messages.length) messages = d.messages;
     activeMessageIndex = Math.min(d.activeMessageIndex ?? 0, messages.length - 1);
-    loopInterval = d.loopInterval ?? DEFAULT_LOOP_S;
-    currentMode = d.currentMode ?? 'message';
+    loopInterval       = d.loopInterval ?? DEFAULT_LOOP_S;
+    currentMode        = d.currentMode  ?? 'message';
   } catch {}
+}
+
+// ── Header helpers ────────────────────────────────────────────────────────────
+function updateHeader(connected, code) {
+  const dot  = document.getElementById('status-dot');
+  const box  = document.getElementById('status-box');
+  const codeEl = document.getElementById('header-code');
+
+  if (code) {
+    currentPairCode = code;
+    codeEl.textContent = code.slice(0, 3) + '-' + code.slice(3);
+  }
+
+  if (connected) {
+    dot.classList.add('connected');
+    box.classList.add('connected');
+    box.textContent = 'CONNECTED';
+  } else {
+    dot.classList.remove('connected');
+    box.classList.remove('connected');
+    box.textContent = 'DISCONNECTED';
+  }
 }
 
 // ── Preview grid DOM ──────────────────────────────────────────────────────────
@@ -88,15 +118,15 @@ function renderPreview() {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const ch = previewGrid[r][c].current;
-      const tileEl = previewTileEls[r][c];
+      const el = previewTileEls[r][c];
       if (isColorChar(ch)) {
-        tileEl.classList.add('color-tile');
-        tileEl.style.setProperty('--tile-color', COLOR_MAP[ch]);
+        el.classList.add('color-tile');
+        el.style.setProperty('--tile-color', COLOR_MAP[ch]);
       } else {
-        tileEl.classList.remove('color-tile');
-        tileEl.style.removeProperty('--tile-color');
-        tileEl.querySelector('.tf').textContent = ch;
-        tileEl.querySelector('.bf').textContent = ch;
+        el.classList.remove('color-tile');
+        el.style.removeProperty('--tile-color');
+        el.querySelector('.tf').textContent = ch;
+        el.querySelector('.bf').textContent = ch;
       }
     }
   }
@@ -108,11 +138,7 @@ function syncPreview(targetRows) {
   renderPreview();
 }
 
-// ── Message list UI ───────────────────────────────────────────────────────────
-function getActiveRows() {
-  return messages[activeMessageIndex].rows;
-}
-
+// ── Message list rendering ────────────────────────────────────────────────────
 function renderMessageList() {
   const list = document.getElementById('message-list');
   list.innerHTML = '';
@@ -122,9 +148,9 @@ function renderMessageList() {
     row.className = 'message-row' + (i === activeMessageIndex ? ' active' : '');
     row.dataset.index = i;
 
-    // 6 text inputs
     const inputsDiv = document.createElement('div');
     inputsDiv.className = 'row-inputs';
+
     for (let r = 0; r < ROWS; r++) {
       const input = document.createElement('input');
       input.type = 'text';
@@ -142,7 +168,6 @@ function renderMessageList() {
 
       input.addEventListener('input', e => {
         let val = e.target.value.toUpperCase();
-        // Replace chars not in spool with ?
         val = val.split('').map(ch => SPOOL.includes(ch) ? ch : '?').join('');
         e.target.value = val;
         messages[i].rows[r] = val;
@@ -153,36 +178,19 @@ function renderMessageList() {
       inputsDiv.appendChild(input);
     }
 
-    // Color picker
-    const colorPicker = document.createElement('div');
-    colorPicker.className = 'row-color-picker';
-    for (const { char, color } of COLOR_CHARS) {
-      const btn = document.createElement('button');
-      btn.className = 'color-btn';
-      btn.dataset.color = char;
-      btn.style.background = color;
-      btn.title = char;
-      btn.setAttribute('aria-label', `Insert color ${char}`);
-      btn.addEventListener('click', () => insertColorChar(char));
-      colorPicker.appendChild(btn);
-    }
-
-    // Delete button (hide if only one message)
     const delBtn = document.createElement('button');
     delBtn.className = 'btn-delete-message';
     delBtn.textContent = '×';
+    delBtn.setAttribute('aria-label', 'Delete message');
+    delBtn.style.visibility = messages.length === 1 ? 'hidden' : 'visible';
     delBtn.addEventListener('click', () => deleteMessage(i));
-    if (messages.length === 1) delBtn.style.visibility = 'hidden';
 
     row.appendChild(inputsDiv);
-    row.appendChild(colorPicker);
     row.appendChild(delBtn);
     list.appendChild(row);
   });
 
-  // Update Add button
-  const addBtn = document.getElementById('btn-add-message');
-  addBtn.disabled = messages.length >= MAX_MESSAGES;
+  document.getElementById('btn-add-message').disabled = messages.length >= MAX_MESSAGES;
 }
 
 function setActiveMessage(index) {
@@ -214,29 +222,24 @@ function deleteMessage(index) {
 
 function insertColorChar(char) {
   if (!focusedInput) return;
-  const input = focusedInput;
-  const start = input.selectionStart;
-  const end = input.selectionEnd;
-  const current = input.value;
+  const start = focusedInput.selectionStart;
+  const end   = focusedInput.selectionEnd;
+  if (focusedInput.value.length >= COLS && start === end) return;
+  focusedInput.setRangeText(char, start, end, 'end');
+  focusedInput.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
-  // Don't exceed maxLength
-  if (current.length >= COLS && start === end) return;
-
-  input.setRangeText(char, start, end, 'end');
-  // Trigger input event to sync
-  input.dispatchEvent(new Event('input', { bubbles: true }));
+// ── Row padding ───────────────────────────────────────────────────────────────
+function padRows(rows) {
+  return Array.from({ length: ROWS }, (_, i) =>
+    (rows[i] ?? '').slice(0, COLS).padEnd(COLS, ' ')
+  );
 }
 
 // ── Play / Next / Reset ───────────────────────────────────────────────────────
 function sendMessage(index) {
   const rows = padRows(messages[index]?.rows ?? []);
   ws.send({ type: 'phone_send', payload: { rows, mode: 'message' } });
-}
-
-function padRows(rows) {
-  return Array.from({ length: ROWS }, (_, i) =>
-    (rows[i] ?? '').slice(0, COLS).padEnd(COLS, ' ')
-  );
 }
 
 function startPlay() {
@@ -247,6 +250,7 @@ function startPlay() {
   playIndex = activeMessageIndex;
   sendMessage(playIndex);
   scheduleNext();
+  savePlayState(true, playIndex);
 }
 
 function stopPlay() {
@@ -254,6 +258,7 @@ function stopPlay() {
   clearTimeout(playTimer);
   document.getElementById('btn-play').classList.remove('playing');
   document.getElementById('btn-play').textContent = 'PLAY';
+  savePlayState(false, playIndex);
 }
 
 function scheduleNext() {
@@ -262,77 +267,80 @@ function scheduleNext() {
     if (!isPlaying) return;
     playIndex = (playIndex + 1) % messages.length;
     sendMessage(playIndex);
+    savePlayState(true, playIndex);
     scheduleNext();
   }, loopInterval * 1000);
 }
 
 function nextMessage() {
-  if (!isPlaying) return;
+  if (!isPlaying || nextDebouncing) return;
+
+  // Spam protection: disable for NEXT_DEBOUNCE_MS
+  nextDebouncing = true;
+  const btn = document.getElementById('btn-next');
+  btn.disabled = true;
+  setTimeout(() => {
+    nextDebouncing = false;
+    btn.disabled = false;
+  }, NEXT_DEBOUNCE_MS);
+
   playIndex = (playIndex + 1) % messages.length;
   sendMessage(playIndex);
-  scheduleNext(); // reset timer
+  savePlayState(true, playIndex);
+  scheduleNext();
 }
 
 function hardReset() {
   stopPlay();
+  // Reset phone UI to HELLO WORLD defaults
+  messages = DEFAULT_MESSAGES();
+  activeMessageIndex = 0;
+  renderMessageList();
+  syncPreview(messages[0].rows);
+  saveDrafts();
   ws.send({ type: 'phone_reset' });
 }
 
 // ── Clock mode ────────────────────────────────────────────────────────────────
-const DAY_NAMES = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
-const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
-                     'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
-
 function buildClockRows() {
-  const now = new Date();
-  const day = DAY_NAMES[now.getDay()];
-  const month = MONTH_NAMES[now.getMonth()];
+  const now  = new Date();
+  const day  = DAY_NAMES[now.getDay()];
+  const mon  = MONTH_NAMES[now.getMonth()];
   const date = String(now.getDate()).padStart(2, ' ');
   const year = String(now.getFullYear());
 
-  let hours = now.getHours();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  const hh = String(hours).padStart(2, ' ');
+  let h = now.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  const hh = String(h).padStart(2, ' ');
   const mm = String(now.getMinutes()).padStart(2, '0');
   const ss = String(now.getSeconds()).padStart(2, '0');
 
-  // Row 2: DAY  MONTH DATE
-  const row2 = `${day} ${month} ${date}`.slice(0, COLS).padEnd(COLS, ' ');
-  // Row 3: HH:MM:SS AM/PM
-  const timeStr = `${hh}:${mm}:${ss} ${ampm}`;
-  const row3 = timeStr.padStart(12, ' ').padEnd(COLS, ' ');
-  // Row 4: year centered
-  const yearPad = Math.floor((COLS - year.length) / 2);
-  const row4 = (' '.repeat(yearPad) + year).padEnd(COLS, ' ');
+  const row2 = `${day} ${mon} ${date}`.slice(0, COLS).padEnd(COLS, ' ');
+  const row3 = `${hh}:${mm}:${ss} ${ampm}`.padStart(14, ' ').padEnd(COLS, ' ');
+  const yPad = Math.floor((COLS - year.length) / 2);
+  const row4 = (' '.repeat(yPad) + year).padEnd(COLS, ' ');
 
-  return [
-    '                      ',
-    row2,
-    row3,
-    row4,
-    '                      ',
-    '                      ',
-  ];
+  return ['                      ', row2, row3, row4, '                      ', '                      '];
 }
 
 function startClockMode() {
   document.getElementById('btn-play').disabled = true;
-  clockTimer = setInterval(() => {
+  document.getElementById('btn-next').disabled = true;
+  const send = () => {
     const rows = buildClockRows();
     ws.send({ type: 'phone_send', payload: { rows, mode: 'clock' } });
     syncPreview(rows);
-  }, 1000);
-  // Send immediately
-  const rows = buildClockRows();
-  ws.send({ type: 'phone_send', payload: { rows, mode: 'clock' } });
-  syncPreview(rows);
+  };
+  send();
+  clockTimer = setInterval(send, 1000);
 }
 
 function stopClockMode() {
   clearInterval(clockTimer);
   clockTimer = null;
   document.getElementById('btn-play').disabled = false;
+  document.getElementById('btn-next').disabled = false;
 }
 
 function switchToMessage() {
@@ -351,13 +359,28 @@ const ws = new WsClient(() => {
 
 ws.onMessage(msg => {
   switch (msg.type) {
-    case 'phone_approved':
+    case 'phone_approved': {
       document.getElementById('connect-screen').remove();
       document.getElementById('controller-ui').hidden = false;
+      updateHeader(true, pairCode);
+
+      // Auto-resume loop if it was playing before disconnect
+      try {
+        const ps = JSON.parse(localStorage.getItem('solari_play_state') || '{}');
+        if (ps.wasPlaying && ps.pairCode === pairCode) {
+          playIndex = Math.min(ps.playIndex ?? 0, messages.length - 1);
+          loopInterval = ps.loopInterval ?? loopInterval;
+          document.getElementById('timer-slider').value = loopInterval;
+          document.getElementById('timer-value').textContent = loopInterval;
+          startPlay();
+        }
+      } catch {}
       break;
+    }
 
     case 'phone_rejected':
-      document.getElementById('connect-status').textContent = 'REQUEST REJECTED';
+      document.getElementById('connect-status').textContent = 'CONNECTION DENIED';
+      updateHeader(false, pairCode);
       break;
 
     case 'board_occupied':
@@ -379,14 +402,16 @@ document.fonts.ready.then(() => {
 
   // Restore mode radio
   document.querySelector(`input[name="mode"][value="${currentMode}"]`).checked = true;
-
-  // Restore timer slider
   document.getElementById('timer-slider').value = loopInterval;
   document.getElementById('timer-value').textContent = loopInterval;
 
-  // ── Event listeners ─────────────────────────────────────────────────────────
+  // ── Emoji color picker ────────────────────────────────────────────────────
+  document.getElementById('emoji-picker').addEventListener('click', e => {
+    const btn = e.target.closest('.emoji-btn');
+    if (btn) insertColorChar(btn.dataset.color);
+  });
 
-  // Mode toggle
+  // ── Mode toggle ──────────────────────────────────────────────────────────
   document.querySelectorAll('input[name="mode"]').forEach(radio => {
     radio.addEventListener('change', e => {
       currentMode = e.target.value;
@@ -400,32 +425,27 @@ document.fonts.ready.then(() => {
     });
   });
 
-  // Loop timer
+  // ── Loop timer ───────────────────────────────────────────────────────────
   document.getElementById('timer-slider').addEventListener('input', e => {
     loopInterval = Number(e.target.value);
     document.getElementById('timer-value').textContent = loopInterval;
     saveDrafts();
-    if (isPlaying) scheduleNext(); // reset timer with new interval
+    if (isPlaying) scheduleNext();
   });
 
-  // Add message
+  // ── Buttons ──────────────────────────────────────────────────────────────
   document.getElementById('btn-add-message').addEventListener('click', addMessage);
 
-  // Play/Stop
   document.getElementById('btn-play').addEventListener('click', () => {
-    if (isPlaying) stopPlay();
-    else startPlay();
+    if (isPlaying) stopPlay(); else startPlay();
   });
 
-  // Next
   document.getElementById('btn-next').addEventListener('click', nextMessage);
-
-  // Hard Reset
   document.getElementById('btn-reset').addEventListener('click', hardReset);
 
-  // Connect
+  // ── Connect ──────────────────────────────────────────────────────────────
   if (!pairCode) {
-    document.getElementById('connect-status').textContent = 'NO CODE PROVIDED';
+    document.getElementById('connect-status').textContent = 'NO CODE — SCAN QR ON BOARD';
   } else {
     ws.connect(`ws://${location.host}/ws`);
   }

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Solari — Split-Flap Display for Any Screen</title>
+  <link rel="stylesheet" href="/shared/splitflap.css">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+
+  <!-- ── Hero: live demo board ──────────────────────────────────────────────── -->
+  <section id="hero">
+    <div id="hero-header">
+      <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
+      <div id="wordmark">DIGITAL SOLARI</div>
+    </div>
+
+    <div id="board-container">
+      <!-- 6×22 tile grid injected by home.js -->
+    </div>
+
+    <div id="demo-controls">
+      <button id="btn-skip">SKIP</button>
+      <button id="btn-mute">MUTE</button>
+      <button id="btn-fullscreen">&#x26F6;</button>
+    </div>
+  </section>
+
+  <!-- ── Click-to-start audio unlock ───────────────────────────────────────── -->
+  <div id="click-to-start">
+    <div id="cts-inner">
+      <span id="cts-label">CLICK TO START</span>
+      <span id="cts-sub">enables mechanical sound</span>
+    </div>
+  </div>
+
+  <audio id="sfx" src="/assets/audio/split-flap-display.wav" loop preload="auto"></audio>
+
+  <!-- ── Product explanation ────────────────────────────────────────────────── -->
+  <section id="about">
+    <div id="about-grid">
+
+      <div id="about-left">
+        <h1 id="about-heading">A SPLIT&#8209;FLAP<br>DISPLAY FOR<br>ANY SCREEN.</h1>
+        <p id="about-desc">
+          Digital Solari brings the mechanical soul of a Solari departures board to any TV,
+          monitor, or browser. No app. No account. No install.<br><br>
+          Characters cycle through a fixed spool — exactly like physical hardware — with
+          every flip timed to a real mechanical cadence.
+        </p>
+      </div>
+
+      <div id="about-right">
+        <div id="how-to">
+          <div class="step">
+            <span class="step-num">01</span>
+            <span class="step-text">Open this page on your TV or any screen.<br>Click <em>Connect Board</em> below.</span>
+          </div>
+          <div class="step">
+            <span class="step-num">02</span>
+            <span class="step-text">Scan the QR code with your phone,<br>or enter the 6-digit code manually.</span>
+          </div>
+          <div class="step">
+            <span class="step-num">03</span>
+            <span class="step-text">Type your messages on the phone controller,<br>hit <em>Play</em> — the board flips.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="cta-row">
+      <a id="btn-connect" href="/board">CONNECT BOARD &nbsp;&#x2192;</a>
+    </div>
+
+    <footer id="site-footer">
+      <span>DIGITAL SOLARI &copy; 2025</span>
+      <span>Node.js &middot; WebSockets &middot; No database</span>
+    </footer>
+  </section>
+
+  <script type="module" src="home.js"></script>
+</body>
+</html>

@@ -14,6 +14,9 @@ const wss = new WebSocket.Server({ server, path: '/ws' });
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
 
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, '../public/index.html')));
+
 app.get('/board', (req, res) =>
   res.sendFile(path.join(__dirname, '../public/board/index.html')));
 
@@ -50,6 +53,9 @@ function getLanHost(req) {
   return req.get('host');
 }
 
+// Sockets watching the live counter from the homepage (no session created)
+const counterWatchers = new Set();
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function send(socket, obj) {
   if (socket && socket.readyState === WebSocket.OPEN) {
@@ -66,8 +72,13 @@ function broadcastLiveCount() {
       s.phoneSocket?.readyState === WebSocket.OPEN
     ) count++;
   }
+  // Broadcast to board TVs
   for (const s of sessions.values()) {
     send(s.tvSocket, { type: 'boards_live', count });
+  }
+  // Broadcast to homepage counter watchers
+  for (const sock of counterWatchers) {
+    send(sock, { type: 'boards_live', count });
   }
 }
 
@@ -90,6 +101,22 @@ wss.on('connection', socket => {
     try { msg = JSON.parse(raw); } catch { return; }
 
     if (!role) {
+      // Homepage live-counter watcher — no session, just receives broadcasts
+      if (msg.type === 'counter_watch') {
+        counterWatchers.add(socket);
+        // Send current count immediately
+        let count = 0;
+        for (const s of sessions.values()) {
+          if (
+            s.state === 'active' &&
+            s.tvSocket?.readyState === WebSocket.OPEN &&
+            s.phoneSocket?.readyState === WebSocket.OPEN
+          ) count++;
+        }
+        send(socket, { type: 'boards_live', count });
+        return;
+      }
+
       // First message determines role
       if (msg.type === 'tv_hello') {
         role = 'tv';
@@ -177,6 +204,9 @@ wss.on('connection', socket => {
   });
 
   socket.on('close', () => {
+    // Clean up counter watchers (homepage)
+    counterWatchers.delete(socket);
+
     if (!session) return;
 
     if (role === 'tv') {
@@ -197,6 +227,7 @@ wss.on('connection', socket => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Digital Solari running on http://localhost:${PORT}`);
+  console.log(`  Homepage:   http://localhost:${PORT}/`);
   console.log(`  Board:      http://localhost:${PORT}/board`);
   console.log(`  Controller: http://localhost:${PORT}/controller`);
 });

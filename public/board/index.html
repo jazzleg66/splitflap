@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Solari</title>
+  <title>Digital Solari — Board</title>
   <link rel="stylesheet" href="/shared/splitflap.css">
   <link rel="stylesheet" href="board.css">
 </head>
@@ -11,35 +11,49 @@
 
   <header id="board-header">
     <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
-    <div id="board-controls">
-      <button id="btn-skip">SKIP</button>
-      <button id="btn-mute">MUTE</button>
-      <button id="btn-fullscreen">&#x26F6;</button>
-    </div>
   </header>
 
   <main id="board-container">
     <!-- 6×22 tile grid injected by board.js -->
   </main>
 
-  <div id="pair-panel">
-    <div id="pair-code"></div>
-    <img id="qr-img" alt="QR Code" hidden>
+  <!-- Demo controls — visible only during demo, placed below the board -->
+  <div id="demo-controls">
+    <button id="btn-skip">SKIP</button>
+    <button id="btn-mute">MUTE</button>
+    <button id="btn-fullscreen">&#x26F6;</button>
   </div>
 
+  <!-- Pair panel: centered full-screen overlay, hidden until paired -->
+  <div id="pair-panel" hidden>
+    <div id="pair-inner">
+      <p id="pair-label">SCAN TO CONNECT</p>
+      <img id="qr-img" alt="QR Code">
+      <div id="pair-code-wrap">
+        <span id="pair-hint">OR ENTER CODE MANUALLY</span>
+        <div id="pair-code">------</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approval overlay -->
   <div id="approval-overlay" hidden>
     <div id="approval-inner">
       <p>CONNECTION REQUEST</p>
       <p>APPROVE? <kbd>ENTER</kbd></p>
-      <p>REJECT? <kbd>ESC</kbd></p>
+      <p>REJECT? &nbsp;&nbsp;<kbd>ESC</kbd></p>
     </div>
   </div>
 
-  <div id="click-to-start" aria-label="Click to start">
-    <span>CLICK TO START</span>
+  <!-- Audio unlock -->
+  <div id="click-to-start">
+    <div id="cts-inner">
+      <span id="cts-label">CLICK TO START</span>
+      <span id="cts-sub">enables mechanical sound</span>
+    </div>
   </div>
 
-  <audio id="sfx" src="/assets/audio/pragotron_split-flap-display.wav" loop preload="auto"></audio>
+  <audio id="sfx" src="/assets/audio/split-flap-display.wav" loop preload="auto"></audio>
 
   <script type="module" src="board.js"></script>
 </body>

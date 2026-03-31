@@ -9,27 +9,22 @@
 </head>
 <body>
 
-  <!-- Connection screen (shown until approved) -->
+  <!-- Persistent header — always visible, shows connection state -->
+  <header id="ctrl-header">
+    <div id="header-code">------</div>
+    <div id="header-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-box" id="status-box">DISCONNECTED</span>
+    </div>
+  </header>
+
+  <!-- Connection screen (covers body until approved) -->
   <div id="connect-screen">
     <div id="connect-status">CONNECTING...</div>
   </div>
 
-  <!-- Main controller UI (hidden until approved) -->
+  <!-- Main UI (hidden until phone_approved) -->
   <div id="controller-ui" hidden>
-
-    <header id="ctrl-header">
-      <h1>DIGITAL SOLARI</h1>
-      <div id="ctrl-status">CONNECTED</div>
-    </header>
-
-    <!-- Board preview -->
-    <section id="preview-section">
-      <div id="preview-wrapper">
-        <div id="board-preview">
-          <!-- 6×22 mini tiles injected by JS -->
-        </div>
-      </div>
-    </section>
 
     <!-- Mode selector -->
     <section id="mode-section">
@@ -43,26 +38,48 @@
       </label>
     </section>
 
-    <!-- Messages (hidden in clock mode) -->
+    <!-- Messages section: preview + instructions + list -->
     <section id="messages-section">
-      <div id="message-list">
-        <!-- message rows injected by JS -->
+
+      <!-- Board preview (scrolls with page) -->
+      <div id="preview-wrapper">
+        <div id="board-preview"></div>
       </div>
+
+      <!-- Color picker + instructions -->
+      <div id="type-row">
+        <span id="type-label">Type below.</span>
+        <div id="emoji-picker">
+          <button class="emoji-btn" data-color="R" title="Red">🔴</button>
+          <button class="emoji-btn" data-color="O" title="Orange">🟠</button>
+          <button class="emoji-btn" data-color="Y" title="Yellow">🟡</button>
+          <button class="emoji-btn" data-color="G" title="Green">🟢</button>
+          <button class="emoji-btn" data-color="B" title="Blue">🔵</button>
+          <button class="emoji-btn" data-color="P" title="Purple">🟣</button>
+          <button class="emoji-btn" data-color="W" title="White">⚪</button>
+        </div>
+      </div>
+
+      <!-- Message list injected by JS -->
+      <div id="message-list"></div>
+
       <button id="btn-add-message">+ ADD MESSAGE</button>
+
       <div id="loop-timer-row">
         <label>LOOP EVERY <span id="timer-value">7</span>S</label>
         <input type="range" id="timer-slider" min="5" max="60" value="7">
       </div>
+
     </section>
 
-    <!-- Sticky footer -->
-    <footer id="global-controls">
-      <button id="btn-play">PLAY</button>
-      <button id="btn-next">NEXT</button>
-      <button id="btn-reset">RESET</button>
-    </footer>
-
   </div>
+
+  <!-- Persistent footer -->
+  <footer id="global-controls">
+    <button id="btn-play">PLAY</button>
+    <button id="btn-next">NEXT</button>
+    <button id="btn-reset">RESET</button>
+  </footer>
 
   <script type="module" src="controller.js"></script>
 </body>
