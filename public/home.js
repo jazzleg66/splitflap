@@ -52,9 +52,19 @@ let demoActive = false;
 let demoIndex = 0;
 let demoTimer = null;
 
-const sfx = document.getElementById('sfx');
-let audioMuted = false;
+// ── Web Audio API — seamless looping (no gap between loop cycles) ─────────────
+let audioCtx    = null;
+let audioBuffer = null; // decoded AudioBuffer, ready to play
+let sourceNode  = null; // currently playing node
+let rawAudio    = null; // prefetched ArrayBuffer (fetched without user gesture)
+let audioMuted  = false;
 let audioUnlocked = false;
+
+// Prefetch raw bytes immediately — doesn't require user gesture
+fetch('/assets/audio/split-flap-display.wav')
+  .then(r => r.arrayBuffer())
+  .then(buf => { rawAudio = buf; })
+  .catch(() => {});
 
 // ── Build grid DOM ────────────────────────────────────────────────────────────
 function buildGrid() {
@@ -65,7 +75,7 @@ function buildGrid() {
     tileEls[r] = [];
     for (let c = 0; c < COLS; c++) {
       const tile = document.createElement('div');
-      tile.className = 'tile';
+      tile.className = 'tile space-tile';
       tile.innerHTML = `
         <div class="tile-top">
           <span class="tile-char tf"> </span>
@@ -87,10 +97,12 @@ function buildGrid() {
 function applyTileChar(tileEl, char) {
   if (isColorChar(char)) {
     tileEl.classList.add('color-tile');
+    tileEl.classList.remove('space-tile');
     tileEl.style.setProperty('--tile-color', COLOR_MAP[char]);
   } else {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
+    tileEl.classList.toggle('space-tile', char === ' ');
     tileEl.querySelector('.tf').textContent = char;
     tileEl.querySelector('.tb').textContent = char;
     tileEl.querySelector('.bf').textContent = char;
@@ -111,17 +123,19 @@ function renderDirtyTiles(dirtyTiles) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
 
+    // Pre-load new char on back panels, then flip — front folds away, back reveals
     tileEl.querySelector('.tb').textContent = newChar;
     tileEl.querySelector('.bb').textContent = newChar;
-    tileEl.classList.remove('flipping');
-    // eslint-disable-next-line no-unused-expressions
-    tileEl.offsetHeight; // force reflow
 
+    tileEl.classList.remove('flipping');
+    tileEl.offsetHeight; // force reflow
     tileEl.classList.add('flipping');
+
     tileEl.addEventListener('animationend', () => {
-      tileEl.classList.remove('flipping');
       tileEl.querySelector('.tf').textContent = newChar;
       tileEl.querySelector('.bf').textContent = newChar;
+      tileEl.classList.remove('flipping');
+      tileEl.classList.toggle('space-tile', newChar === ' ');
     }, { once: true });
   }
 }
@@ -170,11 +184,30 @@ function displayRows(targetRows, onSettled) {
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
-function startAudio() {
-  if (audioMuted || !audioUnlocked) return;
-  sfx.play().catch(() => {});
+async function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (rawAudio) {
+    audioBuffer = await audioCtx.decodeAudioData(rawAudio.slice(0));
+  }
 }
-function stopAudio() { sfx.pause(); }
+
+function startAudio() {
+  if (audioMuted || !audioUnlocked || !audioBuffer || sourceNode) return;
+  sourceNode = audioCtx.createBufferSource();
+  sourceNode.buffer = audioBuffer;
+  sourceNode.loop = true;
+  sourceNode.connect(audioCtx.destination);
+  sourceNode.start();
+}
+
+function stopAudio() {
+  if (!sourceNode) return;
+  try { sourceNode.stop(); } catch {}
+  sourceNode = null;
+}
+
 function toggleMute() {
   audioMuted = !audioMuted;
   document.getElementById('btn-mute').textContent = audioMuted ? 'UNMUTE' : 'MUTE';
@@ -199,6 +232,7 @@ function showDemoMessage() {
 }
 
 function skipDemo() {
+  unlockAudio(); // async — fetches context + decodes buffer on first call
   if (demoTimer) clearTimeout(demoTimer);
   demoActive = false;
   demoIndex = (demoIndex + 1) % DEMO_MESSAGES.length;
@@ -230,17 +264,8 @@ document.addEventListener('fullscreenchange', () => {
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-const clickToStart = document.getElementById('click-to-start');
-clickToStart.addEventListener('pointerdown', () => {
-  audioUnlocked = true;
-  clickToStart.style.opacity = '0';
-  clickToStart.style.pointerEvents = 'none';
-  setTimeout(() => clickToStart.remove(), 300);
-  sfx.play().then(() => sfx.pause()).catch(() => {});
-  startDemo();
-}, { once: true });
-
 document.fonts.ready.then(() => {
   buildGrid();
   ws.connect(`ws://${location.host}/ws`);
+  startDemo();
 });

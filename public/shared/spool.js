@@ -1,7 +1,7 @@
 // Spool engine — pure logic, no DOM dependency.
 // Shared between display board and mobile controller (ES module).
 
-export const SPOOL = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'\"\",.?/\u00b0ROYGBPW";
+export const SPOOL = ` ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'"%,.?/\u00b0roygbpw`;
 
 export function spoolIndex(char) {
   const i = SPOOL.indexOf(char);
@@ -30,7 +30,10 @@ export function initGrid(rows = 6, cols = 22) {
 export function setTargets(grid, targetRows) {
   grid.forEach((row, r) =>
     row.forEach((tile, c) => {
-      const ch = (targetRows[r]?.[c] ?? ' ').toUpperCase();
+      let ch = targetRows[r]?.[c] ?? ' ';
+      // Color chars stay lowercase; everything else uppercased and validated
+      if (!isColorChar(ch)) ch = ch.toUpperCase();
+      if (!SPOOL.includes(ch)) ch = ' ';
       tile.target = ch;
       tile.stepsLeft = stepsToReach(tile.current, tile.target);
     })
@@ -67,15 +70,15 @@ export function snapToTargets(grid) {
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
 export const COLOR_MAP = {
-  R: '#FF0000',
-  O: '#FF7F00',
-  Y: '#FFFF00',
-  G: '#00AA00',
-  B: '#0000FF',
-  P: '#800080',
-  W: '#FFFFFF',
+  r: '#FF0000',
+  o: '#FF7F00',
+  y: '#FFFF00',
+  g: '#00AA00',
+  b: '#0000FF',
+  p: '#800080',
+  w: '#FFFFFF',
 };
 
 export function isColorChar(char) {
-  return Object.prototype.hasOwnProperty.call(COLOR_MAP, char);
+  return 'roygbpw'.includes(char);
 }

@@ -102,7 +102,7 @@ function buildPreviewGrid() {
     previewTileEls[r] = [];
     for (let c = 0; c < COLS; c++) {
       const tile = document.createElement('div');
-      tile.className = 'tile';
+      tile.className = 'tile space-tile';
       tile.innerHTML = `
         <div class="tile-top"><span class="tile-char tf"> </span></div>
         <div class="tile-bottom"><span class="tile-char bf"> </span></div>`;
@@ -121,10 +121,12 @@ function renderPreview() {
       const el = previewTileEls[r][c];
       if (isColorChar(ch)) {
         el.classList.add('color-tile');
+        el.classList.remove('space-tile');
         el.style.setProperty('--tile-color', COLOR_MAP[ch]);
       } else {
         el.classList.remove('color-tile');
         el.style.removeProperty('--tile-color');
+        el.classList.toggle('space-tile', ch === ' ');
         el.querySelector('.tf').textContent = ch;
         el.querySelector('.bf').textContent = ch;
       }
@@ -167,8 +169,12 @@ function renderMessageList() {
       });
 
       input.addEventListener('input', e => {
-        let val = e.target.value.toUpperCase();
-        val = val.split('').map(ch => SPOOL.includes(ch) ? ch : '?').join('');
+        // Preserve lowercase color chars (inserted by emoji picker); uppercase everything else
+        const val = e.target.value.split('').map(ch => {
+          if (isColorChar(ch)) return ch;
+          const up = ch.toUpperCase();
+          return SPOOL.includes(up) ? up : '?';
+        }).join('');
         e.target.value = val;
         messages[i].rows[r] = val;
         syncPreview(messages[activeMessageIndex].rows);

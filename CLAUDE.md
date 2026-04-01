@@ -26,8 +26,9 @@ These constraints are non-negotiable and must be preserved exactly:
 
 **Character Spool** — tiles cycle sequentially through this exact array, never randomly:
 ```js
-const SPOOL = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'\"\",.?/°ROYGBPW";
+const SPOOL = ` ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'"%,.?/°roygbpw`;
 ```
+Color characters are stored as **lowercase** (`roygbpw`) so they don't collide with the uppercase letter set. `isColorChar(ch)` checks `'roygbpw'.includes(ch)`.
 
 **Animation:** All changing tiles flip simultaneously at constant velocity (no easing). To go from `A` to `D`, the tile must render `B` then `C` as intermediate frames.
 
@@ -68,4 +69,20 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢
 
 **UI work:** Always invoke the `frontend-design` skill before making any UI/CSS/HTML changes.
 
-**Visual QA:** Use Puppeteer to take screenshots for verification. Run `npm run screenshot` (requires server running on port 3000). Screenshots save to `.screenshots/` and Claude can read them directly to check for layout or rendering issues.
+**Visual QA:** Use Puppeteer to take screenshots for verification. Run `npm run screenshot` (requires server running on port 3000). Screenshots save to `temporary screenshots/` and Claude can read them directly to check for layout or rendering issues.
+
+## Tile Rendering Architecture
+
+**SplitFlapFont is a stencil/inverse font.** The character glyph FILLS the tile face; the letter shape is a CUTOUT. This requires:
+- Panel `background: #F5F0E8` (light) — the cutout reveals this as the "white" letter
+- Character `color: #1a1a1a` (dark) — fills the tile face
+- `space-tile` CSS class: overrides panel background to `#1B1B1B` for empty/space tiles (no glyph coverage → would reveal cream otherwise)
+
+**4-panel CSS 3D flip architecture:**
+- `.tf` = top front (visible at rest, current char, top half)
+- `.tb` = top back (pre-rotated -90° edge-on, incoming char)
+- `.bf` = bottom front (visible at rest, current char, bottom half)
+- `.bb` = bottom back (pre-rotated +90° edge-on, incoming char)
+- JS writes new char to `.tb`/`.bb` → adds `.flipping` → `animationend` copies to `.tf`/`.bf` and removes `.flipping`
+
+**Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click).

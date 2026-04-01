@@ -11,19 +11,26 @@
   --seam:     #2e2e2e;
   --green:    #00CC66;
   --mono:     'Courier New', Courier, monospace;
+
+  /* About section (white background) */
+  --about-bg:   #ffffff;
+  --about-text: #1B1B1B;
+  --about-dim:  #666666;
+  --about-seam: #dddddd;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--about-bg);
+  color: var(--about-text);
   font-family: var(--mono);
   overflow-x: hidden;
 }
 
 /* ── Hero section ───────────────────────────────────────────────────────────── */
 #hero {
+  background: var(--bg);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -110,46 +117,12 @@ body {
   color: var(--text);
 }
 
-/* ── Audio unlock overlay ────────────────────────────────────────────────────── */
-#click-to-start {
-  position: fixed;
-  inset: 0;
-  background: #000000bb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 300;
-  transition: opacity 0.3s;
-}
-
-#cts-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid #3a3a3a;
-  padding: 2rem 3.5rem;
-}
-
-#cts-label {
-  font-size: 1.1rem;
-  letter-spacing: 0.35em;
-  color: var(--text);
-}
-
-#cts-sub {
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
-  color: var(--dim);
-}
-
 /* ── About / explanation section ─────────────────────────────────────────────── */
 #about {
   max-width: 1200px;
   margin: 0 auto;
   padding: 5rem 1.5rem 3rem;
-  border-top: 1px solid var(--seam);
+  border-top: 1px solid var(--about-seam);
 }
 
 #about-grid {
@@ -165,12 +138,13 @@ body {
   line-height: 1.1;
   margin-bottom: 1.5rem;
   font-weight: normal;
+  color: var(--about-text);
 }
 
 #about-desc {
   font-size: 0.8rem;
   line-height: 1.9;
-  color: var(--dim);
+  color: var(--about-dim);
   letter-spacing: 0.06em;
   max-width: 38ch;
 }
@@ -193,20 +167,20 @@ body {
 .step-num {
   font-size: 0.65rem;
   letter-spacing: 0.15em;
-  color: var(--green);
+  color: #007700;
   padding-top: 0.1rem;
 }
 
 .step-text {
   font-size: 0.78rem;
   line-height: 1.8;
-  color: var(--dim);
+  color: var(--about-dim);
   letter-spacing: 0.06em;
 }
 
 .step-text em {
   font-style: normal;
-  color: var(--text);
+  color: var(--about-text);
 }
 
 /* ── CTA ─────────────────────────────────────────────────────────────────────── */
@@ -214,13 +188,13 @@ body {
   display: flex;
   justify-content: center;
   padding: 2rem 0 4rem;
-  border-top: 1px solid var(--seam);
+  border-top: 1px solid var(--about-seam);
 }
 
 #btn-connect {
   display: inline-block;
-  border: 1px solid var(--text);
-  color: var(--text);
+  border: 1px solid var(--about-text);
+  color: var(--about-text);
   font-family: var(--mono);
   font-size: 0.85rem;
   letter-spacing: 0.3em;
@@ -230,8 +204,8 @@ body {
 }
 
 #btn-connect:hover {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--about-text);
+  color: var(--about-bg);
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────────── */
@@ -240,8 +214,8 @@ body {
   justify-content: space-between;
   font-size: 0.6rem;
   letter-spacing: 0.15em;
-  color: #3a3a3a;
-  border-top: 1px solid var(--seam);
+  color: #aaaaaa;
+  border-top: 1px solid var(--about-seam);
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
 }

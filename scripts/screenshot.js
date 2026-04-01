@@ -1,12 +1,12 @@
 // Screenshot utility — captures board and controller pages for visual QA.
 // Usage: node scripts/screenshot.js [board|controller|all]
-// Saves PNGs to .screenshots/ and prints the paths so Claude can read them.
+// Saves PNGs to "temporary screenshots/" and prints the paths so Claude can read them.
 
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 
-const OUT_DIR = path.join(__dirname, '../.screenshots');
+const OUT_DIR = path.join(__dirname, '../temporary screenshots');
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
 const BASE = process.env.BASE_URL || 'http://localhost:3000';
@@ -24,8 +24,8 @@ async function shoot(name, url) {
 
   try {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 10000 });
-    // Wait a moment for fonts and initial render
-    await new Promise(r => setTimeout(r, 1500));
+    // Wait for fonts, demo auto-start, and animation to fully settle (spool can take ~3s)
+    await new Promise(r => setTimeout(r, 4000));
     const file = path.join(OUT_DIR, `${name}-${Date.now()}.png`);
     await page.screenshot({ path: file, fullPage: false });
     console.log(`SCREENSHOT: ${file}`);

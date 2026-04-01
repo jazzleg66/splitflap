@@ -48,7 +48,8 @@
 .tile-char {
   font-family: 'SplitFlapFont', 'Courier New', monospace;
   font-size: 1.5rem;
-  color: #E8D5A3;
+  /* Dark fill: covers the tile face; letter cutout reveals the white panel background */
+  color: #1a1a1a;
   line-height: 1;
   user-select: none;
   pointer-events: none;
@@ -61,24 +62,24 @@
   transform: translateY(-50%);
 }
 
-/* ── Flip animation panels ─────────────────────────────────────────────────── */
+/* ── Flip animation ────────────────────────────────────────────────────────── */
 /*
-  Each tile has four absolutely-positioned spans:
-    .tf  = top front    (visible, current char top half)
-    .tb  = top back     (hidden behind, next char top half)
-    .bf  = bottom front (visible, current char bottom half)
-    .bb  = bottom back  (hidden behind, next char bottom half)
+  Four-panel CSS 3D card-flip per tile:
+    .tf  = top front    — visible at rest, holds current char (top half)
+    .tb  = top back     — pre-rotated edge-on (-90°), holds incoming char (top half)
+    .bf  = bottom front — visible at rest, holds current char (bottom half)
+    .bb  = bottom back  — pre-rotated edge-on (+90°), holds incoming char (bottom half)
 
   Flip sequence per step:
-    1. Set .tb and .bb content to next char.
-    2. Add .flipping class — triggers animations below.
-    3. On animationend: swap front content to next char, remove .flipping.
+    1. JS writes new char into .tb and .bb.
+    2. JS removes .flipping, forces reflow, adds .flipping.
+    3. Front panels fold to edge-on (disappear); back panels unfold from edge-on (reveal).
+    4. animationend: JS copies new char to .tf/.bf, removes .flipping
+       → back panels snap back to their hidden resting position.
 */
 
-.tile-top .tf,
-.tile-top .tb,
-.tile-bottom .bf,
-.tile-bottom .bb {
+.tile-top .tf, .tile-top .tb,
+.tile-bottom .bf, .tile-bottom .bb {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -86,19 +87,31 @@
   align-items: center;
   justify-content: center;
   backface-visibility: hidden;
+  /* SplitFlapFont is a stencil/inverse font: the glyph FILL covers the tile face,
+     and the letter shape is a CUTOUT revealing the panel background.
+     White panel background + dark glyph fill = dark tile, white letter. */
+  background: #F5F0E8;
 }
 
-/* Back panels start rotated so they're invisible at rest */
+/* Space / blank tiles: panel background must be dark (no glyph covers it) */
+.tile.space-tile .tile-top .tf,
+.tile.space-tile .tile-top .tb,
+.tile.space-tile .tile-bottom .bf,
+.tile.space-tile .tile-bottom .bb {
+  background: #1B1B1B;
+}
+
+/* Back panels pre-rotated edge-on — invisible at rest */
 .tile-top .tb {
   transform-origin: bottom center;
-  transform: rotateX(180deg);
+  transform: rotateX(-90deg);
 }
 .tile-bottom .bb {
   transform-origin: top center;
-  transform: rotateX(-180deg);
+  transform: rotateX(90deg);
 }
 
-/* Flip animations — triggered by .flipping class */
+/* Flip animations — triggered by .flipping on the tile */
 .tile.flipping .tile-top .tf {
   animation: flipTopFront var(--flip-ms, 60ms) linear forwards;
   transform-origin: bottom center;
@@ -117,20 +130,20 @@
 }
 
 @keyframes flipTopFront {
-  from { transform: rotateX(0deg); }
-  to   { transform: rotateX(-90deg); }
+  from { transform: rotateX(0deg);   }
+  to   { transform: rotateX(90deg);  }   /* fold to edge-on → disappear */
 }
 @keyframes flipTopBack {
-  from { transform: rotateX(180deg); }
-  to   { transform: rotateX(90deg); }  /* lands at 90 — JS then swaps to 0 */
+  from { transform: rotateX(-90deg); }
+  to   { transform: rotateX(0deg);   }   /* unfold from edge-on → reveal */
 }
 @keyframes flipBotFront {
-  from { transform: rotateX(0deg); }
-  to   { transform: rotateX(90deg); }
+  from { transform: rotateX(0deg);   }
+  to   { transform: rotateX(-90deg); }   /* fold to edge-on → disappear */
 }
 @keyframes flipBotBack {
-  from { transform: rotateX(-180deg); }
-  to   { transform: rotateX(-90deg); }
+  from { transform: rotateX(90deg);  }
+  to   { transform: rotateX(0deg);   }   /* unfold from edge-on → reveal */
 }
 
 /* ── Color tile overrides ──────────────────────────────────────────────────── */
