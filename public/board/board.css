@@ -78,6 +78,12 @@ body {
   color: var(--text);
 }
 
+#demo-controls button.audio-locked {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* ── Pair panel: full-screen centered overlay ────────────────────────────────── */
 #pair-panel {
   position: fixed;
@@ -157,17 +163,52 @@ body {
   border: 1px solid var(--text);
   padding: 2rem 3rem;
   text-align: center;
-  font-size: 1.1rem;
-  letter-spacing: 0.15em;
-  line-height: 2.2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
 }
 
-#approval-inner kbd {
-  border: 1px solid #666;
-  padding: 0.1em 0.45em;
-  font-size: 0.85em;
+#approval-title {
+  font-size: 1.1rem;
+  letter-spacing: 0.25em;
+  color: var(--text);
+}
+
+#approval-btns {
+  display: flex;
+  gap: 1rem;
+}
+
+#approval-btns button {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  padding: 0.6rem 1.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+#btn-approve:hover {
+  border-color: #00CC66;
+  color: #00CC66;
+}
+
+#btn-reject:hover {
+  border-color: #CC3333;
+  color: #CC3333;
+}
+
+#approval-btns kbd {
+  border: 1px solid currentColor;
+  padding: 0.05em 0.35em;
+  font-size: 0.8em;
   border-radius: 2px;
   font-family: var(--mono);
+  opacity: 0.6;
 }
 
 /* ── Click-to-start overlay ──────────────────────────────────────────────────── */

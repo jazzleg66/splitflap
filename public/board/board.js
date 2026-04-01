@@ -215,6 +215,10 @@ async function unlockAudio() {
   if (rawAudio) {
     audioBuffer = await audioCtx.decodeAudioData(rawAudio.slice(0));
   }
+  // Update mute button now that audio is active
+  const btn = document.getElementById('btn-mute');
+  btn.textContent = audioMuted ? 'UNMUTE' : 'MUTE';
+  btn.classList.remove('audio-locked');
 }
 
 function startAudio() {
@@ -328,15 +332,30 @@ ws.onMessage(msg => {
   }
 });
 
-// Keyboard: approve/reject
+// Approve/reject — keyboard and click
+function approveConnection() {
+  document.getElementById('approval-overlay').hidden = true;
+  ws.send({ type: 'tv_approve' });
+}
+function rejectConnection() {
+  document.getElementById('approval-overlay').hidden = true;
+  ws.send({ type: 'tv_reject' });
+}
+
 window.addEventListener('keydown', e => {
-  const overlay = document.getElementById('approval-overlay');
-  if (overlay.hidden) return;
-  if (e.key === 'Enter') { overlay.hidden = true; ws.send({ type: 'tv_approve' }); }
-  if (e.key === 'Escape') { overlay.hidden = true; ws.send({ type: 'tv_reject' }); }
+  if (document.getElementById('approval-overlay').hidden) return;
+  if (e.key === 'Enter') approveConnection();
+  if (e.key === 'Escape') rejectConnection();
 });
 
+document.getElementById('btn-approve').addEventListener('click', approveConnection);
+document.getElementById('btn-reject').addEventListener('click', rejectConnection);
+
 // ── Controls ──────────────────────────────────────────────────────────────────
+// Set initial mute button to locked state (audio not yet unlocked)
+document.getElementById('btn-mute').textContent = 'SOUND OFF';
+document.getElementById('btn-mute').classList.add('audio-locked');
+
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
 document.getElementById('btn-fullscreen').addEventListener('click', () => {

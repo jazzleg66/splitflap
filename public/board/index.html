@@ -39,9 +39,11 @@
   <!-- Approval overlay -->
   <div id="approval-overlay" hidden>
     <div id="approval-inner">
-      <p>CONNECTION REQUEST</p>
-      <p>APPROVE? <kbd>ENTER</kbd></p>
-      <p>REJECT? &nbsp;&nbsp;<kbd>ESC</kbd></p>
+      <p id="approval-title">CONNECTION REQUEST</p>
+      <div id="approval-btns">
+        <button id="btn-approve">APPROVE <kbd>↵</kbd></button>
+        <button id="btn-reject">REJECT <kbd>ESC</kbd></button>
+      </div>
     </div>
   </div>
 

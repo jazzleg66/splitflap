@@ -117,6 +117,12 @@ body {
   color: var(--text);
 }
 
+#demo-controls button.audio-locked {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* ── About / explanation section ─────────────────────────────────────────────── */
 #about {
   max-width: 1200px;

@@ -191,6 +191,10 @@ async function unlockAudio() {
   if (rawAudio) {
     audioBuffer = await audioCtx.decodeAudioData(rawAudio.slice(0));
   }
+  // Update mute button now that audio is active
+  const btn = document.getElementById('btn-mute');
+  btn.textContent = audioMuted ? 'UNMUTE' : 'MUTE';
+  btn.classList.remove('audio-locked');
 }
 
 function startAudio() {
@@ -251,6 +255,10 @@ ws.onMessage(msg => {
 });
 
 // ── Controls ──────────────────────────────────────────────────────────────────
+// Set initial mute button to locked state (audio not yet unlocked)
+document.getElementById('btn-mute').textContent = 'SOUND OFF';
+document.getElementById('btn-mute').classList.add('audio-locked');
+
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
