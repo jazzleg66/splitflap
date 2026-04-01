@@ -147,7 +147,9 @@ function renderMessageList() {
 
   messages.forEach((msg, i) => {
     const row = document.createElement('div');
-    row.className = 'message-row' + (i === activeMessageIndex ? ' active' : '');
+    row.className = 'message-row' +
+      (i === activeMessageIndex ? ' active' : '') +
+      (isPlaying && i === playIndex ? ' playing' : '');
     row.dataset.index = i;
 
     const inputsDiv = document.createElement('div');
@@ -235,6 +237,24 @@ function insertColorChar(char) {
   focusedInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+// ── Preview scale ─────────────────────────────────────────────────────────────
+function fitPreview() {
+  const wrapper = document.getElementById('preview-wrapper');
+  const preview = document.getElementById('board-preview');
+  const grid    = preview?.querySelector('#board-grid');
+  if (!grid || !wrapper) return;
+  const scale = Math.min(0.45, wrapper.clientWidth / grid.offsetWidth);
+  preview.style.transform = `scale(${scale})`;
+  wrapper.style.height = Math.ceil(grid.offsetHeight * scale) + 'px';
+}
+
+// ── Playing highlight ─────────────────────────────────────────────────────────
+function updatePlayingHighlight() {
+  document.querySelectorAll('.message-row').forEach((row, i) => {
+    row.classList.toggle('playing', isPlaying && i === playIndex);
+  });
+}
+
 // ── Row padding ───────────────────────────────────────────────────────────────
 function padRows(rows) {
   return Array.from({ length: ROWS }, (_, i) =>
@@ -257,6 +277,7 @@ function startPlay() {
   sendMessage(playIndex);
   scheduleNext();
   savePlayState(true, playIndex);
+  updatePlayingHighlight();
 }
 
 function stopPlay() {
@@ -265,6 +286,7 @@ function stopPlay() {
   document.getElementById('btn-play').classList.remove('playing');
   document.getElementById('btn-play').textContent = 'PLAY';
   savePlayState(false, playIndex);
+  updatePlayingHighlight();
 }
 
 function scheduleNext() {
@@ -274,6 +296,7 @@ function scheduleNext() {
     playIndex = (playIndex + 1) % messages.length;
     sendMessage(playIndex);
     savePlayState(true, playIndex);
+    updatePlayingHighlight();
     scheduleNext();
   }, loopInterval * 1000);
 }
@@ -293,6 +316,7 @@ function nextMessage() {
   playIndex = (playIndex + 1) % messages.length;
   sendMessage(playIndex);
   savePlayState(true, playIndex);
+  updatePlayingHighlight();
   scheduleNext();
 }
 
@@ -403,6 +427,8 @@ ws.onMessage(msg => {
 document.fonts.ready.then(() => {
   loadDrafts();
   buildPreviewGrid();
+  fitPreview();
+  window.addEventListener('resize', fitPreview);
   renderMessageList();
   syncPreview(messages[activeMessageIndex].rows);
 

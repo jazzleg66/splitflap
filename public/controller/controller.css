@@ -146,7 +146,7 @@ body {
 
 /* ── Board preview (inside messages section, scrolls away) ───────────────────── */
 #preview-wrapper {
-  height: 68px;
+  /* height set dynamically by fitPreview() in JS */
   overflow: hidden;
   position: relative;
   margin-bottom: 0.75rem;
@@ -155,7 +155,6 @@ body {
 }
 
 #board-preview {
-  transform: scale(0.33);
   transform-origin: top left;
   white-space: nowrap;
   pointer-events: none;
@@ -219,6 +218,10 @@ body {
 
 .message-row.active {
   border-color: #4a4030;
+}
+
+.message-row.playing {
+  border-left: 2px solid var(--green);
 }
 
 .row-inputs {
