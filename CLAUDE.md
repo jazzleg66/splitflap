@@ -73,10 +73,19 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢
 
 ## Tile Rendering Architecture
 
-**SplitFlapFont is a stencil/inverse font.** The character glyph FILLS the tile face; the letter shape is a CUTOUT. This requires:
-- Panel `background: #F5F0E8` (light) — the cutout reveals this as the "white" letter
-- Character `color: #1a1a1a` (dark) — fills the tile face
-- `space-tile` CSS class: overrides panel background to `#1B1B1B` for empty/space tiles (no glyph coverage → would reveal cream otherwise)
+**Font:** Use `SplitFlapTVBlackLine-Regular` (NOT `SplitFlapTV-Regular`).
+- `SplitFlapTV-Regular` is a stencil/inverse font — caused cream background bleeding and double-character rendering for numbers/specials.
+- `SplitFlapTVBlackLine-Regular` renders direct white characters on black panels. Simple, correct, no stencil tricks needed.
+
+**Character sizing — critical math:**
+- Tile: `width: 2.2rem; height: 3rem`
+- Each panel (`.tile-top`, `.tile-bottom`): `height: 50% = 1.5rem`
+- `font-size: 3rem` — equals full tile height so the character fills each panel completely
+- `translateY(0.75rem)` on top-panel chars — shifts character so its **center aligns with the seam** (= `panel_height / 2 = 0.75rem`)
+- `translateY(-0.75rem)` on bottom-panel chars — same logic, upward
+- **Do not use percentage-based translateY** — the correct value is always `panel_height / 2` as an absolute rem, regardless of font-size
+
+**Panel backgrounds:** All panels are `background: #1B1B1B` (black). No cream/light background needed. Space characters render as invisible on black → no `space-tile` class needed in CSS (JS still toggles it but has no visual effect).
 
 **4-panel CSS 3D flip architecture:**
 - `.tf` = top front (visible at rest, current char, top half)
@@ -86,3 +95,5 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢
 - JS writes new char to `.tb`/`.bb` → adds `.flipping` → `animationend` copies to `.tf`/`.bf` and removes `.flipping`
 
 **Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click).
+
+**Mute button state:** Shows `SOUND OFF` (dimmed, non-interactive) until audio is unlocked via Skip. After unlock, becomes `MUTE`/`UNMUTE`.

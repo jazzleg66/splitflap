@@ -1,7 +1,7 @@
 @font-face {
   font-family: 'SplitFlapFont';
-  src: url('/assets/font/SplitFlapTV-Regular.otf') format('opentype'),
-       url('/assets/font/SplitFlapTV-Regular.ttf') format('truetype');
+  src: url('/assets/font/SplitFlapTVBlackLine-Regular.otf') format('opentype'),
+       url('/assets/font/SplitFlapTVBlackLine-Regular.ttf') format('truetype');
   font-display: block;
 }
 
@@ -47,37 +47,20 @@
 /* Characters inside tiles */
 .tile-char {
   font-family: 'SplitFlapFont', 'Courier New', monospace;
-  font-size: 1.5rem;
-  /* Dark fill: covers the tile face; letter cutout reveals the white panel background */
-  color: #1a1a1a;
+  font-size: 3rem;        /* fills full tile height (= 2 × panel_height) */
+  color: #FFFFFF;
   line-height: 1;
   user-select: none;
   pointer-events: none;
   display: block;
-  /* Shift char so top/bottom halves line up correctly */
-  transform: translateY(50%);
+  transform: translateY(0.75rem);   /* = panel_height / 2 — centers char at seam */
 }
 
 .tile-bottom .tile-char {
-  transform: translateY(-50%);
+  transform: translateY(-0.75rem);
 }
 
 /* ── Flip animation ────────────────────────────────────────────────────────── */
-/*
-  Four-panel CSS 3D card-flip per tile:
-    .tf  = top front    — visible at rest, holds current char (top half)
-    .tb  = top back     — pre-rotated edge-on (-90°), holds incoming char (top half)
-    .bf  = bottom front — visible at rest, holds current char (bottom half)
-    .bb  = bottom back  — pre-rotated edge-on (+90°), holds incoming char (bottom half)
-
-  Flip sequence per step:
-    1. JS writes new char into .tb and .bb.
-    2. JS removes .flipping, forces reflow, adds .flipping.
-    3. Front panels fold to edge-on (disappear); back panels unfold from edge-on (reveal).
-    4. animationend: JS copies new char to .tf/.bf, removes .flipping
-       → back panels snap back to their hidden resting position.
-*/
-
 .tile-top .tf, .tile-top .tb,
 .tile-bottom .bf, .tile-bottom .bb {
   position: absolute;
@@ -87,17 +70,6 @@
   align-items: center;
   justify-content: center;
   backface-visibility: hidden;
-  /* SplitFlapFont is a stencil/inverse font: the glyph FILL covers the tile face,
-     and the letter shape is a CUTOUT revealing the panel background.
-     White panel background + dark glyph fill = dark tile, white letter. */
-  background: #F5F0E8;
-}
-
-/* Space / blank tiles: panel background must be dark (no glyph covers it) */
-.tile.space-tile .tile-top .tf,
-.tile.space-tile .tile-top .tb,
-.tile.space-tile .tile-bottom .bf,
-.tile.space-tile .tile-bottom .bb {
   background: #1B1B1B;
 }
 
@@ -131,19 +103,19 @@
 
 @keyframes flipTopFront {
   from { transform: rotateX(0deg);   }
-  to   { transform: rotateX(90deg);  }   /* fold to edge-on → disappear */
+  to   { transform: rotateX(90deg);  }
 }
 @keyframes flipTopBack {
   from { transform: rotateX(-90deg); }
-  to   { transform: rotateX(0deg);   }   /* unfold from edge-on → reveal */
+  to   { transform: rotateX(0deg);   }
 }
 @keyframes flipBotFront {
   from { transform: rotateX(0deg);   }
-  to   { transform: rotateX(-90deg); }   /* fold to edge-on → disappear */
+  to   { transform: rotateX(-90deg); }
 }
 @keyframes flipBotBack {
   from { transform: rotateX(90deg);  }
-  to   { transform: rotateX(0deg);   }   /* unfold from edge-on → reveal */
+  to   { transform: rotateX(0deg);   }
 }
 
 /* ── Color tile overrides ──────────────────────────────────────────────────── */
