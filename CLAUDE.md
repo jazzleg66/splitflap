@@ -40,7 +40,7 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 - Board background: `#1B1B1B` (Eerie Black)
 - Each tile has a 1px horizontal center line (flap seam simulation)
-- Font: Split-Flap Font (vintage Solari style)
+- Font: Doto (Google Fonts, weight 700, `ROND: 0` square dot-matrix style)
 
 ## State & Persistence
 
@@ -65,6 +65,10 @@ On load, cycles through:
 
 Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢 X BOARDS LIVE` (counts active paired sessions only).
 
+## Pending Tasks
+
+_(none)_
+
 ## Workflow Notes
 
 **UI work:** Always invoke the `frontend-design` skill before making any UI/CSS/HTML changes.
@@ -73,25 +77,19 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢
 
 ## Tile Rendering Architecture
 
-**Font:** Use `SplitFlapTVBlackLine-Regular` (NOT `SplitFlapTV-Regular`).
-- Both fonts are stencil/inverse: the glyph fills the em-square with the CSS `color` value; letterforms are transparent cutouts that reveal whatever is behind the span.
-- `SplitFlapTV-Regular` caused double-glyph on numbers/specials and cream bleed. Use `SplitFlapTVBlackLine-Regular` exclusively.
+**Font:** Doto via Google Fonts (`family=Doto:wght@100..900`). All three HTML pages load it via `<link>` preconnect tags before `splitflap.css`.
 
-**Stencil rendering trick — how to get dark tiles with white characters:**
-- Set `color: #1B1B1B` on `.tile-char` — dark fill matching panel background (the glyph fill becomes invisible).
-- Set panel `background: #FFFFFF` only when the panel contains a character (via CSS `:has(.tile-char:not(:empty))`). The white backing is revealed through the letterform cutouts → white characters appear.
-- Empty panels (space chars rendered as `''` → `:empty` pseudo-class matches) stay at `background: #1B1B1B` (dark).
-- `font-size: 3rem` is critical — at exactly tile height, the glyph fills the FULL panel, so the dark fill covers the entire white backing; only the narrow letterform cutouts expose white.
+**Rendering approach:** Direct — Doto is a standard dot-matrix font, not a stencil. Characters render as amber (`#E8D5A3`) text on dark (`#1B1B1B`) panels. No white-backing trick needed.
 
-**Space character rendering:** Always set `textContent = ''` (empty string) for space characters — NEVER `' '` (a space glyph). The space glyph in both SplitFlapTV fonts fills the em-square with `color`, rendering a visible cream/white box. Use the `renderChar` helper in `board.js`: `const renderChar = ch => (ch === ' ' ? '' : ch);`
+**Space character rendering:** Always set `textContent = ''` (empty string) for space characters — use the `renderChar` helper in `board.js`: `const renderChar = ch => (ch === ' ' ? '' : ch);`
 
-**Character sizing — critical math:**
+**Character sizing:**
 - Tile: `width: 2.2rem; height: 3rem`
 - Each panel (`.tile-top`, `.tile-bottom`): `height: 50% = 1.5rem`
-- `font-size: 3rem` — equals full tile height so the glyph covers each panel completely (required for stencil trick above)
-- `translateY(0.75rem)` on top-panel chars — shifts character so its **center aligns with the seam** (= `panel_height / 2 = 0.75rem`)
+- `font-size: 1.5rem` — fills panel height; adjust if characters clip or feel cramped
+- `translateY(0.75rem)` on top-panel chars — shifts character center to the seam (= `panel_height / 2`)
 - `translateY(-0.75rem)` on bottom-panel chars — same logic, upward
-- **Do not use percentage-based translateY** — the correct value is always `panel_height / 2` as an absolute rem, regardless of font-size
+- **Do not use percentage-based translateY** — the correct value is always `panel_height / 2` as an absolute rem
 
 **4-panel CSS 3D flip architecture:**
 - `.top-half-static` (z:1) — static background, holds current char top half; updated after flip settles

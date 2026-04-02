@@ -1,10 +1,3 @@
-@font-face {
-  font-family: 'SplitFlapFont';
-  src: url('/assets/font/SplitFlapTVBlackLine-Regular.otf') format('opentype'),
-       url('/assets/font/SplitFlapTVBlackLine-Regular.ttf') format('truetype');
-  font-display: block;
-}
-
 /* ── Tile base ────────────────────────────────────────────────────────────── */
 .tile {
   position: relative;
@@ -65,16 +58,6 @@
   background: #1B1B1B;
 }
 
-/* White backing: revealed through letterform cutouts when a character is present.
- * The dark glyph fill (color: #1B1B1B) covers the full panel at font-size: 3rem,
- * so only the transparent letterform cutouts expose this white layer.
- * Empty panels (textContent = '') stay dark — :has(:not(:empty)) won't match.  */
-.top-half-static:has(.tile-char:not(:empty)),
-.top-flap-animating:has(.tile-char:not(:empty)),
-.bottom-flap-animating:has(.tile-char:not(:empty)),
-.bottom-half-static:has(.tile-char:not(:empty)) {
-  background: #FFFFFF;
-}
 
 .top-half-static       { z-index: 1; }
 .bottom-flap-animating {
@@ -114,18 +97,16 @@
 /* ── Characters ───────────────────────────────────────────────────────────── */
 /*
  * Panel height = 1.5rem (50% of 3rem tile).
- * Font height  = 3rem (font-size = full tile height, line-height 1).
- * Flex centres the 3rem glyph at y = 0.75rem inside the 1.5rem panel.
- *
- *   Top panels  +0.75rem → character centre at seam → top half visible.
- *   Bot panels  −0.75rem → character centre at seam → bottom half visible.
+ * Doto renders as direct amber text on dark panels — no stencil trick needed.
+ * translateY offsets remain panel_height/2 = 0.75rem for seam alignment.
  */
 .tile-char {
-  font-family: 'SplitFlapFont', 'Courier New', monospace;
-  font-size: 3rem;
-  /* Dark fill = blends with dark panel; letterform cutouts reveal the white
-     backing layer (set below via :has) → white characters on dark tiles.     */
-  color: #1B1B1B;
+  font-family: "Doto", 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-style: normal;
+  font-variation-settings: "ROND" 0;
+  color: #E8D5A3;
   background: transparent;
   line-height: 1;
   user-select: none;
@@ -158,6 +139,7 @@
   from { transform: rotateX(-90deg); }
   to   { transform: rotateX(  0deg); }
 }
+
 
 /* ── Color tile overrides ─────────────────────────────────────────────────── */
 .tile.color-tile .tile-top,

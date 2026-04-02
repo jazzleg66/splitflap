@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Solari — Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/splitflap.css">
   <link rel="stylesheet" href="board.css">
 </head>
@@ -22,17 +25,23 @@
     <button id="btn-skip">SKIP</button>
     <button id="btn-mute">MUTE</button>
     <button id="btn-fullscreen">&#x26F6;</button>
+    <button id="btn-qr" hidden>QR CODE</button>
+    <button id="btn-code" hidden>ENTER CODE</button>
   </div>
 
-  <!-- Pair panel: centered full-screen overlay, hidden until paired -->
-  <div id="pair-panel" hidden>
-    <div id="pair-inner">
-      <p id="pair-label">SCAN TO CONNECT</p>
+  <!-- QR popup: small centered modal, hidden until btn-qr clicked -->
+  <div id="popup-qr" class="popup-overlay" hidden>
+    <div class="popup-inner">
+      <p class="popup-label">SCAN TO CONNECT</p>
       <img id="qr-img" alt="QR Code">
-      <div id="pair-code-wrap">
-        <span id="pair-hint">OR ENTER CODE MANUALLY</span>
-        <div id="pair-code">------</div>
-      </div>
+    </div>
+  </div>
+
+  <!-- Code popup: small centered modal, hidden until btn-code clicked -->
+  <div id="popup-code" class="popup-overlay" hidden>
+    <div class="popup-inner">
+      <p class="popup-label">OR ENTER CODE MANUALLY</p>
+      <div id="pair-code">------</div>
     </div>
   </div>
 
