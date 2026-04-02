@@ -17,7 +17,11 @@
   flex-shrink: 0;
 }
 
-/* Top and bottom halves */
+/* ── Top and bottom structural halves ────────────────────────────────────── */
+/*
+ * Each half clips its children to its own 50% of the tile.
+ * overflow:hidden is critical — it cuts the character exactly at the seam.
+ */
 .tile-top,
 .tile-bottom {
   position: absolute;
@@ -25,104 +29,147 @@
   width: 100%;
   height: 50%;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .tile-top {
   top: 0;
-  align-items: flex-end;
-  padding-bottom: 1px;
-  border-bottom: 1px solid #3a3a3a; /* flap seam */
+  border-bottom: 1px solid #2a2a2a; /* flap seam */
   z-index: 1;
 }
 
-.tile-bottom {
-  bottom: 0;
-  align-items: flex-start;
-  padding-top: 1px;
-}
+.tile-bottom { bottom: 0; }
 
-/* Characters inside tiles */
-.tile-char {
-  font-family: 'SplitFlapFont', 'Courier New', monospace;
-  font-size: 3rem;        /* fills full tile height (= 2 × panel_height) */
-  color: #FFFFFF;
-  line-height: 1;
-  user-select: none;
-  pointer-events: none;
-  display: block;
-  transform: translateY(0.75rem);   /* = panel_height / 2 — centers char at seam */
-}
-
-.tile-bottom .tile-char {
-  transform: translateY(-0.75rem);
-}
-
-/* ── Flip animation ────────────────────────────────────────────────────────── */
-.tile-top .tf, .tile-top .tb,
-.tile-bottom .bf, .tile-bottom .bb {
+/* ── Face panels ─────────────────────────────────────────────────────────── */
+/*
+ * Four panels, three in the top half and one static in the bottom half:
+ *
+ *  .top-half-static      (z:1) — static background, current char top.
+ *                                Updated to new char after the flip settles.
+ *  .bottom-flap-animating (z:2) — next char top, pre-rotated edge-on (-90°).
+ *                                 Unfolds to 0° during the flip.
+ *  .top-flap-animating   (z:3) — current char top, flat at rest.
+ *                                 Folds down to 90° (falls away).
+ *  .bottom-half-static          — next char bottom, snapped immediately.
+ *                                 Never animates.
+ */
+.top-half-static,
+.top-flap-animating,
+.bottom-flap-animating,
+.bottom-half-static {
   position: absolute;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  backface-visibility: hidden;
   background: #1B1B1B;
 }
 
-/* Back panels pre-rotated edge-on — invisible at rest */
-.tile-top .tb {
+/* White backing: revealed through letterform cutouts when a character is present.
+ * The dark glyph fill (color: #1B1B1B) covers the full panel at font-size: 3rem,
+ * so only the transparent letterform cutouts expose this white layer.
+ * Empty panels (textContent = '') stay dark — :has(:not(:empty)) won't match.  */
+.top-half-static:has(.tile-char:not(:empty)),
+.top-flap-animating:has(.tile-char:not(:empty)),
+.bottom-flap-animating:has(.tile-char:not(:empty)),
+.bottom-half-static:has(.tile-char:not(:empty)) {
+  background: #FFFFFF;
+}
+
+.top-half-static       { z-index: 1; }
+.bottom-flap-animating {
+  z-index: 2;
+  backface-visibility: hidden;
   transform-origin: bottom center;
   transform: rotateX(-90deg);
 }
-.tile-bottom .bb {
-  transform-origin: top center;
-  transform: rotateX(90deg);
+.top-flap-animating    {
+  z-index: 3;
+  backface-visibility: hidden;
+  transform-origin: bottom center;
+  transform: rotateX(0deg);
 }
 
-/* Flip animations — triggered by .flipping on the tile */
-.tile.flipping .tile-top .tf {
-  animation: flipTopFront var(--flip-ms, 60ms) linear forwards;
-  transform-origin: bottom center;
-}
-.tile.flipping .tile-top .tb {
-  animation: flipTopBack var(--flip-ms, 60ms) linear forwards;
-  transform-origin: bottom center;
-}
-.tile.flipping .tile-bottom .bf {
-  animation: flipBotFront var(--flip-ms, 60ms) linear forwards;
-  transform-origin: top center;
-}
-.tile.flipping .tile-bottom .bb {
-  animation: flipBotBack var(--flip-ms, 60ms) linear forwards;
-  transform-origin: top center;
+/* ── Flap accumulation lines ─────────────────────────────────────────────── */
+/*
+ * Simulates the physical stack of settled flaps at the bottom of the unit.
+ * Four faint lines, each 1px, progressively dimmer toward the top.
+ */
+.tile-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 -3px 0 rgba(255, 255, 255, 0.055),
+    0 -6px 0 rgba(255, 255, 255, 0.035),
+    0 -9px 0 rgba(255, 255, 255, 0.018);
+  pointer-events: none;
+  z-index: 10;
 }
 
-@keyframes flipTopFront {
-  from { transform: rotateX(0deg);   }
-  to   { transform: rotateX(90deg);  }
+/* ── Characters ───────────────────────────────────────────────────────────── */
+/*
+ * Panel height = 1.5rem (50% of 3rem tile).
+ * Font height  = 3rem (font-size = full tile height, line-height 1).
+ * Flex centres the 3rem glyph at y = 0.75rem inside the 1.5rem panel.
+ *
+ *   Top panels  +0.75rem → character centre at seam → top half visible.
+ *   Bot panels  −0.75rem → character centre at seam → bottom half visible.
+ */
+.tile-char {
+  font-family: 'SplitFlapFont', 'Courier New', monospace;
+  font-size: 3rem;
+  /* Dark fill = blends with dark panel; letterform cutouts reveal the white
+     backing layer (set below via :has) → white characters on dark tiles.     */
+  color: #1B1B1B;
+  background: transparent;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+  display: block;
 }
-@keyframes flipTopBack {
+
+.tile-top    .tile-char { transform: translateY( 0.75rem); }
+.tile-bottom .tile-char { transform: translateY(-0.75rem); }
+
+/* ── Flip animation ───────────────────────────────────────────────────────── */
+/*
+ * Only the top flap moves. The bottom half is already showing the next char.
+ *
+ * .top-flap-animating  folds DOWN  (0° → 90°)  — current char falls away.
+ * .bottom-flap-animating unfolds   (-90° → 0°) — next char top is revealed.
+ */
+.tile.flipping .top-flap-animating {
+  animation: flapFall var(--flip-ms, 60ms) linear forwards;
+}
+.tile.flipping .bottom-flap-animating {
+  animation: flapRise var(--flip-ms, 60ms) linear forwards;
+}
+
+@keyframes flapFall {
+  from { transform: rotateX(  0deg); }
+  to   { transform: rotateX( 90deg); }
+}
+@keyframes flapRise {
   from { transform: rotateX(-90deg); }
-  to   { transform: rotateX(0deg);   }
-}
-@keyframes flipBotFront {
-  from { transform: rotateX(0deg);   }
-  to   { transform: rotateX(-90deg); }
-}
-@keyframes flipBotBack {
-  from { transform: rotateX(90deg);  }
-  to   { transform: rotateX(0deg);   }
+  to   { transform: rotateX(  0deg); }
 }
 
-/* ── Color tile overrides ──────────────────────────────────────────────────── */
+/* ── Color tile overrides ─────────────────────────────────────────────────── */
 .tile.color-tile .tile-top,
 .tile.color-tile .tile-bottom {
   background: var(--tile-color);
   border-color: transparent;
+}
+.tile.color-tile .top-half-static,
+.tile.color-tile .top-flap-animating,
+.tile.color-tile .bottom-flap-animating,
+.tile.color-tile .bottom-half-static {
+  background: var(--tile-color);
 }
 .tile.color-tile .tile-char {
   display: none;

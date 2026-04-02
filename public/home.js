@@ -78,12 +78,12 @@ function buildGrid() {
       tile.className = 'tile space-tile';
       tile.innerHTML = `
         <div class="tile-top">
-          <span class="tile-char tf"> </span>
-          <span class="tile-char tb"> </span>
+          <div class="top-half-static"><span class="tile-char"> </span></div>
+          <div class="bottom-flap-animating"><span class="tile-char"> </span></div>
+          <div class="top-flap-animating"><span class="tile-char"> </span></div>
         </div>
         <div class="tile-bottom">
-          <span class="tile-char bf"> </span>
-          <span class="tile-char bb"> </span>
+          <div class="bottom-half-static"><span class="tile-char"> </span></div>
         </div>`;
       container.appendChild(tile);
       tileEls[r][c] = tile;
@@ -103,10 +103,10 @@ function applyTileChar(tileEl, char) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
     tileEl.classList.toggle('space-tile', char === ' ');
-    tileEl.querySelector('.tf').textContent = char;
-    tileEl.querySelector('.tb').textContent = char;
-    tileEl.querySelector('.bf').textContent = char;
-    tileEl.querySelector('.bb').textContent = char;
+    tileEl.querySelector('.top-half-static .tile-char').textContent = char;
+    tileEl.querySelector('.top-flap-animating .tile-char').textContent = char;
+    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = char;
+    tileEl.querySelector('.bottom-half-static .tile-char').textContent = char;
   }
 }
 
@@ -123,17 +123,19 @@ function renderDirtyTiles(dirtyTiles) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
 
-    // Pre-load new char on back panels, then flip — front folds away, back reveals
-    tileEl.querySelector('.tb').textContent = newChar;
-    tileEl.querySelector('.bb').textContent = newChar;
+    // Snap bottom half to next char immediately — static, no animation
+    tileEl.querySelector('.bottom-half-static .tile-char').textContent = newChar;
+    // Pre-load next char behind the falling top flap (starts edge-on, unfolds)
+    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = newChar;
+    // .top-flap-animating already holds the current char from the previous settle
 
     tileEl.classList.remove('flipping');
     tileEl.offsetHeight; // force reflow
     tileEl.classList.add('flipping');
 
     tileEl.addEventListener('animationend', () => {
-      tileEl.querySelector('.tf').textContent = newChar;
-      tileEl.querySelector('.bf').textContent = newChar;
+      tileEl.querySelector('.top-half-static .tile-char').textContent = newChar;
+      tileEl.querySelector('.top-flap-animating .tile-char').textContent = newChar;
       tileEl.classList.remove('flipping');
       tileEl.classList.toggle('space-tile', newChar === ' ');
     }, { once: true });

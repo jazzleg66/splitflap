@@ -89,15 +89,15 @@ function buildGrid() {
     tileEls[r] = [];
     for (let c = 0; c < COLS; c++) {
       const tile = document.createElement('div');
-      tile.className = 'tile space-tile'; // space until first character is applied
+      tile.className = 'tile space-tile';
       tile.innerHTML = `
         <div class="tile-top">
-          <span class="tile-char tf"> </span>
-          <span class="tile-char tb"> </span>
+          <div class="top-half-static"><span class="tile-char"></span></div>
+          <div class="bottom-flap-animating"><span class="tile-char"></span></div>
+          <div class="top-flap-animating"><span class="tile-char"></span></div>
         </div>
         <div class="tile-bottom">
-          <span class="tile-char bf"> </span>
-          <span class="tile-char bb"> </span>
+          <div class="bottom-half-static"><span class="tile-char"></span></div>
         </div>`;
       container.appendChild(tile);
       tileEls[r][c] = tile;
@@ -108,6 +108,9 @@ function buildGrid() {
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
+// Space glyph in SplitFlapTVBlackLine renders cream — use empty string instead.
+const renderChar = ch => (ch === ' ' ? '' : ch);
+
 function applyTileChar(tileEl, char) {
   if (isColorChar(char)) {
     tileEl.classList.add('color-tile');
@@ -117,10 +120,10 @@ function applyTileChar(tileEl, char) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
     tileEl.classList.toggle('space-tile', char === ' ');
-    tileEl.querySelector('.tf').textContent = char;
-    tileEl.querySelector('.tb').textContent = char;
-    tileEl.querySelector('.bf').textContent = char;
-    tileEl.querySelector('.bb').textContent = char;
+    tileEl.querySelector('.top-half-static .tile-char').textContent = renderChar(char);
+    tileEl.querySelector('.top-flap-animating .tile-char').textContent = renderChar(char);
+    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = renderChar(char);
+    tileEl.querySelector('.bottom-half-static .tile-char').textContent = renderChar(char);
   }
 }
 
@@ -137,17 +140,20 @@ function renderDirtyTiles(dirtyTiles) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
 
-    // Pre-load new char on back panels, then flip — front folds away, back reveals
-    tileEl.querySelector('.tb').textContent = newChar;
-    tileEl.querySelector('.bb').textContent = newChar;
+    // Snap bottom half to next char immediately — static, no animation
+    tileEl.querySelector('.bottom-half-static .tile-char').textContent = renderChar(newChar);
+    // Pre-load next char behind the falling top flap (starts edge-on, unfolds)
+    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = renderChar(newChar);
+    // .top-flap-animating already holds the current char from the previous settle
 
     tileEl.classList.remove('flipping');
     tileEl.offsetHeight; // force reflow to restart animation
     tileEl.classList.add('flipping');
 
     tileEl.addEventListener('animationend', () => {
-      tileEl.querySelector('.tf').textContent = newChar;
-      tileEl.querySelector('.bf').textContent = newChar;
+      // Snap top panels to new char; the flap is now flat showing newChar
+      tileEl.querySelector('.top-half-static .tile-char').textContent = renderChar(newChar);
+      tileEl.querySelector('.top-flap-animating .tile-char').textContent = renderChar(newChar);
       tileEl.classList.remove('flipping');
       tileEl.classList.toggle('space-tile', newChar === ' ');
     }, { once: true });

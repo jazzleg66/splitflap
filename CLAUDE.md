@@ -74,25 +74,31 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢
 ## Tile Rendering Architecture
 
 **Font:** Use `SplitFlapTVBlackLine-Regular` (NOT `SplitFlapTV-Regular`).
-- `SplitFlapTV-Regular` is a stencil/inverse font — caused cream background bleeding and double-character rendering for numbers/specials.
-- `SplitFlapTVBlackLine-Regular` renders direct white characters on black panels. Simple, correct, no stencil tricks needed.
+- Both fonts are stencil/inverse: the glyph fills the em-square with the CSS `color` value; letterforms are transparent cutouts that reveal whatever is behind the span.
+- `SplitFlapTV-Regular` caused double-glyph on numbers/specials and cream bleed. Use `SplitFlapTVBlackLine-Regular` exclusively.
+
+**Stencil rendering trick — how to get dark tiles with white characters:**
+- Set `color: #1B1B1B` on `.tile-char` — dark fill matching panel background (the glyph fill becomes invisible).
+- Set panel `background: #FFFFFF` only when the panel contains a character (via CSS `:has(.tile-char:not(:empty))`). The white backing is revealed through the letterform cutouts → white characters appear.
+- Empty panels (space chars rendered as `''` → `:empty` pseudo-class matches) stay at `background: #1B1B1B` (dark).
+- `font-size: 3rem` is critical — at exactly tile height, the glyph fills the FULL panel, so the dark fill covers the entire white backing; only the narrow letterform cutouts expose white.
+
+**Space character rendering:** Always set `textContent = ''` (empty string) for space characters — NEVER `' '` (a space glyph). The space glyph in both SplitFlapTV fonts fills the em-square with `color`, rendering a visible cream/white box. Use the `renderChar` helper in `board.js`: `const renderChar = ch => (ch === ' ' ? '' : ch);`
 
 **Character sizing — critical math:**
 - Tile: `width: 2.2rem; height: 3rem`
 - Each panel (`.tile-top`, `.tile-bottom`): `height: 50% = 1.5rem`
-- `font-size: 3rem` — equals full tile height so the character fills each panel completely
+- `font-size: 3rem` — equals full tile height so the glyph covers each panel completely (required for stencil trick above)
 - `translateY(0.75rem)` on top-panel chars — shifts character so its **center aligns with the seam** (= `panel_height / 2 = 0.75rem`)
 - `translateY(-0.75rem)` on bottom-panel chars — same logic, upward
 - **Do not use percentage-based translateY** — the correct value is always `panel_height / 2` as an absolute rem, regardless of font-size
 
-**Panel backgrounds:** All panels are `background: #1B1B1B` (black). No cream/light background needed. Space characters render as invisible on black → no `space-tile` class needed in CSS (JS still toggles it but has no visual effect).
-
 **4-panel CSS 3D flip architecture:**
-- `.tf` = top front (visible at rest, current char, top half)
-- `.tb` = top back (pre-rotated -90° edge-on, incoming char)
-- `.bf` = bottom front (visible at rest, current char, bottom half)
-- `.bb` = bottom back (pre-rotated +90° edge-on, incoming char)
-- JS writes new char to `.tb`/`.bb` → adds `.flipping` → `animationend` copies to `.tf`/`.bf` and removes `.flipping`
+- `.top-half-static` (z:1) — static background, holds current char top half; updated after flip settles
+- `.bottom-flap-animating` (z:2) — incoming char top, pre-rotated edge-on (-90°); unfolds during flip
+- `.top-flap-animating` (z:3) — current char top, flat at rest; folds down (90°) during flip
+- `.bottom-half-static` — incoming char bottom, snapped immediately; never animates
+- JS writes new char to `.bottom-flap-animating`/`.bottom-half-static` → adds `.flipping` → `animationend` copies to `.top-half-static`/`.top-flap-animating` and removes `.flipping`
 
 **Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click).
 

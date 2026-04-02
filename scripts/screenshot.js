@@ -26,6 +26,13 @@ async function shoot(name, url) {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 10000 });
     // Wait for fonts, demo auto-start, and animation to fully settle (spool can take ~3s)
     await new Promise(r => setTimeout(r, 4000));
+    // Hide overlays (pair panel, approval) for clean visual QA shots
+    await page.evaluate(() => {
+      const p = document.getElementById('pair-panel');
+      if (p) p.hidden = true;
+      const a = document.getElementById('approval-overlay');
+      if (a) a.hidden = true;
+    });
     const file = path.join(OUT_DIR, `${name}-${Date.now()}.png`);
     await page.screenshot({ path: file, fullPage: false });
     console.log(`SCREENSHOT: ${file}`);
