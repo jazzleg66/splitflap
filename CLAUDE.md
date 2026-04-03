@@ -64,7 +64,11 @@ On load, cycles through:
 2. `"IN REAL LIFE, I ASSURE YOU, THERE IS NO SUCH THING AS ALGEBRA." - FRAN LEBOWITZ`
 3. `SCAN THE QRCODE AND TRY YOURSELF`
 
-Demo controls: [Skip], [Mute/Unmute], [Fullscreen]. Live counter top-left: `🟢 X BOARDS LIVE` (counts active paired sessions only).
+Demo controls: [Skip], [Mute/Unmute], [Fullscreen], [Connect Board →]. Live counter top-left: `🟢 X BOARDS LIVE` (counts active paired sessions only).
+
+**Homepage layout order:** About/steps section first (top), board demo section second (below). The Connect Board button lives inline with the demo controls under the board — not in a separate CTA section.
+
+**Homepage fullscreen:** `#hero.requestFullscreen()` — `:fullscreen` CSS overrides `#hero` background to `#1B1B1B` and flips all text/button colors to work on dark. Only the dark board fills the screen; the white page background is excluded.
 
 ## Pending Tasks
 
@@ -98,6 +102,8 @@ _(none)_
 - `.bottom-half-static` — incoming char bottom, snapped immediately; never animates
 - JS writes new char to `.bottom-flap-animating`/`.bottom-half-static` → adds `.flipping` → `animationend` copies to `.top-half-static`/`.top-flap-animating` and removes `.flipping`
 
-**Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click). Audio stop is tied to `pendingFlips`: a counter incremented per CSS flip animation start, decremented in each `animationend` handler. Audio stops when `pendingFlips === 0 && !animRunning` — exactly when the last visual flap lands.
+**Tile surface texture:** `.tile-top::before` and `.tile-bottom::before` at `z-index: 4` (above all face panels, max z-index 3) add a scanline grain + angled light-sheen overlay. This makes characters appear printed into the tile material rather than floating on top. Do not reduce these z-indexes below 4 or the texture will be buried under the flip panels.
+
+**Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click). After `decodeAudioData` resolves, call `startAudio()` immediately if `animRunning` is true — this prevents the double-click-to-hear bug where the board starts flipping before the buffer is ready. Audio stop is tied to `pendingFlips`: a counter incremented per CSS flip animation start, decremented in each `animationend` handler. Audio stops when `pendingFlips === 0 && !animRunning` — exactly when the last visual flap lands.
 
 **Mute button state:** Shows `SOUND OFF` (dimmed, non-interactive) until audio is unlocked via Skip. After unlock, becomes `MUTE`/`UNMUTE`.

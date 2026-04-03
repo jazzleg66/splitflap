@@ -12,25 +12,6 @@
 </head>
 <body>
 
-  <!-- ── Hero: live demo board ──────────────────────────────────────────────── -->
-  <section id="hero">
-    <div id="hero-header">
-      <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
-      <div id="wordmark">DIGITAL SOLARI</div>
-    </div>
-
-    <div id="board-container">
-      <!-- 6×22 tile grid injected by home.js -->
-    </div>
-
-    <div id="demo-controls">
-      <button id="btn-skip">SKIP</button>
-      <button id="btn-mute">MUTE</button>
-      <button id="btn-fullscreen">&#x26F6;</button>
-    </div>
-  </section>
-
-
   <!-- ── Product explanation ────────────────────────────────────────────────── -->
   <section id="about">
     <div id="about-grid">
@@ -63,16 +44,33 @@
       </div>
 
     </div>
+  </section>
 
-    <div id="cta-row">
-      <a id="btn-connect" href="/board">CONNECT BOARD &nbsp;&#x2192;</a>
+
+  <!-- ── Hero: live demo board ──────────────────────────────────────────────── -->
+  <section id="hero">
+    <div id="hero-header">
+      <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
+      <div id="wordmark">DIGITAL SOLARI</div>
     </div>
 
-    <footer id="site-footer">
-      <span>DIGITAL SOLARI &copy; 2026</span>
-      <span>Node.js &middot; WebSockets &middot; No database</span>
-    </footer>
+    <div id="board-container">
+      <!-- 6×22 tile grid injected by home.js -->
+    </div>
+
+    <div id="demo-controls">
+      <button id="btn-skip">SKIP</button>
+      <button id="btn-mute">MUTE</button>
+      <button id="btn-fullscreen">&#x26F6;</button>
+      <a id="btn-connect" href="/board">CONNECT BOARD &nbsp;&#x2192;</a>
+    </div>
   </section>
+
+
+  <footer id="site-footer">
+    <span>DIGITAL SOLARI &copy; 2026</span>
+    <span>Node.js &middot; WebSockets &middot; No database</span>
+  </footer>
 
   <script type="module" src="home.js"></script>
 </body>

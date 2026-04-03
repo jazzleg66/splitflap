@@ -202,6 +202,7 @@ async function unlockAudio() {
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (rawAudio) {
     audioBuffer = await audioCtx.decodeAudioData(rawAudio.slice(0));
+    if (animRunning) startAudio(); // board already flipping — start audio now that buffer is ready
   }
   // Update mute button now that audio is active
   const btn = document.getElementById('btn-mute');
