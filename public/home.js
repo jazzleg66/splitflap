@@ -47,6 +47,7 @@ const tileEls = [];
 let animRunning = false;
 let lastFlipTime = 0;
 let onSettledCallback = null;
+let pendingFlips = 0; // CSS animations in flight; audio stops when this reaches 0 after settling
 
 let demoActive = false;
 let demoIndex = 0;
@@ -61,7 +62,7 @@ let audioMuted  = false;
 let audioUnlocked = false;
 
 // Prefetch raw bytes immediately — doesn't require user gesture
-fetch('/assets/audio/split-flap-display.wav')
+fetch('/assets/audio/split-flap.wav')
   .then(r => r.arrayBuffer())
   .then(buf => { rawAudio = buf; })
   .catch(() => {});
@@ -78,12 +79,12 @@ function buildGrid() {
       tile.className = 'tile space-tile';
       tile.innerHTML = `
         <div class="tile-top">
-          <div class="top-half-static"><span class="tile-char"> </span></div>
-          <div class="bottom-flap-animating"><span class="tile-char"> </span></div>
-          <div class="top-flap-animating"><span class="tile-char"> </span></div>
+          <div class="top-half-static"><span class="tile-char"></span></div>
+          <div class="bottom-flap-animating"><span class="tile-char"></span></div>
+          <div class="top-flap-animating"><span class="tile-char"></span></div>
         </div>
         <div class="tile-bottom">
-          <div class="bottom-half-static"><span class="tile-char"> </span></div>
+          <div class="bottom-half-static"><span class="tile-char"></span></div>
         </div>`;
       container.appendChild(tile);
       tileEls[r][c] = tile;
@@ -94,6 +95,9 @@ function buildGrid() {
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
+// Space glyph in SplitFlapTVBlackLine renders cream — use empty string instead.
+const renderChar = ch => (ch === ' ' ? '' : ch);
+
 function applyTileChar(tileEl, char) {
   if (isColorChar(char)) {
     tileEl.classList.add('color-tile');
@@ -103,10 +107,11 @@ function applyTileChar(tileEl, char) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
     tileEl.classList.toggle('space-tile', char === ' ');
-    tileEl.querySelector('.top-half-static .tile-char').textContent = char;
-    tileEl.querySelector('.top-flap-animating .tile-char').textContent = char;
-    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = char;
-    tileEl.querySelector('.bottom-half-static .tile-char').textContent = char;
+    tileEl.classList.toggle('degree-tile', char === '°');
+    tileEl.querySelector('.top-half-static .tile-char').textContent = renderChar(char);
+    tileEl.querySelector('.top-flap-animating .tile-char').textContent = renderChar(char);
+    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = renderChar(char);
+    tileEl.querySelector('.bottom-half-static .tile-char').textContent = renderChar(char);
   }
 }
 
@@ -124,20 +129,24 @@ function renderDirtyTiles(dirtyTiles) {
     tileEl.style.removeProperty('--tile-color');
 
     // Snap bottom half to next char immediately — static, no animation
-    tileEl.querySelector('.bottom-half-static .tile-char').textContent = newChar;
+    tileEl.querySelector('.bottom-half-static .tile-char').textContent = renderChar(newChar);
     // Pre-load next char behind the falling top flap (starts edge-on, unfolds)
-    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = newChar;
+    tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = renderChar(newChar);
     // .top-flap-animating already holds the current char from the previous settle
 
     tileEl.classList.remove('flipping');
     tileEl.offsetHeight; // force reflow
     tileEl.classList.add('flipping');
+    pendingFlips++;
 
     tileEl.addEventListener('animationend', () => {
-      tileEl.querySelector('.top-half-static .tile-char').textContent = newChar;
-      tileEl.querySelector('.top-flap-animating .tile-char').textContent = newChar;
+      tileEl.querySelector('.top-half-static .tile-char').textContent = renderChar(newChar);
+      tileEl.querySelector('.top-flap-animating .tile-char').textContent = renderChar(newChar);
       tileEl.classList.remove('flipping');
       tileEl.classList.toggle('space-tile', newChar === ' ');
+      tileEl.classList.toggle('degree-tile', newChar === '°');
+      pendingFlips--;
+      if (pendingFlips === 0 && !animRunning) stopAudio();
     }, { once: true });
   }
 }
@@ -161,7 +170,8 @@ function animLoop(timestamp) {
 
     if (allSettled) {
       animRunning = false;
-      stopAudio();
+      if (pendingFlips === 0) stopAudio(); // no animations in flight — stop immediately
+      // else: last animationend handler stops audio when the final flap lands
       if (onSettledCallback) { const cb = onSettledCallback; onSettledCallback = null; cb(); }
       return;
     }
@@ -273,9 +283,24 @@ document.addEventListener('fullscreenchange', () => {
     document.fullscreenElement ? '\u2715' : '\u26F6';
 });
 
+// ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
+// CSS container queries (cqi/cqh) have cross-browser inconsistencies when the
+// tile height comes from aspect-ratio. ResizeObserver gives exact pixel values.
+function syncTileSizing() {
+  const tile = tileEls[0]?.[0];
+  if (!tile) return;
+  const h = tile.getBoundingClientRect().height;
+  if (h === 0) return;
+  const grid = document.getElementById('board-grid');
+  grid.style.setProperty('--tile-fs', h + 'px');
+  grid.style.setProperty('--tile-ty', (h / 4) + 'px');
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.fonts.ready.then(() => {
   buildGrid();
+  syncTileSizing();
+  new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
   ws.connect(`ws://${location.host}/ws`);
   startDemo();
 });

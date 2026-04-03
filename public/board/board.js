@@ -62,6 +62,7 @@ const tileEls = [];
 let animRunning = false;
 let lastFlipTime = 0;
 let onSettledCallback = null;
+let pendingFlips = 0; // CSS animations in flight; audio stops when this reaches 0 after settling
 
 let demoActive = false;
 let demoIndex = 0;
@@ -75,7 +76,7 @@ let rawAudio    = null;
 let audioMuted  = false;
 let audioUnlocked = false;
 
-fetch('/assets/audio/split-flap-display.wav')
+fetch('/assets/audio/split-flap.wav')
   .then(r => r.arrayBuffer())
   .then(buf => { rawAudio = buf; })
   .catch(() => {});
@@ -120,6 +121,7 @@ function applyTileChar(tileEl, char) {
     tileEl.classList.remove('color-tile');
     tileEl.style.removeProperty('--tile-color');
     tileEl.classList.toggle('space-tile', char === ' ');
+    tileEl.classList.toggle('degree-tile', char === '°');
     tileEl.querySelector('.top-half-static .tile-char').textContent = renderChar(char);
     tileEl.querySelector('.top-flap-animating .tile-char').textContent = renderChar(char);
     tileEl.querySelector('.bottom-flap-animating .tile-char').textContent = renderChar(char);
@@ -149,6 +151,7 @@ function renderDirtyTiles(dirtyTiles) {
     tileEl.classList.remove('flipping');
     tileEl.offsetHeight; // force reflow to restart animation
     tileEl.classList.add('flipping');
+    pendingFlips++;
 
     tileEl.addEventListener('animationend', () => {
       // Snap top panels to new char; the flap is now flat showing newChar
@@ -156,6 +159,9 @@ function renderDirtyTiles(dirtyTiles) {
       tileEl.querySelector('.top-flap-animating .tile-char').textContent = renderChar(newChar);
       tileEl.classList.remove('flipping');
       tileEl.classList.toggle('space-tile', newChar === ' ');
+      tileEl.classList.toggle('degree-tile', newChar === '°');
+      pendingFlips--;
+      if (pendingFlips === 0 && !animRunning) stopAudio();
     }, { once: true });
   }
 }
@@ -179,7 +185,8 @@ function animLoop(timestamp) {
 
     if (allSettled) {
       animRunning = false;
-      stopAudio();
+      if (pendingFlips === 0) stopAudio(); // no animations in flight — stop immediately
+      // else: last animationend handler stops audio when the final flap lands
       if (onSettledCallback) { const cb = onSettledCallback; onSettledCallback = null; cb(); }
       return;
     }
@@ -277,17 +284,24 @@ function skipDemo() {
   startDemo();
 }
 
-// ── Pair panel helpers ────────────────────────────────────────────────────────
+// ── Pair popup helpers ────────────────────────────────────────────────────────
 function showPairPanel(pairCode, sessionId) {
-  // Format code as ABC-123
   document.getElementById('pair-code').textContent =
     pairCode.slice(0, 3) + '-' + pairCode.slice(3);
   document.getElementById('qr-img').src = `/qr/${sessionId}`;
-  document.getElementById('pair-panel').hidden = false;
+  document.getElementById('btn-qr').hidden = false;
+  document.getElementById('btn-code').hidden = false;
 }
 
 function hidePairPanel() {
-  document.getElementById('pair-panel').hidden = true;
+  document.getElementById('btn-qr').hidden = true;
+  document.getElementById('btn-code').hidden = true;
+  closePopups();
+}
+
+function closePopups() {
+  document.getElementById('popup-qr').hidden = true;
+  document.getElementById('popup-code').hidden = true;
 }
 
 // ── WebSocket client ──────────────────────────────────────────────────────────
@@ -357,6 +371,25 @@ window.addEventListener('keydown', e => {
 document.getElementById('btn-approve').addEventListener('click', approveConnection);
 document.getElementById('btn-reject').addEventListener('click', rejectConnection);
 
+// ── Pair popup controls ───────────────────────────────────────────────────────
+document.getElementById('btn-qr').addEventListener('click', () => {
+  document.getElementById('popup-code').hidden = true;
+  document.getElementById('popup-qr').hidden = false;
+});
+
+document.getElementById('btn-code').addEventListener('click', () => {
+  document.getElementById('popup-qr').hidden = true;
+  document.getElementById('popup-code').hidden = false;
+});
+
+// Click backdrop to dismiss
+document.getElementById('popup-qr').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePopups();
+});
+document.getElementById('popup-code').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePopups();
+});
+
 // ── Controls ──────────────────────────────────────────────────────────────────
 // Set initial mute button to locked state (audio not yet unlocked)
 document.getElementById('btn-mute').textContent = 'SOUND OFF';
@@ -373,9 +406,22 @@ document.addEventListener('fullscreenchange', () => {
     document.fullscreenElement ? '\u2715' : '\u26F6';
 });
 
+// ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
+function syncTileSizing() {
+  const tile = tileEls[0]?.[0];
+  if (!tile) return;
+  const h = tile.getBoundingClientRect().height;
+  if (h === 0) return;
+  const boardGrid = document.getElementById('board-grid');
+  boardGrid.style.setProperty('--tile-fs', h + 'px');
+  boardGrid.style.setProperty('--tile-ty', (h / 4) + 'px');
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.fonts.ready.then(() => {
   buildGrid();
+  syncTileSizing();
+  new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
   ws.connect(`ws://${location.host}/ws`);
   startDemo();
 });

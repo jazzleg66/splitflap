@@ -32,13 +32,14 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 **Animation:** All changing tiles flip simultaneously at constant velocity (no easing). To go from `A` to `D`, the tile must render `B` then `C` as intermediate frames.
 
-**Audio:** Single `pragotron_split-flap-display.wav` loop — starts when the first flap moves, stops when the last flap settles.
+**Audio:** Single `split-flap.wav` loop — starts when the first flap moves, stops when the last flap settles (exactly when the last CSS flip animation completes, tracked via `pendingFlips` counter).
 
 **Color characters (ROYGBPW):** Render as full solid-color tiles, not text.
 
 ## Visual Specs
 
-- Board background: `#1B1B1B` (Eerie Black)
+- Page background (homepage hero + board page): `#ffffff` white — the dark board sits in contrast against it
+- Board/tile background: `#1B1B1B` (Eerie Black)
 - Each tile has a 1px horizontal center line (flap seam simulation)
 - Font: Doto (Google Fonts, weight 700, `ROND: 0` square dot-matrix style)
 
@@ -79,17 +80,16 @@ _(none)_
 
 **Font:** Doto via Google Fonts (`family=Doto:wght@100..900`). All three HTML pages load it via `<link>` preconnect tags before `splitflap.css`.
 
-**Rendering approach:** Direct — Doto is a standard dot-matrix font, not a stencil. Characters render as amber (`#E8D5A3`) text on dark (`#1B1B1B`) panels. No white-backing trick needed.
+**Rendering approach:** Direct — Doto is a standard dot-matrix font, not a stencil. Characters render as white (`#FFFFFF`) text on dark (`#1B1B1B`) panels. No white-backing trick needed.
 
 **Space character rendering:** Always set `textContent = ''` (empty string) for space characters — use the `renderChar` helper in `board.js`: `const renderChar = ch => (ch === ' ' ? '' : ch);`
 
 **Character sizing:**
-- Tile: `width: 2.2rem; height: 3rem`
-- Each panel (`.tile-top`, `.tile-bottom`): `height: 50% = 1.5rem`
-- `font-size: 1.5rem` — fills panel height; adjust if characters clip or feel cramped
-- `translateY(0.75rem)` on top-panel chars — shifts character center to the seam (= `panel_height / 2`)
-- `translateY(-0.75rem)` on bottom-panel chars — same logic, upward
-- **Do not use percentage-based translateY** — the correct value is always `panel_height / 2` as an absolute rem
+- Tile: `width: 2.2rem; height: 3rem` (base CSS in `splitflap.css`; overridden to `width: 100%; aspect-ratio: 2.2/3` on both homepage and board page for responsive scaling)
+- Each panel (`.tile-top`, `.tile-bottom`): `height: 50%`
+- `font-size` = full tile height (`h`) — set via `--tile-fs` CSS variable by a `ResizeObserver` in JS (`syncTileSizing`). Both pages set `--tile-fs = h` (full tile height), not panel height. This fills the tile with large Doto characters.
+- `translateY` = `h / 4` (= half panel height) — set via `--tile-ty`. Shifts the character center to the seam.
+- **Do not use percentage-based translateY** — the correct value is always `h / 4` as an absolute px value set by JS
 
 **4-panel CSS 3D flip architecture:**
 - `.top-half-static` (z:1) — static background, holds current char top half; updated after flip settles
@@ -98,6 +98,6 @@ _(none)_
 - `.bottom-half-static` — incoming char bottom, snapped immediately; never animates
 - JS writes new char to `.bottom-flap-animating`/`.bottom-half-static` → adds `.flipping` → `animationend` copies to `.top-half-static`/`.top-flap-animating` and removes `.flipping`
 
-**Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click).
+**Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click). Audio stop is tied to `pendingFlips`: a counter incremented per CSS flip animation start, decremented in each `animationend` handler. Audio stops when `pendingFlips === 0 && !animRunning` — exactly when the last visual flap lands.
 
 **Mute button state:** Shows `SOUND OFF` (dimmed, non-interactive) until audio is unlocked via Skip. After unlock, becomes `MUTE`/`UNMUTE`.

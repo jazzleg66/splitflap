@@ -7,13 +7,13 @@
 :root {
   --bg:   #1B1B1B;
   --text: #E8D5A3;
-  --dim:  #5a5040;
+  --dim:  #888888;
   --mono: 'Courier New', Courier, monospace;
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: #ffffff;
+  color: var(--about-text, #1B1B1B);
   font-family: var(--mono);
   height: 100vh;
   display: flex;
@@ -52,6 +52,19 @@ body {
   box-shadow: 0 0 0 1px #2a2a2a;
 }
 
+/* Responsive tile sizing — tile fills column, height driven by aspect-ratio.
+ * JS (board.js) measures actual tile height via ResizeObserver and sets
+ * --tile-fs (font-size) and --tile-ty (translateY magnitude) on #board-grid. */
+#board-grid .tile {
+  width: 100%;
+  aspect-ratio: 2.2 / 3;
+  height: auto;
+}
+
+#board-grid .tile .tile-char        { font-size: var(--tile-fs, 3rem); }
+#board-grid .tile-top .tile-char    { transform: translateY(var(--tile-ty, 0.75rem)); }
+#board-grid .tile-bottom .tile-char { transform: translateY(calc(var(--tile-ty, 0.75rem) * -1)); }
+
 /* ── Demo controls — below board ─────────────────────────────────────────────── */
 #demo-controls {
   display: flex;
@@ -74,8 +87,8 @@ body {
 }
 
 #demo-controls button:hover {
-  border-color: var(--text);
-  color: var(--text);
+  border-color: #1B1B1B;
+  color: #1B1B1B;
 }
 
 #demo-controls button.audio-locked {
@@ -84,57 +97,44 @@ body {
   pointer-events: none;
 }
 
-/* ── Pair panel: full-screen centered overlay ────────────────────────────────── */
-#pair-panel {
+/* ── Pair popups ─────────────────────────────────────────────────────────────── */
+.popup-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.82);
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 
-#pair-panel[hidden] {
+.popup-overlay[hidden] {
   display: none;
 }
 
-#pair-inner {
+.popup-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.25rem;
   border: 1px solid #3a3a3a;
-  padding: 2rem 2.5rem;
+  padding: 1.75rem 2.25rem;
   background: #131313;
 }
 
-#pair-label {
-  font-size: 0.65rem;
-  letter-spacing: 0.3em;
+.popup-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
   color: var(--dim);
 }
 
 #qr-img {
-  width: 200px;
-  height: 200px;
+  width: 190px;
+  height: 190px;
   image-rendering: pixelated;
   display: block;
   background: #fff; /* QR needs white background */
   padding: 8px;
-}
-
-#pair-code-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-#pair-hint {
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  color: #3a3a3a;
 }
 
 #pair-code {

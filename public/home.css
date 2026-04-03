@@ -30,7 +30,7 @@ body {
 
 /* ── Hero section ───────────────────────────────────────────────────────────── */
 #hero {
-  background: var(--bg);
+  background: #ffffff;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -59,7 +59,7 @@ body {
 }
 
 #boards-live {
-  color: var(--text);
+  color: var(--about-text);
   opacity: 0.85;
 }
 
@@ -86,12 +86,18 @@ body {
     0 4px 40px #00000060;
 }
 
-/* Responsive tile sizing via CSS custom property on the grid */
+/* Responsive tile sizing — tile fills column, height driven by aspect-ratio.
+ * JS (home.js) measures actual tile height via ResizeObserver and sets
+ * --tile-fs (font-size) and --tile-ty (translateY magnitude) on #board-grid. */
 #board-grid .tile {
   width: 100%;
   aspect-ratio: 2.2 / 3;
   height: auto;
 }
+
+#board-grid .tile .tile-char        { font-size: var(--tile-fs, 3rem); }
+#board-grid .tile-top .tile-char    { transform: translateY(var(--tile-ty, 0.75rem)); }
+#board-grid .tile-bottom .tile-char { transform: translateY(calc(var(--tile-ty, 0.75rem) * -1)); }
 
 /* ── Demo controls ───────────────────────────────────────────────────────────── */
 #demo-controls {
