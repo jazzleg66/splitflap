@@ -47,7 +47,8 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 - Page background (homepage hero + board page): `#ffffff` white — the dark board sits in contrast against it
 - Board/tile background: `#1B1B1B` (Eerie Black)
-- Each tile has a 1px horizontal center line (flap seam simulation)
+- Each tile has a **2px black center seam** (`.tile-top { border-bottom: 2px solid #000 }`) with a faint light glint below it, splitting the visual into top and bottom flap
+- Three fold-score lines in the lower portion of `.tile-bottom` (at 60%, 74.5%, 89% of the half-height) via `::after` gradient — each line is a light ridge + dark shadow. `z-index: 10` keeps them above all panels and textures
 - Font: Doto (Google Fonts, weight 700, `ROND: 0` square dot-matrix style)
 
 ## State & Persistence
@@ -84,7 +85,7 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen], [Connect Board →]. Live co
 
 **Homepage layout order:** About/steps section first (top), board demo section second (below). The Connect Board button lives inline with the demo controls under the board — not in a separate CTA section.
 
-**Homepage fullscreen:** `#hero.requestFullscreen()` — `:fullscreen` CSS overrides `#hero` background to `#1B1B1B` and flips all text/button colors to work on dark. Only the dark board fills the screen; the white page background is excluded.
+**Homepage fullscreen:** `#hero.requestFullscreen()` — `:fullscreen` CSS: background `#1B1B1B`, `#hero-header` hidden, board at `width: 100vw`, container `padding: 2vh 0`. Board/board page fullscreen: `document.documentElement.requestFullscreen()`, `body:fullscreen { background: #1B1B1B }`, `#board-header` hidden, same board sizing rules.
 
 ## Pending Tasks
 
@@ -105,7 +106,7 @@ _(none)_
 **Space character rendering:** Always set `textContent = ''` (empty string) for space characters — use the `renderChar` helper in `board.js`: `const renderChar = ch => (ch === ' ' ? '' : ch);`
 
 **Character sizing:**
-- Tile: `width: 2.2rem; height: 3rem` (base CSS in `splitflap.css`; overridden to `width: 100%; aspect-ratio: 2.2/3` on both homepage and board page for responsive scaling)
+- Tile: `width: 2.2rem; height: 4.3rem` (base CSS in `splitflap.css`; overridden to `width: 100%; aspect-ratio: 2.2/4.3` on both homepage and board page for responsive scaling)
 - Each panel (`.tile-top`, `.tile-bottom`): `height: 50%`
 - `font-size` = full tile height (`h`) — set via `--tile-fs` CSS variable by a `ResizeObserver` in JS (`syncTileSizing`). Both pages set `--tile-fs = h` (full tile height), not panel height. This fills the tile with large Doto characters.
 - `translateY` = `h / 4` (= half panel height) — set via `--tile-ty`. Shifts the character center to the seam.

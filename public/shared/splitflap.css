@@ -2,7 +2,7 @@
 .tile {
   position: relative;
   width: 2.2rem;
-  height: 3rem;
+  height: 4.3rem;
   background: #1B1B1B;
   border-radius: 2px;
   overflow: hidden;
@@ -28,7 +28,8 @@
 
 .tile-top {
   top: 0;
-  border-bottom: 1px solid #3a3a3a; /* flap seam — slightly visible edge */
+  border-bottom: 2px solid #000; /* center flap seam — splits top and bottom flap */
+  box-shadow: 0 2px 0 rgba(255, 255, 255, 0.06); /* faint light edge below seam for depth */
   z-index: 1;
 }
 
@@ -105,25 +106,32 @@
   transform: rotateX(0deg);
 }
 
-/* ── Flap accumulation lines ─────────────────────────────────────────────── */
+/* ── Fold-score lines ────────────────────────────────────────────────────── */
 /*
- * Simulates the physical stack of settled flaps at the bottom of the unit.
- * Four faint lines, each 1px, progressively dimmer toward the top.
+ * Three horizontal crease marks in the lower portion of the bottom half,
+ * mimicking the physical score lines on real Solari split-flap cards.
+ * Percentage-based so they scale with any tile size.
+ * Each line: faint light edge (crease ridge) + dark shadow below it.
  */
 .tile-bottom::after {
   content: '';
   position: absolute;
-  bottom: 2px;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow:
-    0 -3px 0 rgba(255, 255, 255, 0.055),
-    0 -6px 0 rgba(255, 255, 255, 0.035),
-    0 -9px 0 rgba(255, 255, 255, 0.018);
+  inset: 0;
   pointer-events: none;
   z-index: 10;
+  background: linear-gradient(
+    to bottom,
+    transparent 59%,
+    rgba(255, 255, 255, 0.09) 59%,   rgba(255, 255, 255, 0.09) 60%,
+    rgba(0,   0,   0,   0.55) 60%,   rgba(0,   0,   0,   0.55) calc(60% + 1.5px),
+    transparent calc(60% + 1.5px)    73.5%,
+    rgba(255, 255, 255, 0.07) 73.5%, rgba(255, 255, 255, 0.07) 74.5%,
+    rgba(0,   0,   0,   0.48) 74.5%, rgba(0,   0,   0,   0.48) calc(74.5% + 1.5px),
+    transparent calc(74.5% + 1.5px)  88%,
+    rgba(255, 255, 255, 0.05) 88%,   rgba(255, 255, 255, 0.05) 89%,
+    rgba(0,   0,   0,   0.40) 89%,   rgba(0,   0,   0,   0.40) calc(89% + 1.5px),
+    transparent calc(89% + 1.5px)
+  );
 }
 
 /* ── Characters ───────────────────────────────────────────────────────────── */
@@ -177,7 +185,7 @@
 .tile.color-tile .tile-top,
 .tile.color-tile .tile-bottom {
   background: var(--tile-color);
-  border-color: transparent;
+  border-color: rgba(0, 0, 0, 0.55);
 }
 .tile.color-tile .top-half-static,
 .tile.color-tile .top-flap-animating,

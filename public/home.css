@@ -157,7 +157,7 @@ body {
  * --tile-fs (font-size) and --tile-ty (translateY magnitude) on #board-grid. */
 #board-grid .tile {
   width: 100%;
-  aspect-ratio: 2.2 / 3;
+  aspect-ratio: 2.2 / 4.3;
   height: auto;
 }
 
@@ -225,14 +225,35 @@ body {
   max-width: 100%;
 }
 
-/* ── Fullscreen — board fills screen with dark background, no white surround ─── */
+/* ── Fullscreen — 100vw wide, centered with 2vh gap top and bottom ───────────── */
 #hero:fullscreen,
 #hero:-webkit-full-screen {
   background: #1B1B1B;
   border-top: none;
   margin-top: 0;
-  min-height: 100vh;
-  padding-bottom: 1rem;
+  height: 100vh;
+  padding: 0;
+}
+
+/* Hide header in fullscreen — reclaims ~16% vertical space */
+#hero:fullscreen #hero-header,
+#hero:-webkit-full-screen #hero-header {
+  display: none;
+}
+
+#hero:fullscreen #board-container,
+#hero:-webkit-full-screen #board-container {
+  max-width: none;
+  flex: 1;
+  min-height: 0;
+  padding: 2vh 0;
+  align-items: center;
+}
+
+#hero:fullscreen #board-grid,
+#hero:-webkit-full-screen #board-grid {
+  width: 100vw;
+  max-width: 100vw;
 }
 
 /* Header text: was dark (for white bg), needs to be light in fullscreen */

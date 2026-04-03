@@ -12,28 +12,28 @@ const DEMO_HOLD_MS = 7000;
 
 const DEMO_MESSAGES = [
   [
-    ' IMPOSSIBLE IS NOTHING',
+    'rrr                rrr',
+    '                      ',
+    'IMPOSSIBLE IS NOTHING ',
     '          - ADIDAS    ',
     '                      ',
-    '                      ',
-    '                      ',
-    '                      ',
+    'rrr                rrr',
   ],
   [
+    '                      ',
     'IN REAL LIFE, I ASSURE',
     "YOU, THERE IS NO SUCH ",
     'THING AS ALGEBRA.     ',
-    '                      ',
     '    - FRAN LEBOWITZ   ',
     '                      ',
   ],
   [
-    '                      ',
-    '  SCAN THE QR CODE    ',
-    '    AND TRY YOURSELF  ',
-    '                      ',
-    '                      ',
-    '                      ',
+    'gggggggggggggggggggggg',
+    'gbbbbbbbbbbbbbbbbbbbbg',
+    'gb SCAN THE QR CODE bg',
+    'gb  AND TRY YOURSELFbg',
+    'gbbbbbbbbbbbbbbbbbbbbg',
+    'gggggggggggggggggggggg',
   ],
 ];
 

@@ -385,10 +385,10 @@ function buildClockRows() {
   const mm = String(now.getMinutes()).padStart(2, '0');
   const ss = String(now.getSeconds()).padStart(2, '0');
 
-  const row2 = `${day} ${mon} ${date}`.slice(0, COLS).padEnd(COLS, ' ');
-  const row3 = `${hh}:${mm}:${ss} ${ampm}`.padStart(14, ' ').padEnd(COLS, ' ');
+  const row2 = ('   ' + `${day} ${mon} ${date}`).slice(0, COLS).padEnd(COLS, ' ');
+  const row3 = `${hh}:${mm}:${ss} ${ampm}`.padStart(16, ' ').padEnd(COLS, ' ');
   const yPad = Math.floor((COLS - year.length) / 2);
-  const row4 = (' '.repeat(yPad) + year).padEnd(COLS, ' ');
+  const row4 = (' '.repeat(yPad + 2) + year).slice(0, COLS).padEnd(COLS, ' ');
 
   return ['                      ', row2, row3, row4, '                      ', '                      '];
 }

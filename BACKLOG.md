@@ -32,6 +32,7 @@ Document bugs encountered during development, their root cause, and how they wer
 | 14 | iOS Safari: input tap zooms the page | Input `font-size < 16px` triggers iOS auto-zoom | Set `font-size: 16px` on `.row-input` for mobile; reverts to `0.72rem` at ≥480px | Resolved |
 | 25 | Controller board preview tiles stacked in a single column instead of 22×6 grid | `controller.css` only set `gap` and `padding` on `#board-preview #board-grid` — missing `display: grid; grid-template-columns: repeat(22, auto)`. The controller does not load `board.css` where these rules live. The 0.45 scale cap masked the wrong layout. | Added `display: grid; grid-template-columns: repeat(22, auto); width: max-content` to `#board-preview #board-grid` in `controller.css` | Resolved |
 | 26 | Controller preview did not fill the phone screen width — capped at ~45% scale | `fitPreview()` had `Math.min(0.45, wrapper.clientWidth / grid.offsetWidth)`. With the grid now rendering at correct natural width (~824px), the true scale to fill 375px is ~0.455, which exceeded the cap. | Removed the `0.45` cap; `fitPreview()` now uses `wrapper.clientWidth / grid.offsetWidth` unconditionally. Added `!grid.offsetWidth` guard to skip if grid not yet painted. | Resolved |
+| 27 | Fullscreen showed white body background on /board page | `document.documentElement.requestFullscreen()` fullscreened the whole document including `body { background: #ffffff }` | Added `body:fullscreen { background: #1B1B1B }` in `board.css`; hid `#board-header` in fullscreen | Resolved |
 
 ---
 
