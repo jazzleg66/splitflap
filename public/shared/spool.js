@@ -1,7 +1,7 @@
 // Spool engine — pure logic, no DOM dependency.
 // Shared between display board and mobile controller (ES module).
 
-export const SPOOL = ` ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'"%,.?/\u00b0roygbpw`;
+export const SPOOL = ` ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'"%,.?/\u00b0wroygbp`;
 
 export function spoolIndex(char) {
   const i = SPOOL.indexOf(char);
@@ -70,13 +70,13 @@ export function snapToTargets(grid) {
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
 export const COLOR_MAP = {
-  r: '#FF0000',
-  o: '#FF7F00',
-  y: '#FFFF00',
-  g: '#00AA00',
-  b: '#0000FF',
-  p: '#800080',
-  w: '#FFFFFF',
+  r: '#B34444',
+  o: '#CC8F52',
+  y: '#F2D046',
+  g: '#3A5944',
+  b: '#4365A8',
+  p: '#744471',
+  w: '#FAFAFA',
 };
 
 export function isColorChar(char) {

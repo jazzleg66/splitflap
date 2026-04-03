@@ -34,7 +34,14 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 **Audio:** Single `split-flap.wav` loop — starts when the first flap moves, stops when the last flap settles (exactly when the last CSS flip animation completes, tracked via `pendingFlips` counter).
 
-**Color characters (ROYGBPW):** Render as full solid-color tiles, not text.
+**Color characters (ROYGBPW):** Render as full solid-color tiles, not text. Color palette (defined in `public/shared/spool.js` `COLOR_MAP`):
+- `r` Red `#B34444`
+- `o` Orange `#CC8F52`
+- `y` Yellow `#F2D046`
+- `g` Green `#3A5944`
+- `b` Blue `#4365A8`
+- `p` Purple `#744471`
+- `w` White `#FAFAFA`
 
 ## Visual Specs
 

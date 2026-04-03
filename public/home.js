@@ -15,12 +15,12 @@ const DEMO_HOLD_MS = 7000;
 
 const DEMO_MESSAGES = [
   [
+    'rrr                rrr',
     '                      ',
-    '                      ',
-    ' IMPOSSIBLE IS NOTHING',
+    'IMPOSSIBLE IS NOTHING ',
     '          - ADIDAS    ',
     '                      ',
-    '                      ',
+    'rrr                rrr',
   ],
   [
     '                      ',
@@ -31,12 +31,12 @@ const DEMO_MESSAGES = [
     '                      ',
   ],
   [
-    '                      ',
-    '                      ',
-    '  SCAN THE QR CODE    ',
-    '    AND TRY YOURSELF  ',
-    '                      ',
-    '                      ',
+    'gggggggggggggggggggggg',
+    'gbbbbbbbbbbbbbbbbbbbbg',
+    'gb SCAN THE QR CODE bg',
+    'gb  AND TRY YOURSELFbg',
+    'gbbbbbbbbbbbbbbbbbbbbg',
+    'gggggggggggggggggggggg',
   ],
 ];
 
