@@ -285,28 +285,25 @@ function skipDemo() {
   startDemo();
 }
 
-// ── Pair popup helpers ────────────────────────────────────────────────────────
-function showPairPanel(pairCode, sessionId) {
+// ── QR screen helpers ─────────────────────────────────────────────────────────
+function showQrScreen(pairCode, sessionId) {
   document.getElementById('pair-code').textContent =
     pairCode.slice(0, 3) + '-' + pairCode.slice(3);
   document.getElementById('qr-img').src = `/qr/${sessionId}`;
-  document.getElementById('btn-qr').hidden = false;
-  document.getElementById('btn-code').hidden = false;
+  document.getElementById('qr-screen').classList.remove('hidden');
+  document.body.classList.remove('board-active');
 }
 
-function hidePairPanel() {
-  document.getElementById('btn-qr').hidden = true;
-  document.getElementById('btn-code').hidden = true;
-  closePopups();
-}
-
-function closePopups() {
-  document.getElementById('popup-qr').hidden = true;
-  document.getElementById('popup-code').hidden = true;
+function hideQrScreen() {
+  document.getElementById('qr-screen').classList.add('hidden');
+  document.body.classList.add('board-active');
+  // Trigger ResizeObserver so tile sizing recalculates for the new board dimensions
+  syncTileSizing();
 }
 
 // ── WebSocket client ──────────────────────────────────────────────────────────
 let sessionId = localStorage.getItem('solari_session_id') || null;
+let lastPairCode = null;
 
 const ws = new WsClient(() => {
   ws.send({ type: 'tv_hello', sessionId });
@@ -316,20 +313,24 @@ ws.onMessage(msg => {
   switch (msg.type) {
     case 'tv_paired':
       sessionId = msg.sessionId;
+      lastPairCode = msg.pairCode;
       localStorage.setItem('solari_session_id', sessionId);
-      showPairPanel(msg.pairCode, msg.sessionId);
+      showQrScreen(msg.pairCode, msg.sessionId);
       break;
 
     case 'phone_request':
-      hidePairPanel();
-      document.getElementById('approval-overlay').hidden = false;
+      // Auto-approve — QR code itself is the security token
+      unlockAudio();
+      ws.send({ type: 'tv_approve' });
       break;
 
     case 'phone_approved':
       document.getElementById('approval-overlay').hidden = true;
-      hidePairPanel();
+      hideQrScreen();
       stopDemo();
       displayRows(STANDBY_ROWS);
+      document.getElementById('conn-dot').className = 'connected';
+      document.getElementById('conn-dot').setAttribute('aria-label', 'Connected');
       break;
 
     case 'display_update':
@@ -342,9 +343,10 @@ ws.onMessage(msg => {
       break;
 
     case 'disconnected':
-      displayRows(DISCONNECTED_ROWS, () => {
-        setTimeout(startDemo, 10000);
-      });
+      stopDemo();
+      if (lastPairCode && sessionId) showQrScreen(lastPairCode, sessionId);
+      document.getElementById('conn-dot').className = 'disconnected';
+      document.getElementById('conn-dot').setAttribute('aria-label', 'Disconnected');
       break;
 
     case 'boards_live':
@@ -355,6 +357,7 @@ ws.onMessage(msg => {
 
 // Approve/reject — keyboard and click
 function approveConnection() {
+  unlockAudio();
   document.getElementById('approval-overlay').hidden = true;
   ws.send({ type: 'tv_approve' });
 }
@@ -372,24 +375,6 @@ window.addEventListener('keydown', e => {
 document.getElementById('btn-approve').addEventListener('click', approveConnection);
 document.getElementById('btn-reject').addEventListener('click', rejectConnection);
 
-// ── Pair popup controls ───────────────────────────────────────────────────────
-document.getElementById('btn-qr').addEventListener('click', () => {
-  document.getElementById('popup-code').hidden = true;
-  document.getElementById('popup-qr').hidden = false;
-});
-
-document.getElementById('btn-code').addEventListener('click', () => {
-  document.getElementById('popup-qr').hidden = true;
-  document.getElementById('popup-code').hidden = false;
-});
-
-// Click backdrop to dismiss
-document.getElementById('popup-qr').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closePopups();
-});
-document.getElementById('popup-code').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closePopups();
-});
 
 // ── Controls ──────────────────────────────────────────────────────────────────
 // Set initial mute button to locked state (audio not yet unlocked)
@@ -419,10 +404,18 @@ function syncTileSizing() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+// ── Manual code reveal ────────────────────────────────────────────────────────
+document.getElementById('btn-show-code').addEventListener('click', () => {
+  const code = document.getElementById('pair-code');
+  const btn  = document.getElementById('btn-show-code');
+  code.hidden = !code.hidden;
+  btn.textContent = code.hidden ? 'ENTER CODE MANUALLY' : 'HIDE CODE';
+});
+
 document.fonts.ready.then(() => {
   buildGrid();
   syncTileSizing();
   new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
   ws.connect(`ws://${location.host}/ws`);
-  startDemo();
+  // Board starts hidden behind #qr-screen; demo only runs after phone approval
 });

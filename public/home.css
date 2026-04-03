@@ -11,11 +11,12 @@
   --seam:     #2e2e2e;
   --green:    #00CC66;
   --mono:     'Courier New', Courier, monospace;
+  --rht:      "Red Hat Text", sans-serif;
 
   /* About section (white background) */
   --about-bg:   #ffffff;
   --about-text: #1B1B1B;
-  --about-dim:  #666666;
+  --about-dim:  #1B1B1B;
   --about-seam: #dddddd;
 }
 
@@ -28,69 +29,204 @@ body {
   overflow-x: hidden;
 }
 
-/* ── About / explanation section — now first ─────────────────────────────────── */
+/* ── Hero / about section ────────────────────────────────────────────────────── */
 #about {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 5rem 1.5rem 3rem;
+  padding: 7rem 1.5rem 4rem;
+  display: flex;
+  justify-content: center;
 }
 
-#about-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  margin-bottom: 0;
+#about-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.2rem;
+  max-width: 900px;
+  width: 100%;
+}
+
+/* Headline */
+#hero-text {
+  text-align: center;
+  opacity: 0;
+  animation: heroFadeUp 0.55s ease 0.05s forwards;
 }
 
 #about-heading {
-  font-size: clamp(1.8rem, 4vw, 3.2rem);
-  letter-spacing: 0.06em;
+  font-family: var(--rht);
+  font-size: clamp(2rem, 5.5vw, 4.2rem);
+  letter-spacing: 0.01em;
   line-height: 1.1;
-  margin-bottom: 1.5rem;
-  font-weight: normal;
+  margin-bottom: 0.25em;
+  font-weight: 300;
   color: var(--about-text);
 }
 
-#about-desc {
-  font-size: 0.8rem;
-  line-height: 1.9;
-  color: var(--about-dim);
-  letter-spacing: 0.06em;
-  max-width: 38ch;
+/* ── Animated word strip — renders like a mini board row ──────────────────────
+ * .word-sizer: invisible, in normal flow — sizes the strip to the longest word.
+ * .rotating-word: absolutely stacked on top of the sizer, animate in/out.       */
+#word-strip {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  background: #1B1B1B;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #2a2a2a, 0 4px 24px rgba(0,0,0,0.22);
+  vertical-align: bottom;
 }
 
-/* ── How-to steps ────────────────────────────────────────────────────────────── */
-#how-to {
+/* Center seam — mimics the top/bottom flap split of the real tiles */
+#word-strip::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 2px;
+  background: #000;
+  margin-top: -1px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.word-sizer,
+.rotating-word {
+  font-family: "Doto", monospace;
+  font-weight: 700;
+  font-variation-settings: "ROND" 0;
+  font-size: clamp(2rem, 5.5vw, 4.2rem);
+  color: #E8D5A3;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  white-space: nowrap;
+  padding: 0.08em 0.45em;
+}
+
+.word-sizer {
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.rotating-word {
+  display: block;
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  text-align: center;
+  transform: translateY(-110%);
+}
+
+.rotating-word.active {
+  transform: translateY(0);
+  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rotating-word.exiting {
+  transform: translateY(110%);
+  transition: transform 0.38s cubic-bezier(0.55, 0, 1, 0.45);
+}
+
+/* Description */
+#about-desc {
+  font-family: var(--rht);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--about-dim);
+  letter-spacing: 0;
+  text-align: center;
+  max-width: 58ch;
+  opacity: 0;
+  animation: heroFadeUp 0.55s ease 0.28s forwards;
+}
+
+/* CTA buttons */
+#hero-ctas {
   display: flex;
-  flex-direction: column;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  animation: heroFadeUp 0.55s ease 0.38s forwards;
+}
+
+#cta-primary {
+  display: inline-block;
+  background: var(--about-text);
+  color: var(--about-bg);
+  font-family: var(--rht);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 0.65rem 1.5rem;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+#cta-primary:hover { background: #333333; }
+
+#cta-secondary {
+  display: inline-block;
+  border: 1px solid #cccccc;
+  color: var(--about-dim);
+  font-family: var(--rht);
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  padding: 0.65rem 1.5rem;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+#cta-secondary:hover {
+  border-color: var(--about-text);
+  color: var(--about-text);
+}
+
+/* How-it-works steps — horizontal 3-column */
+#how-it-works {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  padding-top: 0.5rem;
+  width: 100%;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--about-seam);
+  opacity: 0;
+  animation: heroFadeUp 0.55s ease 0.48s forwards;
 }
 
 .step {
-  display: grid;
-  grid-template-columns: 2.5rem 1fr;
-  gap: 1rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .step-num {
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  font-family: var(--rht);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   color: #007700;
-  padding-top: 0.1rem;
 }
 
 .step-text {
-  font-size: 0.78rem;
-  line-height: 1.8;
+  font-family: var(--rht);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.75;
   color: var(--about-dim);
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
 }
 
 .step-text em {
   font-style: normal;
+  font-weight: 500;
   color: var(--about-text);
+}
+
+/* Page-load staggered reveal */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Hero section — now second ───────────────────────────────────────────────── */
@@ -125,6 +261,10 @@ body {
 }
 
 #boards-live {
+  font-family: var(--rht);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   color: var(--about-text);
   opacity: 0.85;
 }
@@ -177,9 +317,10 @@ body {
   background: transparent;
   border: 1px solid #3a3a3a;
   color: var(--dim);
-  font-family: var(--mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
+  font-family: var(--rht);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
   padding: 0.3rem 0.8rem;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -200,9 +341,10 @@ body {
   display: inline-block;
   border: 1px solid var(--about-text);
   color: var(--about-text);
-  font-family: var(--mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
+  font-family: var(--rht);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
   padding: 0.3rem 0.8rem;
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
@@ -217,9 +359,11 @@ body {
 #site-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 0.6rem;
-  letter-spacing: 0.15em;
-  color: #aaaaaa;
+  font-family: var(--rht);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: #1B1B1B;
   border-top: 1px solid var(--about-seam);
   padding: 1.5rem 1.5rem;
   max-width: 100%;
@@ -296,13 +440,32 @@ body {
 
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
-  #about-grid {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
+  #about {
+    padding: 4.5rem 1.25rem 3rem;
   }
 
-  #about-heading {
-    font-size: 1.8rem;
+  #about-inner {
+    gap: 1.75rem;
+  }
+
+  #about-desc {
+    text-align: left;
+  }
+
+  #hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  #cta-primary,
+  #cta-secondary {
+    text-align: center;
+  }
+
+  #how-it-works {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
   }
 
   #site-footer {

@@ -12,13 +12,113 @@
 }
 
 body {
-  background: #ffffff;
-  color: var(--about-text, #1B1B1B);
+  background: #1B1B1B;
+  color: var(--text);
   font-family: var(--mono);
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ── QR pairing screen ───────────────────────────────────────────────────────── */
+#qr-screen {
+  position: fixed;
+  inset: 0;
+  background: #1B1B1B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+#qr-screen.hidden {
+  display: none;
+}
+
+#qr-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+#qr-label {
+  font-family: "Red Hat Text", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+#qr-img {
+  width: 220px;
+  height: 220px;
+  image-rendering: pixelated;
+  display: block;
+  background: #fff;
+  padding: 10px;
+}
+
+#qr-alt-label {
+  font-family: "Red Hat Text", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  color: var(--text);
+  opacity: 0.35;
+  margin-top: 0.5rem;
+}
+
+#btn-show-code {
+  background: transparent;
+  border: 1px solid rgba(232, 213, 163, 0.2);
+  color: rgba(232, 213, 163, 0.45);
+  font-family: "Red Hat Text", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: 0.25rem;
+}
+
+#btn-show-code:hover {
+  border-color: rgba(232, 213, 163, 0.5);
+  color: rgba(232, 213, 163, 0.8);
+}
+
+#pair-code {
+  font-size: 2rem;
+  letter-spacing: 0.45em;
+  color: var(--text);
+  opacity: 0.75;
+  padding-left: 0.45em;
+}
+
+/* ── Board-active — applied when phone pairs; mirrors fullscreen layout ──────── */
+body.board-active {
+  background: #1B1B1B;
+}
+
+body.board-active #board-header {
+  display: none;
+}
+
+body.board-active #demo-controls {
+  display: none;
+}
+
+body.board-active #board-container {
+  padding: 2.5rem 0 2vh;
+  align-items: center;
+}
+
+body.board-active #board-grid {
+  width: 100vw;
+  max-width: 100vw;
 }
 
 /* ── Header: live counter only ───────────────────────────────────────────────── */
@@ -65,7 +165,7 @@ body:-webkit-full-screen #board-header {
 
 body:fullscreen #board-container,
 body:-webkit-full-screen #board-container {
-  padding: 2vh 0;
+  padding: 2.5rem 0 2vh;
   align-items: center;
 }
 
@@ -272,4 +372,32 @@ body:-webkit-full-screen #demo-controls button:hover {
   font-size: 0.6rem;
   letter-spacing: 0.18em;
   color: var(--dim);
+}
+
+/* ── Connection status dot ───────────────────────────────────────────────────── */
+#conn-dot {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  z-index: 300;
+  transition: background 0.4s, box-shadow 0.4s;
+}
+
+#conn-dot.disconnected {
+  background: #7a2a2a;
+  box-shadow: 0 0 0 0 transparent;
+}
+
+#conn-dot.connected {
+  background: #00CC66;
+  box-shadow: 0 0 6px 1px rgba(0, 204, 102, 0.5);
+  animation: dotPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(0, 204, 102, 0.45); }
+  50%       { box-shadow: 0 0 10px 3px rgba(0, 204, 102, 0.2); }
 }

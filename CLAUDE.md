@@ -124,3 +124,6 @@ _(none)_
 **Audio:** Use Web Audio API (`AudioBufferSourceNode` with `loop=true`), NOT `<audio loop>`. Browsers have a gap between `<audio>` loop cycles. Pattern: prefetch raw bytes on page load (no user gesture needed), decode to `AudioBuffer` only after user gesture (e.g. Skip click). After `decodeAudioData` resolves, call `startAudio()` immediately if `animRunning` is true — this prevents the double-click-to-hear bug where the board starts flipping before the buffer is ready. Audio stop is tied to `pendingFlips`: a counter incremented per CSS flip animation start, decremented in each `animationend` handler. Audio stops when `pendingFlips === 0 && !animRunning` — exactly when the last visual flap lands.
 
 **Mute button state:** Shows `SOUND OFF` (dimmed, non-interactive) until audio is unlocked via Skip. After unlock, becomes `MUTE`/`UNMUTE`.
+
+**To-do List:**
+- Hompage fullscreen demo board has the correct display size, while fullscreen board size on the board page is incorrect. The homepage fullscreen keeps demo controls (~50px) at the bottom which limits board height, but the board page hides them. That extra vertical space makes tiles larger. I need to compensate with matching bottom padding. Let me also check the homepage fullscreen rules to match exactly. See ref_4.png (board page) and ref_5.png (home page).

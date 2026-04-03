@@ -6,12 +6,26 @@
   <title>Digital Solari — Board</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Red+Hat+Text:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/splitflap.css">
   <link rel="stylesheet" href="board.css">
 </head>
 <body>
 
+  <!-- ── QR pairing screen — shown until a phone connects ─────────────────── -->
+  <div id="qr-screen">
+    <div id="qr-inner">
+      <p id="qr-label">SCAN TO CONNECT</p>
+      <img id="qr-img" alt="QR Code">
+      <button id="btn-show-code">ENTER CODE MANUALLY</button>
+      <div id="pair-code" hidden>------</div>
+    </div>
+  </div>
+
+  <!-- ── Connection status dot — always top-left ──────────────────────────── -->
+  <div id="conn-dot" class="disconnected" aria-label="Disconnected"></div>
+
+  <!-- ── Board (hidden until phone pairs) ──────────────────────────────────── -->
   <header id="board-header">
     <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
   </header>
@@ -20,29 +34,10 @@
     <!-- 6×22 tile grid injected by board.js -->
   </main>
 
-  <!-- Demo controls — visible only during demo, placed below the board -->
   <div id="demo-controls">
     <button id="btn-skip">SKIP</button>
     <button id="btn-mute">MUTE</button>
     <button id="btn-fullscreen">&#x26F6;</button>
-    <button id="btn-qr" hidden>QR CODE</button>
-    <button id="btn-code" hidden>ENTER CODE</button>
-  </div>
-
-  <!-- QR popup: small centered modal, hidden until btn-qr clicked -->
-  <div id="popup-qr" class="popup-overlay" hidden>
-    <div class="popup-inner">
-      <p class="popup-label">SCAN TO CONNECT</p>
-      <img id="qr-img" alt="QR Code">
-    </div>
-  </div>
-
-  <!-- Code popup: small centered modal, hidden until btn-code clicked -->
-  <div id="popup-code" class="popup-overlay" hidden>
-    <div class="popup-inner">
-      <p class="popup-label">OR ENTER CODE MANUALLY</p>
-      <div id="pair-code">------</div>
-    </div>
   </div>
 
   <!-- Approval overlay -->
@@ -55,7 +50,6 @@
       </div>
     </div>
   </div>
-
 
   <script type="module" src="board.js"></script>
 </body>

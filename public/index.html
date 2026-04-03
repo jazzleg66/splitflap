@@ -6,40 +6,52 @@
   <title>Digital Solari — Split-Flap Display for Any Screen</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Red+Hat+Text:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/splitflap.css">
   <link rel="stylesheet" href="home.css">
 </head>
 <body>
 
-  <!-- ── Product explanation ────────────────────────────────────────────────── -->
+  <!-- ── Hero: product headline + animated word ────────────────────────────── -->
   <section id="about">
-    <div id="about-grid">
+    <div id="about-inner">
 
-      <div id="about-left">
-        <h1 id="about-heading">A SPLIT&#8209;FLAP<br>DISPLAY FOR<br>ANY SCREEN.</h1>
-        <p id="about-desc">
-          Digital Solari brings the mechanical soul of a Solari departures board to any TV,
-          monitor, or browser. No app. No account. No install.<br><br>
-          Characters cycle through a fixed spool — exactly like physical hardware — with
-          every flip timed to a real mechanical cadence.
-        </p>
+      <div id="hero-text">
+        <h1 id="about-heading">A SPLIT&#8209;FLAP DISPLAY FOR</h1>
+        <div id="word-strip" aria-live="polite" aria-atomic="true">
+          <!-- sizer: invisible, occupies width of longest word -->
+          <span class="word-sizer" aria-hidden="true">EVERY VENUE.</span>
+          <span class="rotating-word active">ANY SCREEN.</span>
+          <span class="rotating-word">YOUR LOBBY.</span>
+          <span class="rotating-word">YOUR OFFICE.</span>
+          <span class="rotating-word">EVERY VENUE.</span>
+          <span class="rotating-word">DEPARTURES.</span>
+        </div>
       </div>
 
-      <div id="about-right">
-        <div id="how-to">
-          <div class="step">
-            <span class="step-num">01</span>
-            <span class="step-text">Open this page on your TV or any screen.<br>Click <em>Connect Board</em> below.</span>
-          </div>
-          <div class="step">
-            <span class="step-num">02</span>
-            <span class="step-text">Scan the QR code with your phone,<br>or enter the 6-digit code manually.</span>
-          </div>
-          <div class="step">
-            <span class="step-num">03</span>
-            <span class="step-text">Type your messages on the phone controller,<br>hit <em>Play</em> — the board flips.</span>
-          </div>
+      <p id="about-desc">
+        Digital Solari brings the mechanical soul of a Solari departures board to any TV,
+        monitor, or browser. Characters cycle through a fixed spool — exactly like physical
+        hardware — with every flip timed to a real mechanical cadence.
+      </p>
+
+      <div id="hero-ctas">
+        <a href="/board" id="cta-primary">CONNECT BOARD &nbsp;&#x2192;</a>
+        <a href="#hero" id="cta-secondary">SEE IT LIVE &nbsp;&#x2193;</a>
+      </div>
+
+      <div id="how-it-works">
+        <div class="step">
+          <span class="step-num">01</span>
+          <span class="step-text">Open this page on your TV or any screen.<br>Click <em>Connect Board</em> below.</span>
+        </div>
+        <div class="step">
+          <span class="step-num">02</span>
+          <span class="step-text">Scan the QR code with your phone,<br>or enter the 6-digit code manually.</span>
+        </div>
+        <div class="step">
+          <span class="step-num">03</span>
+          <span class="step-text">Type your messages on the phone controller,<br>hit <em>Play</em> — the board flips.</span>
         </div>
       </div>
 
@@ -47,11 +59,10 @@
   </section>
 
 
-  <!-- ── Hero: live demo board ──────────────────────────────────────────────── -->
+  <!-- ── Live demo board ────────────────────────────────────────────────────── -->
   <section id="hero">
     <div id="hero-header">
       <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
-      <div id="wordmark">DIGITAL SOLARI</div>
     </div>
 
     <div id="board-container">

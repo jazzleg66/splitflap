@@ -180,6 +180,7 @@ wss.on('connection', socket => {
       if (msg.type === 'tv_approve') {
         session.state = 'active';
         send(session.phoneSocket, { type: 'phone_approved' });
+        send(session.tvSocket,    { type: 'phone_approved' });
         broadcastLiveCount();
       } else if (msg.type === 'tv_reject') {
         session.state = 'waiting';
