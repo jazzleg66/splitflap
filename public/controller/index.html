@@ -29,29 +29,37 @@
   <!-- Main UI (hidden until phone_approved) -->
   <div id="controller-ui" hidden>
 
-    <!-- Mode selector -->
-    <section id="mode-section">
-      <label class="mode-label">
-        <input type="radio" name="mode" value="message" checked>
-        <span>MESSAGE</span>
-      </label>
-      <label class="mode-label">
-        <input type="radio" name="mode" value="clock">
-        <span>CLOCK</span>
-      </label>
-    </section>
-
-    <!-- Messages section: preview + instructions + list -->
-    <section id="messages-section">
-
-      <!-- Board preview (scrolls with page) -->
+    <!-- PART A: Live mirror — sticky, full-width board preview -->
+    <div id="mirror-section">
       <div id="preview-wrapper">
         <div id="board-preview"></div>
       </div>
+    </div>
 
-      <!-- Color picker + instructions -->
+    <!-- PART B: Controls — scrollable -->
+    <div id="scroll-body">
+
+      <!-- Mode selector -->
+      <section id="mode-section">
+        <label class="mode-label">
+          <input type="radio" name="mode" value="message" checked>
+          <span>MESSAGE</span>
+        </label>
+        <label class="mode-label">
+          <input type="radio" name="mode" value="clock">
+          <span>CLOCK</span>
+        </label>
+      </section>
+
+      <!-- Message tabs + add button -->
+      <div id="msg-nav">
+        <div id="msg-tabs"></div>
+        <button id="btn-add-message" title="Add message">+</button>
+      </div>
+
+      <!-- Color picker -->
       <div id="type-row">
-        <span id="type-label">Type below.</span>
+        <span id="type-label">Color tile →</span>
         <div id="emoji-picker">
           <button class="emoji-btn" data-color="r" title="Red">🔴</button>
           <button class="emoji-btn" data-color="o" title="Orange">🟠</button>
@@ -63,18 +71,15 @@
         </div>
       </div>
 
-      <!-- Message list injected by JS -->
+      <!-- Active message row inputs — injected by JS -->
       <div id="message-list"></div>
-
-      <button id="btn-add-message">+ ADD MESSAGE</button>
 
       <div id="loop-timer-row">
         <label>LOOP EVERY <span id="timer-value">7</span>S</label>
         <input type="range" id="timer-slider" min="5" max="60" value="7">
       </div>
 
-    </section>
-
+    </div>
   </div>
 
   <!-- Persistent footer -->

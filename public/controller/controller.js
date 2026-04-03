@@ -43,7 +43,7 @@ let currentPairCode    = '';
 let nextDebouncing     = false;
 
 // Preview grid
-const previewGrid   = initGrid(ROWS, COLS);
+const previewGrid    = initGrid(ROWS, COLS);
 const previewTileEls = [];
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -73,8 +73,8 @@ function loadDrafts() {
 
 // ── Header helpers ────────────────────────────────────────────────────────────
 function updateHeader(connected, code) {
-  const dot  = document.getElementById('status-dot');
-  const box  = document.getElementById('status-box');
+  const dot    = document.getElementById('status-dot');
+  const box    = document.getElementById('status-box');
   const codeEl = document.getElementById('header-code');
 
   if (code) {
@@ -127,8 +127,8 @@ function renderPreview() {
         el.classList.remove('color-tile');
         el.style.removeProperty('--tile-color');
         el.classList.toggle('space-tile', ch === ' ');
-        el.querySelector('.tf').textContent = ch;
-        el.querySelector('.bf').textContent = ch;
+        el.querySelector('.tf').textContent = ch === ' ' ? '' : ch;
+        el.querySelector('.bf').textContent = ch === ' ' ? '' : ch;
       }
     }
   }
@@ -140,65 +140,103 @@ function syncPreview(targetRows) {
   renderPreview();
 }
 
-// ── Message list rendering ────────────────────────────────────────────────────
+// ── Message tab bar ───────────────────────────────────────────────────────────
+/*
+ * Renders the compact numbered tab strip above the row inputs.
+ * Each tab shows the message number and a × delete button (hidden when only 1 message).
+ * Active tab is highlighted; the currently-playing tab gets a green border.
+ */
+function renderMsgTabs() {
+  const tabs = document.getElementById('msg-tabs');
+  if (!tabs) return;
+  tabs.innerHTML = '';
+
+  messages.forEach((_, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'msg-tab' +
+      (i === activeMessageIndex ? ' active' : '') +
+      (isPlaying && i === playIndex ? ' playing' : '');
+    tab.setAttribute('aria-label', `Message ${i + 1}`);
+
+    tab.appendChild(document.createTextNode(i + 1));
+
+    if (messages.length > 1) {
+      const del = document.createElement('span');
+      del.className = 'msg-tab-del';
+      del.textContent = '×';
+      del.setAttribute('role', 'button');
+      del.setAttribute('aria-label', `Delete message ${i + 1}`);
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteMessage(i);
+      });
+      tab.appendChild(del);
+    }
+
+    tab.addEventListener('click', () => setActiveMessage(i));
+    tabs.appendChild(tab);
+  });
+
+  document.getElementById('btn-add-message').disabled = messages.length >= MAX_MESSAGES;
+}
+
+// ── Message inputs rendering ──────────────────────────────────────────────────
+/*
+ * Renders only the ACTIVE message's 6 row inputs, each labelled with its
+ * board row number (01–06). This creates a 1:1 WYSIWYG mapping between
+ * the input rows and the preview mirror above.
+ */
 function renderMessageList() {
   const list = document.getElementById('message-list');
   list.innerHTML = '';
 
-  messages.forEach((msg, i) => {
-    const row = document.createElement('div');
-    row.className = 'message-row' +
-      (i === activeMessageIndex ? ' active' : '') +
-      (isPlaying && i === playIndex ? ' playing' : '');
-    row.dataset.index = i;
+  const i   = activeMessageIndex;
+  const msg = messages[i];
 
-    const inputsDiv = document.createElement('div');
-    inputsDiv.className = 'row-inputs';
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'message-inputs';
 
-    for (let r = 0; r < ROWS; r++) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'row-input';
-      input.maxLength = COLS;
-      input.placeholder = `ROW ${r + 1}`;
-      input.value = msg.rows[r] || '';
-      input.dataset.rowIndex = r;
-      input.dataset.msgIndex = i;
+  for (let r = 0; r < ROWS; r++) {
+    const group = document.createElement('div');
+    group.className = 'row-input-group';
 
-      input.addEventListener('focus', () => {
-        focusedInput = input;
-        setActiveMessage(i);
-      });
+    const label = document.createElement('div');
+    label.className = 'row-label';
+    label.textContent = String(r + 1).padStart(2, '0');
 
-      input.addEventListener('input', e => {
-        // Preserve lowercase color chars (inserted by emoji picker); uppercase everything else
-        const val = e.target.value.split('').map(ch => {
-          if (isColorChar(ch)) return ch;
-          const up = ch.toUpperCase();
-          return SPOOL.includes(up) ? up : '?';
-        }).join('');
-        e.target.value = val;
-        messages[i].rows[r] = val;
-        syncPreview(messages[activeMessageIndex].rows);
-        saveDrafts();
-      });
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'row-input';
+    input.maxLength = COLS;
+    input.placeholder = `ROW ${r + 1}`;
+    input.value = msg.rows[r] || '';
+    input.dataset.rowIndex = r;
+    input.dataset.msgIndex = i;
 
-      inputsDiv.appendChild(input);
-    }
+    input.addEventListener('focus', () => {
+      focusedInput = input;
+    });
 
-    const delBtn = document.createElement('button');
-    delBtn.className = 'btn-delete-message';
-    delBtn.textContent = '×';
-    delBtn.setAttribute('aria-label', 'Delete message');
-    delBtn.style.visibility = messages.length === 1 ? 'hidden' : 'visible';
-    delBtn.addEventListener('click', () => deleteMessage(i));
+    input.addEventListener('input', e => {
+      // Preserve lowercase color chars (inserted by emoji picker); uppercase everything else
+      const val = e.target.value.split('').map(ch => {
+        if (isColorChar(ch)) return ch;
+        const up = ch.toUpperCase();
+        return SPOOL.includes(up) ? up : '?';
+      }).join('');
+      e.target.value = val;
+      messages[i].rows[r] = val;
+      syncPreview(messages[activeMessageIndex].rows);
+      saveDrafts();
+    });
 
-    row.appendChild(inputsDiv);
-    row.appendChild(delBtn);
-    list.appendChild(row);
-  });
+    group.appendChild(label);
+    group.appendChild(input);
+    msgDiv.appendChild(group);
+  }
 
-  document.getElementById('btn-add-message').disabled = messages.length >= MAX_MESSAGES;
+  list.appendChild(msgDiv);
+  renderMsgTabs();
 }
 
 function setActiveMessage(index) {
@@ -238,21 +276,23 @@ function insertColorChar(char) {
 }
 
 // ── Preview scale ─────────────────────────────────────────────────────────────
+/*
+ * Scales the board preview to fill the full width of #preview-wrapper.
+ * No upper cap — the preview always spans edge-to-edge.
+ */
 function fitPreview() {
   const wrapper = document.getElementById('preview-wrapper');
   const preview = document.getElementById('board-preview');
   const grid    = preview?.querySelector('#board-grid');
-  if (!grid || !wrapper) return;
-  const scale = Math.min(0.45, wrapper.clientWidth / grid.offsetWidth);
+  if (!grid || !wrapper || !grid.offsetWidth) return;
+  const scale = wrapper.clientWidth / grid.offsetWidth;
   preview.style.transform = `scale(${scale})`;
   wrapper.style.height = Math.ceil(grid.offsetHeight * scale) + 'px';
 }
 
 // ── Playing highlight ─────────────────────────────────────────────────────────
 function updatePlayingHighlight() {
-  document.querySelectorAll('.message-row').forEach((row, i) => {
-    row.classList.toggle('playing', isPlaying && i === playIndex);
-  });
+  renderMsgTabs();
 }
 
 // ── Row padding ───────────────────────────────────────────────────────────────
@@ -322,7 +362,6 @@ function nextMessage() {
 
 function hardReset() {
   stopPlay();
-  // Reset phone UI to HELLO WORLD defaults
   messages = DEFAULT_MESSAGES();
   activeMessageIndex = 0;
   renderMessageList();

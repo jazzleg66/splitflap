@@ -30,6 +30,8 @@ Document bugs encountered during development, their root cause, and how they wer
 | 12 | Mute button misleading before audio unlock | `[MUTE]` label shown even when audio never started | Shows `SOUND OFF` (dimmed, non-interactive) until Skip unlocks audio; updates to `MUTE` after unlock | Resolved |
 | 13 | iOS Safari: footer hidden behind home indicator | Fixed `bottom: 0` doesn't account for safe area | Added `env(safe-area-inset-bottom)` to footer height and body padding; `viewport-fit=cover` in meta tag | Resolved |
 | 14 | iOS Safari: input tap zooms the page | Input `font-size < 16px` triggers iOS auto-zoom | Set `font-size: 16px` on `.row-input` for mobile; reverts to `0.72rem` at ≥480px | Resolved |
+| 25 | Controller board preview tiles stacked in a single column instead of 22×6 grid | `controller.css` only set `gap` and `padding` on `#board-preview #board-grid` — missing `display: grid; grid-template-columns: repeat(22, auto)`. The controller does not load `board.css` where these rules live. The 0.45 scale cap masked the wrong layout. | Added `display: grid; grid-template-columns: repeat(22, auto); width: max-content` to `#board-preview #board-grid` in `controller.css` | Resolved |
+| 26 | Controller preview did not fill the phone screen width — capped at ~45% scale | `fitPreview()` had `Math.min(0.45, wrapper.clientWidth / grid.offsetWidth)`. With the grid now rendering at correct natural width (~824px), the true scale to fill 375px is ~0.455, which exceeded the cap. | Removed the `0.45` cap; `fitPreview()` now uses `wrapper.clientWidth / grid.offsetWidth` unconditionally. Added `!grid.offsetWidth` guard to skip if grid not yet painted. | Resolved |
 
 ---
 
@@ -39,7 +41,7 @@ Items that are acknowledged but deferred.
 
 | # | Description | Priority |
 |---|-------------|----------|
-| 1 | Controller preview uses 2-panel tiles (no back panels) — preview animation is instant snap, not a real flip. Low impact since it's a small preview. | Low |
+| 1 | Controller preview uses 2-panel tiles (no back panels) — preview animation is instant snap, not a real flip. Low impact since the mirror is a read-only display, not an animated one. | Low |
 | 2 | Clock mode: only sends update every 1s — if the second hasn't changed (e.g. within the same second), no flip occurs. Correct behavior but could look jittery at transition boundaries. | Low |
 | 3 | No reconnection backoff on WebSocket client — reconnects immediately. Could spam server on repeated failures. | Medium |
 | 4 | Real-device pairing: Windows Firewall blocks inbound port 3000 by default — phones on the same LAN can't reach the server. `getLanHost` correctly encodes the LAN IP; the blocker is OS firewall. Fix: `netsh advfirewall firewall add rule name="Digital Solari :3000" protocol=TCP dir=in localport=3000 action=allow` (requires admin). | High |
