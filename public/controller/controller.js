@@ -12,8 +12,17 @@ const DEFAULT_LOOP_S = 7;
 const NEXT_DEBOUNCE_MS = 1500;
 
 // Default message set — shown on first load (no saved drafts)
+// Bump DEFAULT_VERSION whenever DEFAULT_MESSAGES changes to clear stale drafts
+const DEFAULT_VERSION = 2;
 const DEFAULT_MESSAGES = () => ([{
-  rows: ['HELLO WORLD', '', 'HOPE YOU ENJOY', 'CHEERS', '', ''],
+  rows: [
+    '                      ',
+    '                      ',
+    '     HELLO WORLD!     ',
+    '                      ',
+    '                      ',
+    '                      ',
+  ],
 }]);
 
 const STANDBY_ROWS = [
@@ -49,7 +58,7 @@ const previewTileEls = [];
 // ── Persistence ───────────────────────────────────────────────────────────────
 function saveDrafts() {
   localStorage.setItem('solari_drafts', JSON.stringify({
-    messages, activeMessageIndex, loopInterval, currentMode,
+    version: DEFAULT_VERSION, messages, activeMessageIndex, loopInterval, currentMode,
   }));
 }
 
@@ -64,6 +73,7 @@ function loadDrafts() {
     const raw = localStorage.getItem('solari_drafts');
     if (!raw) return;
     const d = JSON.parse(raw);
+    if (d.version !== DEFAULT_VERSION) { localStorage.removeItem('solari_drafts'); return; }
     if (Array.isArray(d.messages) && d.messages.length) messages = d.messages;
     activeMessageIndex = Math.min(d.activeMessageIndex ?? 0, messages.length - 1);
     loopInterval       = d.loopInterval ?? DEFAULT_LOOP_S;

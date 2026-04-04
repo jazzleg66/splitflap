@@ -55,8 +55,10 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 - Server: in-memory only, sessions auto-purge after 24h inactivity
 - TV: `localStorage` stores last paired session ID (auto-reconnect on network blip)
-- Mobile: `localStorage` saves draft messages
+- Mobile: `localStorage` saves draft messages under key `solari_drafts`
 - Phone socket close → TV shows `DISCONNECTED`; re-opening phone resumes session
+
+**Default message versioning:** `DEFAULT_VERSION` constant in `controller.js` guards against stale drafts. `saveDrafts()` writes the version into `solari_drafts`; `loadDrafts()` discards and removes any saved drafts whose version doesn't match. **Whenever `DEFAULT_MESSAGES` is changed, bump `DEFAULT_VERSION` by 1** so old phone localStorage is automatically cleared on next load.
 
 ## Mobile Controller Behavior
 
