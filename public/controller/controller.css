@@ -143,7 +143,7 @@ body {
 
 /*
  * The preview grid needs its own display:grid declaration because the
- * controller does not load board.css. Tiles are fixed-size (2.2rem × 3rem),
+ * controller does not load board.css. Tiles are fixed-size (2.2rem × 4.3rem),
  * so we use `auto` columns rather than `1fr`.
  */
 #board-preview #board-grid {
@@ -153,6 +153,32 @@ body {
   padding: 4px;
   background: #0a0a0a;
   width: max-content;
+}
+
+/*
+ * Preview tiles use a simplified 2-panel structure (tile-top / tile-bottom
+ * directly containing the tile-char span — no inner flex wrappers).
+ * Add flex centering here so translateY math works correctly:
+ * panel height = 2.15rem (50% of 4.3rem tile), offset = 2.15rem/2 = 1.075rem.
+ */
+#board-preview .tile-top,
+#board-preview .tile-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Font fills the tile height (matches board/home behavior where font-size = tile height) */
+#board-preview .tile-char {
+  font-size: 4.3rem;
+}
+
+/* Correct seam-alignment offsets for fixed 4.3rem preview tiles */
+#board-preview .tile-top .tile-char {
+  transform: translateY(1.075rem);
+}
+#board-preview .tile-bottom .tile-char {
+  transform: translateY(-1.075rem);
 }
 
 /* ── Scroll body (Part B) ────────────────────────────────────────────────────── */

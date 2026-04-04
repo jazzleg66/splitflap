@@ -466,7 +466,12 @@ ws.onMessage(msg => {
 document.fonts.ready.then(() => {
   loadDrafts();
   buildPreviewGrid();
-  fitPreview();
+  // Defer fitPreview until after layout paint — fonts.ready can fire before
+  // the browser has calculated offsetWidth (especially on iOS Safari).
+  // ResizeObserver catches any subsequent wrapper-width changes (orientation, etc.).
+  const wrapper = document.getElementById('preview-wrapper');
+  new ResizeObserver(fitPreview).observe(wrapper);
+  requestAnimationFrame(fitPreview);
   window.addEventListener('resize', fitPreview);
   renderMessageList();
   syncPreview(messages[activeMessageIndex].rows);

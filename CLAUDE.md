@@ -74,6 +74,10 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 **Controller preview grid CSS:** The controller does NOT load `board.css`. `controller.css` must declare `display: grid; grid-template-columns: repeat(22, auto)` on `#board-preview #board-grid` directly — otherwise the preview tiles stack in a single column.
 
+**Controller preview tile rendering:** Preview tiles use a simplified 2-panel structure (`tile-top`/`tile-bottom` directly containing `.tile-char`) — no inner flex wrappers. `controller.css` must add `display: flex; align-items: center; justify-content: center` to `#board-preview .tile-top` and `.tile-bottom` so the span is centered before `translateY` shifts it to the seam. `translateY` must be `±1.075rem` (= `4.3rem ÷ 4`, half-panel height) and `font-size` must be `4.3rem` (full tile height) — the `splitflap.css` defaults of `0.75rem` / `1.5rem` are sized for the old 3rem tile and are wrong here.
+
+**Controller preview scaling:** `fitPreview()` must be called via `requestAnimationFrame()` (not synchronously in `fonts.ready`) to ensure `grid.offsetWidth` is non-zero on load. A `ResizeObserver` on `#preview-wrapper` handles orientation changes and late-layout scenarios.
+
 ## Demo Mode (Display Board)
 
 On load, cycles through:
