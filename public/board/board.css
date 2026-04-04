@@ -152,7 +152,8 @@ body.board-active #board-grid {
   box-shadow: 0 0 0 1px #2a2a2a;
 }
 
-/* ── Fullscreen — 100vw wide, centered with 5vh gap top and bottom ───────────── */
+/* ── Fullscreen — 100vw wide, matching homepage layout ───────────────────────── */
+/* body.requestFullscreen() is called, so body:fullscreen selectors correctly match */
 body:fullscreen,
 body:-webkit-full-screen {
   background: #1B1B1B;
@@ -165,8 +166,16 @@ body:-webkit-full-screen #board-header {
 
 body:fullscreen #board-container,
 body:-webkit-full-screen #board-container {
-  padding: 2.5rem 0 2vh;
+  padding: 2vh 0;
   align-items: center;
+}
+
+/* When board-active (phone connected), demo-controls are hidden (~40px lost).
+ * Compensate with matching bottom padding so the board sits identically to
+ * the homepage fullscreen, which retains its demo-controls as the bottom gap. */
+body.board-active:fullscreen #board-container,
+body.board-active:-webkit-full-screen #board-container {
+  padding-bottom: 40px;
 }
 
 body:fullscreen #board-grid,

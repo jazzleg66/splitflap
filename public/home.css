@@ -92,6 +92,7 @@ body {
 .rotating-word {
   font-family: "Doto", monospace;
   font-weight: 700;
+  font-optical-sizing: auto;
   font-variation-settings: "ROND" 0;
   font-size: clamp(2rem, 5.5vw, 4.2rem);
   color: #E8D5A3;

@@ -30,7 +30,8 @@ app.get('/qr/:sessionId', async (req, res) => {
 
   // In dev, use LAN IP so phones on the same network can scan
   const host = getLanHost(req);
-  const url = `${req.protocol}://${host}/controller?code=${session.pairCode}`;
+  const url = `http://${host}/controller?code=${session.pairCode}`;
+  console.log(`[qr] encoding URL: ${url}`);
 
   try {
     const buf = await QRCode.toBuffer(url, { errorCorrectionLevel: 'M', width: 300 });
@@ -40,17 +41,30 @@ app.get('/qr/:sessionId', async (req, res) => {
   }
 });
 
-function getLanHost(req) {
-  if (process.env.NODE_ENV === 'production') return req.get('host');
+function getLanIp() {
   const nets = os.networkInterfaces();
+  const candidates = [];
   for (const ifaces of Object.values(nets)) {
     for (const iface of ifaces) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return `${iface.address}:${process.env.PORT || 3000}`;
-      }
+      // Support both string ('IPv4') and numeric (4) family — Node.js changed this across versions
+      const isIPv4 = iface.family === 'IPv4' || iface.family === 4;
+      if (isIPv4 && !iface.internal) candidates.push(iface.address);
     }
   }
-  return req.get('host');
+  // Prefer typical home/office LAN ranges (192.168.x.x, 10.x.x.x)
+  // over virtual adapter ranges used by VMware/Hyper-V/Docker (172.x.x.x, 169.x.x.x, etc.)
+  return (
+    candidates.find(ip => ip.startsWith('192.168.')) ||
+    candidates.find(ip => ip.startsWith('10.'))       ||
+    candidates[0] || null
+  );
+}
+
+function getLanHost(req) {
+  if (process.env.NODE_ENV === 'production') return req.get('host');
+  const port = process.env.PORT || 3000;
+  const ip = getLanIp();
+  return ip ? `${ip}:${port}` : req.get('host');
 }
 
 // Sockets watching the live counter from the homepage (no session created)
@@ -131,6 +145,7 @@ wss.on('connection', socket => {
           session.tvSocket = socket;
         }
         touch(session);
+        console.log(`[pair] tv_hello → session=${session.id} code=${session.pairCode} resumed=${!!existing}`);
         send(socket, { type: 'tv_paired', sessionId: session.id, pairCode: session.pairCode });
         broadcastLiveCount();
         return;
@@ -139,6 +154,7 @@ wss.on('connection', socket => {
       if (msg.type === 'phone_hello') {
         role = 'phone';
         const found = getByCode(msg.pairCode);
+        console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
         if (!found) { send(socket, { type: 'not_found' }); socket.close(); return; }
 
         // Hijack protection: active session with live phone socket
@@ -146,12 +162,15 @@ wss.on('connection', socket => {
           found.state === 'active' &&
           found.phoneSocket?.readyState === WebSocket.OPEN
         ) {
+          console.log(`[pair] board_occupied code=${msg.pairCode}`);
           send(socket, { type: 'board_occupied' });
           socket.close();
           return;
         }
 
         session = found;
+        const tvOpen = found.tvSocket?.readyState === WebSocket.OPEN;
+        console.log(`[pair] session state=${found.state} tvConnected=${tvOpen}`);
 
         // Phone reconnecting to an active session (socket dropped) — skip re-approval
         if (found.state === 'active') {
@@ -226,9 +245,16 @@ wss.on('connection', socket => {
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
+  const lanIp = getLanIp();
   console.log(`Digital Solari running on http://localhost:${PORT}`);
   console.log(`  Homepage:   http://localhost:${PORT}/`);
   console.log(`  Board:      http://localhost:${PORT}/board`);
   console.log(`  Controller: http://localhost:${PORT}/controller`);
+  if (lanIp) {
+    console.log(`  QR codes use LAN IP: http://${lanIp}:${PORT}/controller`);
+    console.log(`  → Open Board on this machine, then scan QR from a phone on the same Wi-Fi`);
+  } else {
+    console.log(`  WARNING: No LAN IP detected — QR codes will use localhost (phone scanning won't work)`);
+  }
 });

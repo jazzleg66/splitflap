@@ -344,7 +344,7 @@ ws.onMessage(msg => {
 
     case 'disconnected':
       stopDemo();
-      if (lastPairCode && sessionId) showQrScreen(lastPairCode, sessionId);
+      displayRows(DISCONNECTED_ROWS);
       document.getElementById('conn-dot').className = 'disconnected';
       document.getElementById('conn-dot').setAttribute('aria-label', 'Disconnected');
       break;
@@ -384,7 +384,7 @@ document.getElementById('btn-mute').classList.add('audio-locked');
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  if (!document.fullscreenElement) document.body.requestFullscreen();
   else document.exitFullscreen();
 });
 document.addEventListener('fullscreenchange', () => {

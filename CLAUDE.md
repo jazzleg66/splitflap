@@ -85,7 +85,17 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen], [Connect Board →]. Live co
 
 **Homepage layout order:** About/steps section first (top), board demo section second (below). The Connect Board button lives inline with the demo controls under the board — not in a separate CTA section.
 
-**Homepage fullscreen:** `#hero.requestFullscreen()` — `:fullscreen` CSS: background `#1B1B1B`, `#hero-header` hidden, board at `width: 100vw`, container `padding: 2vh 0`. Board/board page fullscreen: `document.documentElement.requestFullscreen()`, `body:fullscreen { background: #1B1B1B }`, `#board-header` hidden, same board sizing rules.
+**Homepage fullscreen:** `#hero.requestFullscreen()` — `:fullscreen` CSS: background `#1B1B1B`, `#hero-header` hidden, board at `width: 100vw`, container `padding: 2vh 0`. Demo controls remain visible (~40px) providing natural bottom gap.
+
+**Board page fullscreen:** `document.body.requestFullscreen()` (NOT `documentElement` — `body:fullscreen` selectors only match when `body` is the fullscreen element). CSS hides `#board-header`, sets container `padding: 2vh 0`. When `board-active` (phone connected, demo controls hidden), adds `padding-bottom: 40px` to compensate for the missing controls gap, matching homepage appearance.
+
+**Phone disconnect behavior:** When phone disconnects, board stays open (keeps `board-active` state, QR screen stays hidden) and flips to `DISCONNECTED_ROWS`. Does NOT return to QR screen. When phone reconnects and re-approves, board flips to `STANDBY_ROWS`.
+
+**Server binding:** Must listen on `'0.0.0.0'` explicitly — `server.listen(PORT, '0.0.0.0', ...)`. Without this, Node.js on Windows binds to `::` (IPv6 only) and rejects IPv4 connections from phones on the same LAN.
+
+**QR code IP detection:** `getLanIp()` in `server/index.js` collects all non-internal IPv4 addresses and prefers `192.168.x.x` then `10.x.x.x` to avoid returning virtual adapter IPs (WSL, VMware, Hyper-V). QR URL hardcodes `http://` — do not use `req.protocol` which can return `https` unexpectedly.
+
+**iOS / HTTPS:** iOS Safari may refuse `http://` URLs if typed without the `http://` prefix (Safari auto-upgrades bare `IP:port` to HTTPS). Always include the `http://` scheme. The QR code encodes the full `http://` URL so scanning works correctly.
 
 ## Pending Tasks
 
@@ -126,4 +136,4 @@ _(none)_
 **Mute button state:** Shows `SOUND OFF` (dimmed, non-interactive) until audio is unlocked via Skip. After unlock, becomes `MUTE`/`UNMUTE`.
 
 **To-do List:**
-- Hompage fullscreen demo board has the correct display size, while fullscreen board size on the board page is incorrect. The homepage fullscreen keeps demo controls (~50px) at the bottom which limits board height, but the board page hides them. That extra vertical space makes tiles larger. I need to compensate with matching bottom padding. Let me also check the homepage fullscreen rules to match exactly. See ref_4.png (board page) and ref_5.png (home page).
+_(none)_
