@@ -383,38 +383,49 @@ body {
 
 /* ── Message textarea ────────────────────────────────────────────────────────── */
 /*
- * Single monospace textarea replacing the per-row character grids.
- * 6 rows × 22 chars enforced in JS (hard-wrap + block at limits).
+ * White monospace textarea with a CSS dot-grid overlay.
+ * Dots are painted via radial-gradient tiled at 1ch × 1.6em (char-width ×
+ * line-height) so each dot marks the top-left corner of one character cell,
+ * making all 22×6 positions clearly visible.
+ * Roboto Mono is required — proportional fonts would misalign the grid.
  * font-size ≥ 16px prevents iOS Safari auto-zoom on focus.
  */
 #msg-textarea {
   display: block;
   width: 100%;
-  background: #080808;
-  border: 1px solid #1e1e1e;
-  border-left: 2px solid #252010;
-  border-radius: 0 3px 3px 0;
-  color: var(--text);
-  font-family: 'Courier New', Courier, monospace;
+
+  /* White surface with character-position dot grid */
+  background-color: #ffffff;
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.3) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 1ch 1.6em;    /* one tile = one character cell */
+  background-origin: content-box; /* align to text start, not padding */
+  background-position: 0 0;
+
+  border: 1px solid #c0c0c0;
+  border-radius: 3px;
+  color: #111111;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
   font-size: 16px;
   line-height: 1.6;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   padding: 10px 12px;
   resize: none;
   outline: none;
-  caret-color: var(--text);
+  caret-color: #111111;
   margin-bottom: 0.75rem;
-  transition: border-left-color 0.15s, border-color 0.15s;
-  /* Prevent OS spell-check decorations */
-  -webkit-text-fill-color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 #msg-textarea:focus {
-  border-color: #2a2018;
-  border-left-color: var(--text);
+  border-color: #888888;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.07);
 }
 
-/* Hide scrollbar — 6 lines at 1.6 line-height never overflow */
+/* Hide scrollbar — 6 rows at 1.6 line-height never overflow */
 #msg-textarea::-webkit-scrollbar { display: none; }
 #msg-textarea { scrollbar-width: none; }
 
