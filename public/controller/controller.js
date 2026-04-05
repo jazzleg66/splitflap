@@ -554,7 +554,12 @@ document.fonts.ready.then(() => {
   document.getElementById('timer-slider').value = loopInterval;
   document.getElementById('timer-value').textContent = loopInterval;
 
-  // ── Emoji color picker ────────────────────────────────────────────────────
+  // ── Color picker ─────────────────────────────────────────────────────────
+  // mousedown preventDefault stops the swatch from stealing focus from the
+  // textarea — without this, blur fires before click, nulling focusedInput.
+  document.getElementById('emoji-picker').addEventListener('mousedown', e => {
+    if (e.target.closest('.color-swatch')) e.preventDefault();
+  });
   document.getElementById('emoji-picker').addEventListener('click', e => {
     const btn = e.target.closest('.color-swatch');
     if (btn) insertColorChar(btn.dataset.color);
