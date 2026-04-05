@@ -106,24 +106,53 @@ body {
 }
 
 /* ── Mirror section (Part A) ─────────────────────────────────────────────────── */
-/*
- * Sticky below the fixed header so it stays visible while the user
- * scrolls the input area below. Full-bleed — no side padding.
- */
 #mirror-section {
   position: sticky;
   top: 50px;
   z-index: 40;
-  background: #080808;
+  background: #0a0a0a;
   border-bottom: 1px solid var(--border);
-  /* Subtle scanline texture matching the board aesthetic */
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0)    0px,
-    rgba(0, 0, 0, 0)    2px,
-    rgba(0, 0, 0, 0.08) 2px,
-    rgba(0, 0, 0, 0.08) 3px
-  );
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+  margin: 0 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+/* ── Preview label bar ───────────────────────────────────────────────────────── */
+#preview-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.35rem 1rem;
+  border-bottom: 1px solid #161616;
+}
+
+#preview-live-text {
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+}
+
+#preview-code-badge {
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  opacity: 0.55;
+}
+
+.preview-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #333;
+  flex-shrink: 0;
+  transition: background 0.4s;
+}
+
+.preview-dot.connected {
+  background: var(--green);
+  box-shadow: 0 0 5px var(--green);
 }
 
 #preview-wrapper {
@@ -308,90 +337,184 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.55rem;
-  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  gap: 0.6rem;
 }
 
 #type-label {
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
   color: var(--dim);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 #emoji-picker {
   display: flex;
-  gap: 2px;
+  gap: 5px;
+  flex: 1;
+  justify-content: flex-end;
 }
 
-.emoji-btn {
-  background: transparent;
-  border: none;
+.color-swatch {
+  flex: 1;
+  max-width: 42px;
+  height: 26px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255,255,255,0.06);
   cursor: pointer;
-  font-size: 1rem;
-  padding: 0.1rem;
-  line-height: 1;
-  transition: transform 0.1s;
-  min-width: 30px;
-  min-height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+  padding: 0;
 }
 
-.emoji-btn:active {
-  transform: scale(0.85);
+.color-swatch:hover {
+  transform: scaleY(1.1);
+  border-color: rgba(255,255,255,0.22);
 }
 
-/* ── Message inputs — WYSIWYG row layout ─────────────────────────────────────── */
-/*
- * Each .row-input-group maps 1:1 to a board row.
- * The .row-label on the left shows the row number (01–06),
- * mirroring how rows are counted top-to-bottom on the board preview above.
- */
+.color-swatch:active {
+  transform: scale(0.9);
+}
+
+.color-swatch.selected {
+  border-color: var(--text);
+  box-shadow: 0 0 0 1px var(--text);
+}
+
+/* ── Message inputs — character-grid row layout ──────────────────────────────── */
 .message-inputs {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   margin-bottom: 0.75rem;
 }
 
 .row-input-group {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  gap: 0;
 }
 
 .row-label {
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: 0.55rem;
   letter-spacing: 0.04em;
   color: var(--dim);
-  width: 1.6rem;
+  width: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 0.4rem;
+  padding-right: 0.35rem;
   flex-shrink: 0;
   user-select: none;
 }
 
-.row-input {
-  background: #0d0d0d;
-  border: 1px solid #1e1e1e;
-  border-left: 2px solid #2a2a2a;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 16px; /* ≥16px prevents iOS Safari auto-zoom on focus */
-  letter-spacing: 0.12em;
-  padding: 0.3rem 0.4rem;
-  text-transform: uppercase;
-  width: 100%;
-  outline: none;
-  transition: border-left-color 0.12s;
+/* Wrapper holds the visual grid + invisible input overlay */
+.char-grid-wrapper {
+  position: relative;
+  flex: 1;
+  cursor: text;
+  /* Outline when a row is active (focused) */
+  border-radius: 3px;
 }
 
-.row-input:focus {
-  border-left-color: var(--text);
+.char-grid-wrapper.row-focused {
+  outline: 1px solid #3a3020;
+  outline-offset: 1px;
+}
+
+/* 22-cell character grid */
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(22, 1fr);
+  gap: 1px;
+  background: #141414; /* gap color */
+  border: 1px solid #1e1e1e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Individual character cell */
+.char-cell {
+  background: #0d0d0d;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--text);
+  user-select: none;
+  position: relative;
+  transition: background 0.06s;
+}
+
+/* Filled character — slightly brighter bg */
+.char-cell.has-char {
+  background: #111111;
+}
+
+/* Color tile cell */
+.char-cell.is-color {
+  background: var(--cell-color, #333);
+}
+
+/* Blinking cursor indicator */
+.char-cell.cursor-pos::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 1px;
+  animation: cell-blink 1s step-start infinite;
+}
+
+.char-cell.cursor-pos.is-color::after {
+  background: rgba(255,255,255,0.7);
+}
+
+@keyframes cell-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/*
+ * The hidden input overlays the full grid area.
+ * It's nearly transparent so users see the visual cells,
+ * but it receives all keyboard input and touch events.
+ * font-size ≥ 16px prevents iOS Safari from auto-zooming.
+ */
+.char-hidden-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.001;
+  font-size: 16px;
+  background: transparent;
+  border: none;
+  color: transparent;
+  caret-color: transparent;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  letter-spacing: 0;
+  z-index: 5;
+  cursor: text;
+  /* Disable all mobile text assistance */
+  autocomplete: off;
+  autocorrect: off;
+  -webkit-text-size-adjust: none;
+}
+
+/* ── Desktop: keep cells readable at wider widths ────────────────────────────── */
+@media (min-width: 380px) {
+  .char-cell {
+    font-size: 0.68rem;
+  }
 }
 
 /* ── Loop timer ──────────────────────────────────────────────────────────────── */
@@ -455,9 +578,3 @@ body {
   color: var(--green);
 }
 
-/* ── Desktop: restore compact input size (no zoom risk on desktop) ───────────── */
-@media (min-width: 480px) {
-  .row-input {
-    font-size: 0.72rem;
-  }
-}

@@ -62,17 +62,32 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 
 ## Mobile Controller Behavior
 
-- 6 text inputs, 22-char max each; JS forces uppercase; unsupported chars become `?`
+- 6 character-grid rows, 22-char max each; JS forces uppercase; unsupported chars (emoji, special unicode) are **silently dropped** (not replaced with `?`)
 - Up to 10 messages; loop timer 5–60s (default 7s)
 - **Clock Mode:** only the changing second-digit tiles flip; rows 2–4 show Day/Date, HH:MM:SS AM/PM, Year
 - Switching from Clock → Message Mode snaps board to `DEVICE CONNECTED` standby
 
 **Controller UI layout:**
-- `#mirror-section` — `position: sticky; top: 50px` — full-width board preview pinned below the header. Scales to fill the viewport width (`fitPreview()` has no cap — `scale = wrapper.clientWidth / grid.offsetWidth`).
+- `#mirror-section` — `position: sticky; top: 50px` — contains `#preview-label` bar (status dot + code) above `#preview-wrapper`. Has rounded bottom corners and side margin for a card look. Scales to fill the viewport width (`fitPreview()` has no cap — `scale = wrapper.clientWidth / grid.offsetWidth`).
+- `#preview-label` — bar at top of mirror showing "LIVE ON BOARD [CODE]" + a `.preview-dot` (green when connected, dim otherwise). Updated by `updateHeader()`.
 - `#scroll-body` — scrollable area below the mirror; contains mode tabs, message nav, color picker, row inputs, and loop timer.
 - `#msg-nav` / `#msg-tabs` — compact numbered tab strip for navigating between messages (1–10). Active tab: amber border. Playing tab: green border. Each tab has an inline `×` delete button when there are multiple messages. `#btn-add-message` lives here as a compact `+` button.
-- `renderMessageList()` renders **only the active message's** 6 row inputs — not all messages stacked. Inputs labeled `01`–`06` on the left for 1:1 WYSIWYG mapping to the preview rows above. Switching active message via tab re-renders inputs for the newly active message.
+- `renderMessageList()` renders **only the active message's** 6 row character-grids — not all messages stacked. Rows labeled `01`–`06` on the left for 1:1 WYSIWYG mapping to the preview rows above. Switching active message via tab re-renders grids for the newly active message.
 - `renderMsgTabs()` is called by `renderMessageList()` and `updatePlayingHighlight()`.
+
+**Character grid input architecture:**
+- Each row is a `.char-grid-wrapper` containing a 22-cell `.char-grid` (CSS grid `repeat(22, 1fr)`) + a `.char-hidden-input` overlay.
+- The hidden input has `opacity: 0.001; position: absolute; inset: 0; font-size: 16px` — invisible but focusable; tapping the row opens the keyboard.
+- Click position on the hidden input is translated to a column index → `setSelectionRange(col, col)` sets the cursor.
+- `selectionchange` events (including iOS long-press-space trackpad) dispatch a custom `_cursor` event to the focused input, calling `updateCells()` to move the blinking underline cursor highlight.
+- `normalizeValue()`: keeps lowercase color chars (from picker only), uppercases valid SPOOL chars, silently drops everything else.
+- Color chars are inserted only via `insertColorChar()` which writes **directly to `.value`** (not `setRangeText`) to bypass `autocapitalize="characters"` converting lowercase to uppercase.
+- `focusedInput` global tracks which row's hidden input is active for `insertColorChar()`.
+
+**Color picker:**
+- `#emoji-picker` contains 7 `.color-swatch` buttons (was emoji buttons) with inline `style="background: #XXXXXX"` using exact `COLOR_MAP` hex values. Order: white, red, orange, yellow, green, blue, purple.
+- Click handler: `e.target.closest('.color-swatch')` → `insertColorChar(btn.dataset.color)`.
+- Color cells render as solid-color fills (no text) via `.char-cell.is-color { background: var(--cell-color) }` and `cell.textContent = ''`.
 
 **Controller preview grid CSS:** The controller does NOT load `board.css`. `controller.css` must declare `display: grid; grid-template-columns: repeat(22, auto)` on `#board-preview #board-grid` directly — otherwise the preview tiles stack in a single column.
 

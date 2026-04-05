@@ -89,17 +89,22 @@ function updateHeader(connected, code) {
 
   if (code) {
     currentPairCode = code;
-    codeEl.textContent = code.slice(0, 3) + '-' + code.slice(3);
+    const formatted = code.slice(0, 3) + '-' + code.slice(3);
+    codeEl.textContent = formatted;
+    const badge = document.getElementById('preview-code-badge');
+    if (badge) badge.textContent = formatted;
   }
 
   if (connected) {
     dot.classList.add('connected');
     box.classList.add('connected');
     box.textContent = 'CONNECTED';
+    document.querySelector('.preview-dot')?.classList.add('connected');
   } else {
     dot.classList.remove('connected');
     box.classList.remove('connected');
     box.textContent = 'DISCONNECTED';
+    document.querySelector('.preview-dot')?.classList.remove('connected');
   }
 }
 
@@ -190,15 +195,152 @@ function renderMsgTabs() {
   document.getElementById('btn-add-message').disabled = messages.length >= MAX_MESSAGES;
 }
 
+// ── Character-grid row ────────────────────────────────────────────────────────
+/*
+ * Creates one 22-cell visual row for a message row.
+ * A nearly-transparent <input> overlays the grid to capture keyboard input
+ * and iOS space-bar-trackpad cursor movement. selectionchange fires as the
+ * cursor moves, updating the blinking underline cursor in the visual cells.
+ */
+
+// Single document-level selectionchange handler — dispatches a custom event
+// onto whichever hidden input is currently focused so each row's updateCellDisplay
+// closure is called without accumulating listeners on document.
+document.addEventListener('selectionchange', () => {
+  if (focusedInput && document.activeElement === focusedInput) {
+    focusedInput.dispatchEvent(new CustomEvent('_cursor'));
+  }
+});
+
+function createCharRow(rowIndex, msgIndex, initialValue) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'char-grid-wrapper';
+
+  const grid = document.createElement('div');
+  grid.className = 'char-grid';
+
+  // Build 22 visual cells
+  const cells = [];
+  for (let c = 0; c < COLS; c++) {
+    const cell = document.createElement('div');
+    cell.className = 'char-cell';
+    cells.push(cell);
+    grid.appendChild(cell);
+  }
+
+  // Hidden overlay input — receives all keyboard events
+  const inp = document.createElement('input');
+  inp.type          = 'text';
+  inp.className     = 'char-hidden-input';
+  inp.maxLength     = COLS;
+  inp.value         = initialValue || '';
+  inp.autocomplete  = 'off';
+  inp.autocorrect   = 'off';
+  inp.autocapitalize = 'characters';
+  inp.spellcheck    = false;
+  inp.setAttribute('inputmode', 'text');
+
+  // Re-render cells from current input value + cursor position
+  function updateCells() {
+    const raw = inp.value;
+    const cursorPos = (document.activeElement === inp) ? inp.selectionStart : -1;
+    for (let c = 0; c < COLS; c++) {
+      const ch   = raw[c] ?? ' ';
+      const cell = cells[c];
+      // Reset classes
+      cell.className = 'char-cell';
+      cell.style.removeProperty('--cell-color');
+      cell.textContent = '';
+
+      if (isColorChar(ch)) {
+        cell.classList.add('is-color');
+        cell.style.setProperty('--cell-color', COLOR_MAP[ch]);
+      } else if (ch !== ' ') {
+        cell.classList.add('has-char');
+        cell.textContent = ch;
+      }
+      if (c === cursorPos) cell.classList.add('cursor-pos');
+    }
+  }
+
+  // Normalize value:
+  //   • lowercase color chars ('r','o','y','g','b','p','w') → keep as-is (from color picker)
+  //   • everything else → uppercase and keep only if it exists in SPOOL (drops emoji, unsupported chars)
+  //   • autocapitalize="characters" on mobile ensures keyboard 'r' arrives as 'R' (letter, not color)
+  function normalizeValue(raw) {
+    const out = [];
+    for (const ch of raw) {
+      if (isColorChar(ch)) {
+        out.push(ch);          // color char — always from insertColorChar, never the keyboard on mobile
+      } else {
+        const up = ch.toUpperCase();
+        if (SPOOL.includes(up)) out.push(up);  // valid letter/digit/symbol → uppercase
+        // else: emoji, unsupported unicode, etc. → silently dropped
+      }
+    }
+    return out.join('');
+  }
+
+  inp.addEventListener('focus', () => {
+    focusedInput = inp;
+    wrapper.classList.add('row-focused');
+    updateCells();
+  });
+
+  inp.addEventListener('blur', () => {
+    if (focusedInput === inp) focusedInput = null;
+    wrapper.classList.remove('row-focused');
+    updateCells(); // clears cursor-pos highlight
+  });
+
+  inp.addEventListener('input', () => {
+    const cursorBefore = inp.selectionStart;
+    const raw = inp.value;
+    const normalized = normalizeValue(raw);
+    inp.value = normalized;
+    // Clamp cursor: dropped chars shrink the string, so cap to new length
+    inp.setSelectionRange(
+      Math.min(cursorBefore, normalized.length),
+      Math.min(cursorBefore, normalized.length)
+    );
+    messages[msgIndex].rows[rowIndex] = normalized.slice(0, COLS).padEnd(COLS, ' ');
+    updateCells();
+    syncPreview(messages[activeMessageIndex].rows);
+    saveDrafts();
+  });
+
+  inp.addEventListener('keyup', updateCells);
+
+  // Custom event fired by the global selectionchange handler
+  inp.addEventListener('_cursor', updateCells);
+
+  // Tap anywhere in the row: calculate which column was tapped and set cursor
+  inp.addEventListener('click', e => {
+    const rect = inp.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const col  = Math.min(Math.max(0, Math.floor((relX / rect.width) * COLS)), COLS);
+    inp.setSelectionRange(col, col);
+    updateCells();
+  });
+
+  wrapper.appendChild(grid);
+  wrapper.appendChild(inp);
+
+  // Initial render
+  updateCells();
+
+  return wrapper;
+}
+
 // ── Message inputs rendering ──────────────────────────────────────────────────
 /*
- * Renders only the ACTIVE message's 6 row inputs, each labelled with its
- * board row number (01–06). This creates a 1:1 WYSIWYG mapping between
- * the input rows and the preview mirror above.
+ * Renders only the ACTIVE message's 6 row inputs using the character grid.
+ * Each row maps 1:1 to the board preview above it.
  */
 function renderMessageList() {
   const list = document.getElementById('message-list');
   list.innerHTML = '';
+  focusedInput = null;
 
   const i   = activeMessageIndex;
   const msg = messages[i];
@@ -214,34 +356,10 @@ function renderMessageList() {
     label.className = 'row-label';
     label.textContent = String(r + 1).padStart(2, '0');
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'row-input';
-    input.maxLength = COLS;
-    input.placeholder = `ROW ${r + 1}`;
-    input.value = msg.rows[r] || '';
-    input.dataset.rowIndex = r;
-    input.dataset.msgIndex = i;
-
-    input.addEventListener('focus', () => {
-      focusedInput = input;
-    });
-
-    input.addEventListener('input', e => {
-      // Preserve lowercase color chars (inserted by emoji picker); uppercase everything else
-      const val = e.target.value.split('').map(ch => {
-        if (isColorChar(ch)) return ch;
-        const up = ch.toUpperCase();
-        return SPOOL.includes(up) ? up : '?';
-      }).join('');
-      e.target.value = val;
-      messages[i].rows[r] = val;
-      syncPreview(messages[activeMessageIndex].rows);
-      saveDrafts();
-    });
+    const charWrapper = createCharRow(r, i, msg.rows[r] || '');
 
     group.appendChild(label);
-    group.appendChild(input);
+    group.appendChild(charWrapper);
     msgDiv.appendChild(group);
   }
 
@@ -278,10 +396,23 @@ function deleteMessage(index) {
 
 function insertColorChar(char) {
   if (!focusedInput) return;
-  const start = focusedInput.selectionStart;
-  const end   = focusedInput.selectionEnd;
-  if (focusedInput.value.length >= COLS && start === end) return;
-  focusedInput.setRangeText(char, start, end, 'end');
+  const start = focusedInput.selectionStart ?? 0;
+  const end   = focusedInput.selectionEnd   ?? 0;
+  const v     = focusedInput.value;
+  // Always write directly to .value (avoids autocapitalize converting lowercase color chars)
+  if (start === end) {
+    // No selection: insert at cursor (overwrite if at max length)
+    if (v.length >= COLS) {
+      focusedInput.value = v.slice(0, start) + char + v.slice(start + 1);
+    } else {
+      focusedInput.value = v.slice(0, start) + char + v.slice(start);
+    }
+  } else {
+    // Replace selection
+    focusedInput.value = v.slice(0, start) + char + v.slice(end);
+  }
+  const next = Math.min(start + 1, COLS);
+  focusedInput.setSelectionRange(next, next);
   focusedInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
@@ -493,7 +624,7 @@ document.fonts.ready.then(() => {
 
   // ── Emoji color picker ────────────────────────────────────────────────────
   document.getElementById('emoji-picker').addEventListener('click', e => {
-    const btn = e.target.closest('.emoji-btn');
+    const btn = e.target.closest('.color-swatch');
     if (btn) insertColorChar(btn.dataset.color);
   });
 

@@ -31,6 +31,11 @@
 
     <!-- PART A: Live mirror — sticky, full-width board preview -->
     <div id="mirror-section">
+      <div id="preview-label">
+        <span id="preview-live-text">LIVE ON BOARD</span>
+        <span id="preview-code-badge">------</span>
+        <span class="preview-dot"></span>
+      </div>
       <div id="preview-wrapper">
         <div id="board-preview"></div>
       </div>
@@ -59,15 +64,15 @@
 
       <!-- Color picker -->
       <div id="type-row">
-        <span id="type-label">Color tile →</span>
+        <span id="type-label">Color tile</span>
         <div id="emoji-picker">
-          <button class="emoji-btn" data-color="r" title="Red">🔴</button>
-          <button class="emoji-btn" data-color="o" title="Orange">🟠</button>
-          <button class="emoji-btn" data-color="y" title="Yellow">🟡</button>
-          <button class="emoji-btn" data-color="g" title="Green">🟢</button>
-          <button class="emoji-btn" data-color="b" title="Blue">🔵</button>
-          <button class="emoji-btn" data-color="p" title="Purple">🟣</button>
-          <button class="emoji-btn" data-color="w" title="White">⚪</button>
+          <button class="color-swatch" data-color="w" style="background:#FAFAFA" title="White"></button>
+          <button class="color-swatch" data-color="r" style="background:#B34444" title="Red"></button>
+          <button class="color-swatch" data-color="o" style="background:#CC8F52" title="Orange"></button>
+          <button class="color-swatch" data-color="y" style="background:#F2D046" title="Yellow"></button>
+          <button class="color-swatch" data-color="g" style="background:#3A5944" title="Green"></button>
+          <button class="color-swatch" data-color="b" style="background:#4365A8" title="Blue"></button>
+          <button class="color-swatch" data-color="p" style="background:#744471" title="Purple"></button>
         </div>
       </div>
 
