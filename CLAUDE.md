@@ -75,14 +75,14 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 - `renderMessageList()` renders **only the active message's** 6 row character-grids — not all messages stacked. Rows labeled `01`–`06` on the left for 1:1 WYSIWYG mapping to the preview rows above. Switching active message via tab re-renders grids for the newly active message.
 - `renderMsgTabs()` is called by `renderMessageList()` and `updatePlayingHighlight()`.
 
-**Character grid input architecture:**
-- Each row is a `.char-grid-wrapper` containing a 22-cell `.char-grid` (CSS grid `repeat(22, 1fr)`) + a `.char-hidden-input` overlay.
-- The hidden input has `opacity: 0.001; position: absolute; inset: 0; font-size: 16px` — invisible but focusable; tapping the row opens the keyboard.
-- Click position on the hidden input is translated to a column index → `setSelectionRange(col, col)` sets the cursor.
-- `selectionchange` events (including iOS long-press-space trackpad) dispatch a custom `_cursor` event to the focused input, calling `updateCells()` to move the blinking underline cursor highlight.
-- `normalizeValue()`: keeps lowercase color chars (from picker only), uppercases valid SPOOL chars, silently drops everything else.
-- Color chars are inserted only via `insertColorChar()` which writes **directly to `.value`** (not `setRangeText`) to bypass `autocapitalize="characters"` converting lowercase to uppercase.
-- `focusedInput` global tracks which row's hidden input is active for `insertColorChar()`.
+**Textarea message input architecture:**
+- A single `<textarea id="msg-textarea" rows="6">` replaces the per-row char-grid system. Clean, minimal dark look — no visible grid.
+- `handleTextareaKeydown`: blocks Enter when already at 6 lines; at col 22 on non-last line, auto-inserts `\n` + the typed char (hard-wrap); silently blocks typing at col 22 on line 6.
+- `handleTextareaInput`: calls `normalizeTextareaValue()`, restores cursor (clamped to new length), writes back to `messages[activeMessageIndex].rows`, calls `syncPreview` + `saveDrafts`.
+- `normalizeTextareaValue(raw)`: splits by `\n`, for each line keeps lowercase color chars and uppercased valid SPOOL chars (drops emoji/unsupported); hard-truncates each line at 22 chars; truncates to 6 lines. Returns `{ value: string, rows: string[6] }`.
+- `renderMessageList()`: creates one textarea, sets value from `msg.rows.map(r => r.trimEnd()).join('\n')` (trimEnd keeps leading spaces, removes trailing for clean display). `messages` state still stores full 22-char padded rows.
+- `insertColorChar(char)`: writes directly to `focusedInput.value` at cursor (bypasses `autocapitalize`); dispatches `input` event so normalization truncates if needed.
+- `focusedInput` global points to the textarea when focused, null otherwise.
 
 **Color picker:**
 - `#emoji-picker` contains 7 `.color-swatch` buttons (was emoji buttons) with inline `style="background: #XXXXXX"` using exact `COLOR_MAP` hex values. Order: white, red, orange, yellow, green, blue, purple.

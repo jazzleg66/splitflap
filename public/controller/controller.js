@@ -195,175 +195,117 @@ function renderMsgTabs() {
   document.getElementById('btn-add-message').disabled = messages.length >= MAX_MESSAGES;
 }
 
-// ── Character-grid row ────────────────────────────────────────────────────────
+// ── Textarea message input ────────────────────────────────────────────────────
 /*
- * Creates one 22-cell visual row for a message row.
- * A nearly-transparent <input> overlays the grid to capture keyboard input
- * and iOS space-bar-trackpad cursor movement. selectionchange fires as the
- * cursor moves, updating the blinking underline cursor in the visual cells.
+ * A single <textarea> (6 rows × 22 chars) replaces the per-row char grids.
+ * Hard-wrap and line limits are enforced in JS; normalization keeps only
+ * valid SPOOL chars (uppercase letters/digits/symbols + lowercase color chars).
  */
 
-// Single document-level selectionchange handler — dispatches a custom event
-// onto whichever hidden input is currently focused so each row's updateCellDisplay
-// closure is called without accumulating listeners on document.
-document.addEventListener('selectionchange', () => {
-  if (focusedInput && document.activeElement === focusedInput) {
-    focusedInput.dispatchEvent(new CustomEvent('_cursor'));
-  }
-});
+// Normalize a full textarea value (may contain \n separators).
+// Returns { value: string, rows: string[6] }
+function normalizeTextareaValue(raw) {
+  const lines = raw.split('\n');
+  const outLines = [];
 
-function createCharRow(rowIndex, msgIndex, initialValue) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'char-grid-wrapper';
-
-  const grid = document.createElement('div');
-  grid.className = 'char-grid';
-
-  // Build 22 visual cells
-  const cells = [];
-  for (let c = 0; c < COLS; c++) {
-    const cell = document.createElement('div');
-    cell.className = 'char-cell';
-    cells.push(cell);
-    grid.appendChild(cell);
-  }
-
-  // Hidden overlay input — receives all keyboard events
-  const inp = document.createElement('input');
-  inp.type          = 'text';
-  inp.className     = 'char-hidden-input';
-  inp.maxLength     = COLS;
-  inp.value         = initialValue || '';
-  inp.autocomplete  = 'off';
-  inp.autocorrect   = 'off';
-  inp.autocapitalize = 'characters';
-  inp.spellcheck    = false;
-  inp.setAttribute('inputmode', 'text');
-
-  // Re-render cells from current input value + cursor position
-  function updateCells() {
-    const raw = inp.value;
-    const cursorPos = (document.activeElement === inp) ? inp.selectionStart : -1;
-    for (let c = 0; c < COLS; c++) {
-      const ch   = raw[c] ?? ' ';
-      const cell = cells[c];
-      // Reset classes
-      cell.className = 'char-cell';
-      cell.style.removeProperty('--cell-color');
-      cell.textContent = '';
-
-      if (isColorChar(ch)) {
-        cell.classList.add('is-color');
-        cell.style.setProperty('--cell-color', COLOR_MAP[ch]);
-      } else if (ch !== ' ') {
-        cell.classList.add('has-char');
-        cell.textContent = ch;
-      }
-      if (c === cursorPos) cell.classList.add('cursor-pos');
-    }
-  }
-
-  // Normalize value:
-  //   • lowercase color chars ('r','o','y','g','b','p','w') → keep as-is (from color picker)
-  //   • everything else → uppercase and keep only if it exists in SPOOL (drops emoji, unsupported chars)
-  //   • autocapitalize="characters" on mobile ensures keyboard 'r' arrives as 'R' (letter, not color)
-  function normalizeValue(raw) {
+  for (let i = 0; i < lines.length && outLines.length < ROWS; i++) {
     const out = [];
-    for (const ch of raw) {
+    for (const ch of lines[i]) {
+      if (out.length >= COLS) break;           // hard-truncate at 22
       if (isColorChar(ch)) {
-        out.push(ch);          // color char — always from insertColorChar, never the keyboard on mobile
+        out.push(ch);                           // color char from picker — keep lowercase
       } else {
         const up = ch.toUpperCase();
-        if (SPOOL.includes(up)) out.push(up);  // valid letter/digit/symbol → uppercase
-        // else: emoji, unsupported unicode, etc. → silently dropped
+        if (SPOOL.includes(up)) out.push(up);  // valid spool char → uppercase; else drop
       }
     }
-    return out.join('');
+    outLines.push(out.join(''));
   }
 
-  inp.addEventListener('focus', () => {
-    focusedInput = inp;
-    wrapper.classList.add('row-focused');
-    updateCells();
-  });
+  return {
+    value: outLines.join('\n'),
+    rows: Array.from({ length: ROWS }, (_, i) =>
+      (outLines[i] ?? '').padEnd(COLS, ' ')
+    ),
+  };
+}
 
-  inp.addEventListener('blur', () => {
-    if (focusedInput === inp) focusedInput = null;
-    wrapper.classList.remove('row-focused');
-    updateCells(); // clears cursor-pos highlight
-  });
+// keydown: gate Enter at 6 lines; auto-advance to next line at col 22.
+function handleTextareaKeydown(e) {
+  const ta = e.currentTarget;
+  const value = ta.value;
+  const pos   = ta.selectionStart;
 
-  inp.addEventListener('input', () => {
-    const cursorBefore = inp.selectionStart;
-    const raw = inp.value;
-    const normalized = normalizeValue(raw);
-    inp.value = normalized;
-    // Clamp cursor: dropped chars shrink the string, so cap to new length
-    inp.setSelectionRange(
-      Math.min(cursorBefore, normalized.length),
-      Math.min(cursorBefore, normalized.length)
-    );
-    messages[msgIndex].rows[rowIndex] = normalized.slice(0, COLS).padEnd(COLS, ' ');
-    updateCells();
-    syncPreview(messages[activeMessageIndex].rows);
-    saveDrafts();
-  });
+  // Derive current line index and column within that line
+  const before      = value.slice(0, pos);
+  const linesBefore = before.split('\n');
+  const lineIdx     = linesBefore.length - 1;
+  const colIdx      = linesBefore[lineIdx].length;
+  const totalLines  = value.split('\n').length;
 
-  inp.addEventListener('keyup', updateCells);
+  if (e.key === 'Enter') {
+    if (totalLines >= ROWS) e.preventDefault();   // already 6 lines → block
+    return;
+  }
 
-  // Custom event fired by the global selectionchange handler
-  inp.addEventListener('_cursor', updateCells);
+  // Only act on printable single characters (not ctrl/meta shortcuts)
+  if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
 
-  // Tap anywhere in the row: calculate which column was tapped and set cursor
-  inp.addEventListener('click', e => {
-    const rect = inp.getBoundingClientRect();
-    const relX = e.clientX - rect.left;
-    const col  = Math.min(Math.max(0, Math.floor((relX / rect.width) * COLS)), COLS);
-    inp.setSelectionRange(col, col);
-    updateCells();
-  });
+  if (colIdx >= COLS) {
+    e.preventDefault();
+    if (lineIdx < ROWS - 1 && totalLines < ROWS) {
+      // Auto-advance: insert newline + the typed char, then normalize
+      const s   = ta.selectionStart;
+      const end = ta.selectionEnd;
+      ta.value  = value.slice(0, s) + '\n' + e.key + value.slice(end);
+      ta.setSelectionRange(s + 2, s + 2);
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    // else: at last line and col limit → silently block
+  }
+}
 
-  wrapper.appendChild(grid);
-  wrapper.appendChild(inp);
+// input: normalize value, restore cursor, sync state.
+function handleTextareaInput(e) {
+  const ta          = e.currentTarget;
+  const cursorBefore = ta.selectionStart;
+  const { value: normalized, rows } = normalizeTextareaValue(ta.value);
 
-  // Initial render
-  updateCells();
+  ta.value = normalized;
+  // Clamp cursor (dropped chars can shorten the string)
+  const clamp = Math.min(cursorBefore, normalized.length);
+  ta.setSelectionRange(clamp, clamp);
 
-  return wrapper;
+  messages[activeMessageIndex].rows = rows;
+  syncPreview(rows);
+  saveDrafts();
 }
 
 // ── Message inputs rendering ──────────────────────────────────────────────────
-/*
- * Renders only the ACTIVE message's 6 row inputs using the character grid.
- * Each row maps 1:1 to the board preview above it.
- */
 function renderMessageList() {
   const list = document.getElementById('message-list');
   list.innerHTML = '';
   focusedInput = null;
 
-  const i   = activeMessageIndex;
-  const msg = messages[i];
+  const msg = messages[activeMessageIndex];
+  // Trim trailing spaces per row for display; rows state keeps full 22-char padding
+  const taValue = msg.rows.map(r => r.trimEnd()).join('\n');
 
-  const msgDiv = document.createElement('div');
-  msgDiv.className = 'message-inputs';
+  const ta = document.createElement('textarea');
+  ta.id = 'msg-textarea';
+  ta.rows = ROWS;
+  ta.value = taValue;
+  ta.setAttribute('autocomplete',   'off');
+  ta.setAttribute('autocorrect',    'off');
+  ta.setAttribute('autocapitalize', 'characters');
+  ta.setAttribute('spellcheck',     'false');
 
-  for (let r = 0; r < ROWS; r++) {
-    const group = document.createElement('div');
-    group.className = 'row-input-group';
+  ta.addEventListener('focus',   () => { focusedInput = ta; });
+  ta.addEventListener('blur',    () => { if (focusedInput === ta) focusedInput = null; });
+  ta.addEventListener('keydown', handleTextareaKeydown);
+  ta.addEventListener('input',   handleTextareaInput);
 
-    const label = document.createElement('div');
-    label.className = 'row-label';
-    label.textContent = String(r + 1).padStart(2, '0');
-
-    const charWrapper = createCharRow(r, i, msg.rows[r] || '');
-
-    group.appendChild(label);
-    group.appendChild(charWrapper);
-    msgDiv.appendChild(group);
-  }
-
-  list.appendChild(msgDiv);
+  list.appendChild(ta);
   renderMsgTabs();
 }
 
@@ -396,23 +338,13 @@ function deleteMessage(index) {
 
 function insertColorChar(char) {
   if (!focusedInput) return;
-  const start = focusedInput.selectionStart ?? 0;
-  const end   = focusedInput.selectionEnd   ?? 0;
-  const v     = focusedInput.value;
-  // Always write directly to .value (avoids autocapitalize converting lowercase color chars)
-  if (start === end) {
-    // No selection: insert at cursor (overwrite if at max length)
-    if (v.length >= COLS) {
-      focusedInput.value = v.slice(0, start) + char + v.slice(start + 1);
-    } else {
-      focusedInput.value = v.slice(0, start) + char + v.slice(start);
-    }
-  } else {
-    // Replace selection
-    focusedInput.value = v.slice(0, start) + char + v.slice(end);
-  }
-  const next = Math.min(start + 1, COLS);
-  focusedInput.setSelectionRange(next, next);
+  const s = focusedInput.selectionStart ?? 0;
+  const e = focusedInput.selectionEnd   ?? 0;
+  const v = focusedInput.value;
+  // Write directly to .value — bypasses autocapitalize which would uppercase the char
+  focusedInput.value = v.slice(0, s) + char + v.slice(e);
+  focusedInput.setSelectionRange(s + 1, s + 1);
+  // normalizeTextareaValue (via handleTextareaInput) will truncate line if it exceeds 22
   focusedInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
