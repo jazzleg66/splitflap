@@ -8,7 +8,8 @@
     "dev": "nodemon server/index.js",
     "screenshot": "node scripts/screenshot.js",
     "screenshot:board": "node scripts/screenshot.js board",
-    "screenshot:controller": "node scripts/screenshot.js controller"
+    "screenshot:controller": "node scripts/screenshot.js controller",
+    "test": "jest"
   },
   "dependencies": {
     "@sentry/node": "^10.48.0",
@@ -20,6 +21,13 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
+    "babel-jest": "^30.3.0",
+    "babel-plugin-module-resolver": "^5.0.3",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "jsdom": "^29.0.2",
     "nodemon": "^3.1.0",
     "puppeteer": "^22.0.0"
   }
