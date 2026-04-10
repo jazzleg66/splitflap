@@ -16,6 +16,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 const QRCode = require('qrcode');
 const { createSession, getByCode, getById, touch, updateState, updateRows, sessions } = require('./sessionManager');
 
@@ -23,18 +24,43 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
+// ── Preload and inject env vars into HTML ─────────────────────────────────────
+const sentryDsn = process.env.SENTRY_DSN || '';
+const phKey = process.env.VITE_POSTHOG_KEY || '';
+
+const htmlCache = {};
+function getInjectedHtml(filePath) {
+  if (!htmlCache[filePath]) {
+    try {
+      let data = fs.readFileSync(filePath, 'utf8');
+      data = data.replace(/var sentryDsn = 'YOUR_SENTRY_DSN_HERE';?/g, `var sentryDsn = '${sentryDsn}';`);
+      data = data.replace(/var phKey = 'YOUR_POSTHOG_KEY_HERE';?/g, `var phKey = '${phKey}';`);
+      htmlCache[filePath] = data;
+    } catch (err) {
+      console.error('Error reading HTML file:', err);
+      return 'Internal Server Error';
+    }
+  }
+  return htmlCache[filePath];
+}
+
 // ── Static files ──────────────────────────────────────────────────────────────
+// Intercept requests for HTML files before express.static to serve the injected versions
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path === '/index.html') {
+    return res.send(getInjectedHtml(path.join(__dirname, '../public/index.html')));
+  }
+  if (req.path === '/board' || req.path === '/board/' || req.path === '/board/index.html') {
+    return res.send(getInjectedHtml(path.join(__dirname, '../public/board/index.html')));
+  }
+  if (req.path === '/controller' || req.path === '/controller/' || req.path === '/controller/index.html') {
+    return res.send(getInjectedHtml(path.join(__dirname, '../public/controller/index.html')));
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
-
-app.get('/', (req, res) =>
-  res.sendFile(path.join(__dirname, '../public/index.html')));
-
-app.get('/board', (req, res) =>
-  res.sendFile(path.join(__dirname, '../public/board/index.html')));
-
-app.get('/controller', (req, res) =>
-  res.sendFile(path.join(__dirname, '../public/controller/index.html')));
 
 // ── QR code endpoint ──────────────────────────────────────────────────────────
 app.get('/qr/:sessionId', async (req, res) => {
@@ -258,8 +284,10 @@ wss.on('connection', socket => {
 });
 
 // Add Sentry error handler (if initialized)
-if (Sentry) {
+if (Sentry && Sentry.Handlers && Sentry.Handlers.errorHandler) {
   app.use(Sentry.Handlers.errorHandler());
+} else if (Sentry && Sentry.setupExpressErrorHandler) {
+  Sentry.setupExpressErrorHandler(app);
 }
 
 // ── Start ──────────────────────────────────────────────────────────────────────
