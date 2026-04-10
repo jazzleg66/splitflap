@@ -381,53 +381,114 @@ body {
   box-shadow: 0 0 0 1px var(--text);
 }
 
-/* ── Message textarea ────────────────────────────────────────────────────────── */
+/* ── Message cell grid ───────────────────────────────────────────────────────── */
 /*
- * White monospace textarea with a CSS dot-grid overlay.
- * Dots are painted via radial-gradient tiled at 1ch × 1.6em (char-width ×
- * line-height) so each dot marks the top-left corner of one character cell,
- * making all 22×6 positions clearly visible.
- * Roboto Mono is required — proportional fonts would misalign the grid.
- * font-size ≥ 16px prevents iOS Safari auto-zoom on focus.
+ * A 22×6 CSS grid of individual character cells replaces the plain <textarea>.
+ * Each cell holds exactly one SPOOL character. The white surface sits inside the
+ * dark controller UI as a bright, tactile editing surface.
+ * Roboto Mono is required for monospace alignment.
  */
-#msg-textarea {
-  display: block;
-  width: 100%;
-
-  /* White surface with character-position dot grid */
-  background-color: #ffffff;
-  background-image: radial-gradient(
-    circle,
-    rgba(0, 0, 0, 0.3) 1.5px,
-    transparent 1.5px
-  );
-  background-size: 1ch 1.6em;    /* one tile = one character cell */
-  background-origin: content-box; /* align to text start, not padding */
-  background-position: 0 0;
-
-  border: 1px solid #c0c0c0;
-  border-radius: 3px;
-  color: #111111;
-  font-family: 'Roboto Mono', 'Courier New', monospace;
-  font-size: 16px;
-  line-height: 1.6;
-  letter-spacing: 0;
-  padding: 10px 12px;
-  resize: none;
-  outline: none;
-  caret-color: #111111;
+#msg-grid-container {
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.10),
+    0 4px 12px rgba(0,0,0,0.06);
+  overflow: hidden;
   margin-bottom: 0.75rem;
+  cursor: text;
+  -webkit-tap-highlight-color: transparent;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-#msg-textarea:focus {
-  border-color: #888888;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.07);
+/* Subtle amber focus ring when the capture input is active */
+#msg-grid-container.grid-active {
+  border-color: #C8B882;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.10),
+    0 4px 12px rgba(0,0,0,0.06),
+    0 0 0 2px rgba(140,118,72,0.14);
 }
 
-/* Hide scrollbar — 6 rows at 1.6 line-height never overflow */
-#msg-textarea::-webkit-scrollbar { display: none; }
-#msg-textarea { scrollbar-width: none; }
+#msg-grid {
+  display: grid;
+  grid-template-columns: repeat(22, 1fr);
+  width: 100%;
+}
+
+/* ── Individual cell ──────────────────────────────────────────────────────────── */
+.cell {
+  height: clamp(20px, 5.4vw, 24px);
+  border-right: 1px solid #EEEEEE;
+  border-bottom: 1px solid #EEEEEE;
+  font-family: 'Roboto Mono', 'SF Mono', ui-monospace, monospace;
+  font-size: clamp(9px, 2.7vw, 12px);
+  font-weight: 500;
+  color: #1A1A1A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.06s;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+/* Remove redundant outer-edge borders */
+.cell:nth-child(22n)        { border-right: none; }
+.cell:nth-last-child(-n+22) { border-bottom: none; }
+
+/* ── Cursor cell ──────────────────────────────────────────────────────────────── */
+/* Warm amber highlight — ties the white grid back to the controller's amber palette */
+.cell.is-cursor {
+  background: rgba(232, 213, 163, 0.18);
+  box-shadow: inset 0 0 0 1.5px rgba(140, 118, 72, 0.38);
+  z-index: 1;
+}
+
+/* Blinking caret — only rendered when the cursor cell is empty */
+.cell.is-cursor.is-empty::after {
+  content: '';
+  position: absolute;
+  width: 1.5px;
+  height: 52%;
+  background: #8c7848;
+  border-radius: 1px;
+  animation: cell-blink 1.1s step-end infinite;
+}
+
+@keyframes cell-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Color cells ──────────────────────────────────────────────────────────────── */
+.cell.is-color {
+  background: var(--cell-color);
+}
+
+.cell.is-color.is-cursor {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.65);
+}
+
+/* ── Drag interaction states ──────────────────────────────────────────────────── */
+.cell.is-drag-source {
+  opacity: 0.22;
+  background: #f5f5f5;
+}
+
+.cell.is-drag-over {
+  background: rgba(66, 133, 244, 0.12);
+  box-shadow: inset 0 0 0 1.5px rgba(66, 133, 244, 0.50);
+  z-index: 1;
+}
+
+.cell.is-color.is-drag-over {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.70);
+}
 
 /* ── Loop timer ──────────────────────────────────────────────────────────────── */
 #loop-timer-row {

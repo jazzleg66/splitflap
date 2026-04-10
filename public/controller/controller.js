@@ -47,8 +47,17 @@ let playIndex          = 0;
 let playTimer          = null;
 let currentMode        = 'message';
 let clockTimer         = null;
-let focusedInput       = null;
 let currentPairCode    = '';
+// Grid input state
+let gridCursorIndex   = 0;
+let gridCells         = [];
+let dragSourceIndex   = null;
+let dragOverIndex     = null;
+let longPressTimer    = null;
+let dragActive        = false;
+let dragPointerOrigin = null;
+let dragBoundMove     = null;
+let dragBoundUp       = null;
 let nextDebouncing     = false;
 
 // Preview grid
@@ -195,124 +204,234 @@ function renderMsgTabs() {
   document.getElementById('btn-add-message').disabled = messages.length >= MAX_MESSAGES;
 }
 
-// ── Textarea message input ────────────────────────────────────────────────────
+// ── Message cell grid ─────────────────────────────────────────────────────────
 /*
- * A single <textarea> (6 rows × 22 chars) replaces the per-row char grids.
- * Hard-wrap and line limits are enforced in JS; normalization keeps only
- * valid SPOOL chars (uppercase letters/digits/symbols + lowercase color chars).
+ * A 22×6 grid of individual <div class="cell"> elements replaces the textarea.
+ * Keyboard input is captured by a hidden off-screen <input id="grid-capture">
+ * which is focused on cell tap — this summons the virtual keyboard on mobile.
+ * Drag-to-swap uses pointer events with a 320ms long-press threshold.
  */
 
-// Normalize a full textarea value (may contain \n separators).
-// Returns { value: string, rows: string[6] }
-function normalizeTextareaValue(raw) {
-  const lines = raw.split('\n');
-  const outLines = [];
-
-  for (let i = 0; i < lines.length && outLines.length < ROWS; i++) {
-    const out = [];
-    for (const ch of lines[i]) {
-      if (out.length >= COLS) break;           // hard-truncate at 22
-      if (isColorChar(ch)) {
-        out.push(ch);                           // color char from picker — keep lowercase
-      } else {
-        const up = ch.toUpperCase();
-        if (SPOOL.includes(up)) out.push(up);  // valid spool char → uppercase; else drop
-      }
-    }
-    outLines.push(out.join(''));
-  }
-
-  return {
-    value: outLines.join('\n'),
-    rows: Array.from({ length: ROWS }, (_, i) =>
-      (outLines[i] ?? '').padEnd(COLS, ' ')
-    ),
-  };
+function getCharAt(index) {
+  const row = Math.floor(index / COLS);
+  const col = index % COLS;
+  return ((messages[activeMessageIndex].rows[row] ?? '').padEnd(COLS, ' '))[col] ?? ' ';
 }
 
-// keydown: gate Enter at 6 lines; auto-advance to next line at col 22.
-function handleTextareaKeydown(e) {
-  const ta = e.currentTarget;
-  const value = ta.value;
-  const pos   = ta.selectionStart;
-
-  // Derive current line index and column within that line
-  const before      = value.slice(0, pos);
-  const linesBefore = before.split('\n');
-  const lineIdx     = linesBefore.length - 1;
-  const colIdx      = linesBefore[lineIdx].length;
-  const totalLines  = value.split('\n').length;
-
-  if (e.key === 'Enter') {
-    if (totalLines >= ROWS) e.preventDefault();   // already 6 lines → block
-    return;
-  }
-
-  // Only act on printable single characters (not ctrl/meta shortcuts)
-  if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
-
-  if (colIdx >= COLS) {
-    e.preventDefault();
-    if (lineIdx < ROWS - 1 && totalLines < ROWS) {
-      // Auto-advance: insert newline + the typed char, then normalize
-      const s   = ta.selectionStart;
-      const end = ta.selectionEnd;
-      ta.value  = value.slice(0, s) + '\n' + e.key + value.slice(end);
-      ta.setSelectionRange(s + 2, s + 2);
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    // else: at last line and col limit → silently block
+function updateCellDOM(cellEl, ch) {
+  const isEmpty = !ch || ch === ' ';
+  const isColor = isColorChar(ch);
+  cellEl.classList.toggle('is-empty', isEmpty);
+  cellEl.classList.toggle('is-color', isColor);
+  if (isColor) {
+    cellEl.style.setProperty('--cell-color', COLOR_MAP[ch]);
+    cellEl.textContent = '';
+  } else {
+    cellEl.style.removeProperty('--cell-color');
+    cellEl.textContent = isEmpty ? '' : ch;
   }
 }
 
-// input: normalize value, restore cursor, sync state.
-function handleTextareaInput(e) {
-  const ta          = e.currentTarget;
-  const cursorBefore = ta.selectionStart;
-  const { value: normalized, rows } = normalizeTextareaValue(ta.value);
+// Write ch to messages state + update DOM cell. Does NOT sync preview.
+function setCellCharRaw(index, ch) {
+  const row = Math.floor(index / COLS);
+  const col = index % COLS;
+  const r = (messages[activeMessageIndex].rows[row] ?? '').padEnd(COLS, ' ');
+  messages[activeMessageIndex].rows[row] = r.slice(0, col) + ch + r.slice(col + 1);
+  updateCellDOM(gridCells[index], ch);
+}
 
-  ta.value = normalized;
-  // Clamp cursor (dropped chars can shorten the string)
-  const clamp = Math.min(cursorBefore, normalized.length);
-  ta.setSelectionRange(clamp, clamp);
-
-  messages[activeMessageIndex].rows = rows;
-  syncPreview(rows);
+// Write ch, then sync preview + save.
+function setCellChar(index, ch) {
+  setCellCharRaw(index, ch);
+  syncPreview(messages[activeMessageIndex].rows);
   saveDrafts();
 }
 
-// ── Message inputs rendering ──────────────────────────────────────────────────
-function renderMessageList() {
+function updateCursorCell() {
+  gridCells.forEach(c => c.classList.remove('is-cursor'));
+  if (gridCells[gridCursorIndex]) gridCells[gridCursorIndex].classList.add('is-cursor');
+}
+
+// ── Grid keyboard handler ──────────────────────────────────────────────────────
+function handleGridKey(e) {
+  const cursor = gridCursorIndex;
+  const row    = Math.floor(cursor / COLS);
+  const col    = cursor % COLS;
+
+  if (e.key === 'Backspace') {
+    if (col > 0) {
+      gridCursorIndex--;
+      setCellChar(gridCursorIndex, ' ');
+    } else if (row > 0) {
+      gridCursorIndex = (row - 1) * COLS + (COLS - 1);
+      setCellChar(gridCursorIndex, ' ');
+    }
+    updateCursorCell();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'Delete') {
+    setCellChar(cursor, ' ');
+    e.preventDefault();
+    return;
+  }
+
+  const navMap = {
+    ArrowRight: () => Math.min(cursor + 1, ROWS * COLS - 1),
+    ArrowLeft:  () => Math.max(cursor - 1, 0),
+    ArrowDown:  () => Math.min(cursor + COLS, ROWS * COLS - 1),
+    ArrowUp:    () => Math.max(cursor - COLS, 0),
+    Home:       () => row * COLS,
+    End:        () => row * COLS + COLS - 1,
+  };
+  if (navMap[e.key]) {
+    gridCursorIndex = navMap[e.key]();
+    updateCursorCell();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    if (row < ROWS - 1) { gridCursorIndex = (row + 1) * COLS; updateCursorCell(); }
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const ch = e.key.toUpperCase();
+    if (SPOOL.includes(ch) && !isColorChar(ch)) {
+      setCellChar(cursor, ch);
+      // Advance: next cell in row, or wrap to start of next row
+      gridCursorIndex = col < COLS - 1
+        ? cursor + 1
+        : (row < ROWS - 1 ? (row + 1) * COLS : cursor);
+      updateCursorCell();
+    }
+    e.preventDefault();
+  }
+}
+
+// ── Drag-to-swap (pointer events) ─────────────────────────────────────────────
+function cleanupDrag() {
+  clearTimeout(longPressTimer);
+  if (dragSourceIndex !== null) gridCells[dragSourceIndex]?.classList.remove('is-drag-source');
+  if (dragOverIndex   !== null) gridCells[dragOverIndex]?.classList.remove('is-drag-over');
+  dragActive        = false;
+  dragSourceIndex   = null;
+  dragOverIndex     = null;
+  dragPointerOrigin = null;
+  if (dragBoundMove) { document.removeEventListener('pointermove', dragBoundMove); dragBoundMove = null; }
+  if (dragBoundUp)   { document.removeEventListener('pointerup',   dragBoundUp);   dragBoundUp   = null; }
+}
+
+function onDragPointerMove(e) {
+  if (!dragPointerOrigin) return;
+  const dist = Math.hypot(e.clientX - dragPointerOrigin.x, e.clientY - dragPointerOrigin.y);
+  if (!dragActive) {
+    if (dist > 6) { clearTimeout(longPressTimer); cleanupDrag(); }
+    return;
+  }
+  e.preventDefault();
+  const el   = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = el?.closest?.('.cell');
+  const idx  = cell ? +cell.dataset.index : null;
+  if (idx !== null && idx !== dragOverIndex) {
+    if (dragOverIndex !== null) gridCells[dragOverIndex]?.classList.remove('is-drag-over');
+    dragOverIndex = idx;
+    gridCells[dragOverIndex]?.classList.add('is-drag-over');
+  }
+}
+
+function onDragPointerUp() {
+  clearTimeout(longPressTimer);
+  if (dragActive && dragOverIndex !== null && dragOverIndex !== dragSourceIndex) {
+    const srcCh = getCharAt(dragSourceIndex);
+    const tgtCh = getCharAt(dragOverIndex);
+    // Move to empty cell, swap if occupied
+    if (tgtCh === ' ') {
+      setCellCharRaw(dragSourceIndex, ' ');
+      setCellCharRaw(dragOverIndex,   srcCh);
+    } else {
+      setCellCharRaw(dragSourceIndex, tgtCh);
+      setCellCharRaw(dragOverIndex,   srcCh);
+    }
+    gridCursorIndex = dragOverIndex;
+    updateCursorCell();
+    syncPreview(messages[activeMessageIndex].rows);
+    saveDrafts();
+  }
+  cleanupDrag();
+}
+
+// ── Message grid rendering ─────────────────────────────────────────────────────
+function renderMessageGrid() {
+  cleanupDrag();  // abort any in-progress drag before tearing down the old grid
   const list = document.getElementById('message-list');
   list.innerHTML = '';
-  focusedInput = null;
+  gridCells = [];
 
   const msg = messages[activeMessageIndex];
-  // Trim trailing spaces per row for display; rows state keeps full 22-char padding
-  const taValue = msg.rows.map(r => r.trimEnd()).join('\n');
 
-  const ta = document.createElement('textarea');
-  ta.id = 'msg-textarea';
-  ta.rows = ROWS;
-  ta.value = taValue;
-  ta.setAttribute('autocomplete',   'off');
-  ta.setAttribute('autocorrect',    'off');
-  ta.setAttribute('autocapitalize', 'characters');
-  ta.setAttribute('spellcheck',     'false');
+  const container = document.createElement('div');
+  container.id = 'msg-grid-container';
 
-  ta.addEventListener('focus',   () => { focusedInput = ta; });
-  ta.addEventListener('blur',    () => { if (focusedInput === ta) focusedInput = null; });
-  ta.addEventListener('keydown', handleTextareaKeydown);
-  ta.addEventListener('input',   handleTextareaInput);
+  const grid = document.createElement('div');
+  grid.id = 'msg-grid';
+  grid.setAttribute('aria-label', 'Message grid (22 columns × 6 rows)');
 
-  list.appendChild(ta);
+  for (let i = 0; i < ROWS * COLS; i++) {
+    const row  = Math.floor(i / COLS);
+    const col  = i % COLS;
+    const cell = document.createElement('div');
+    cell.className    = 'cell';
+    cell.dataset.index = String(i);
+    updateCellDOM(cell, ((msg.rows[row] ?? '').padEnd(COLS, ' '))[col] ?? ' ');
+    gridCells.push(cell);
+    grid.appendChild(cell);
+  }
+
+  container.appendChild(grid);
+  list.appendChild(container);
+
+  gridCursorIndex = Math.max(0, Math.min(gridCursorIndex, ROWS * COLS - 1));
+  updateCursorCell();
+
+  // Tap → move cursor + focus keyboard capture
+  container.addEventListener('click', e => {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    gridCursorIndex = +cell.dataset.index;
+    updateCursorCell();
+    document.getElementById('grid-capture').focus();
+  });
+
+  // Long-press drag detection
+  container.addEventListener('pointerdown', e => {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    const index       = +cell.dataset.index;
+    dragPointerOrigin = { x: e.clientX, y: e.clientY };
+    dragSourceIndex   = index;
+    longPressTimer = setTimeout(() => {
+      dragActive = true;
+      gridCells[dragSourceIndex]?.classList.add('is-drag-source');
+    }, 320);
+    dragBoundMove = onDragPointerMove;
+    dragBoundUp   = onDragPointerUp;
+    document.addEventListener('pointermove', dragBoundMove, { passive: false });
+    document.addEventListener('pointerup',   dragBoundUp);
+  });
+
   renderMsgTabs();
 }
 
 function setActiveMessage(index) {
   if (index === activeMessageIndex) return;
   activeMessageIndex = Math.max(0, Math.min(index, messages.length - 1));
-  renderMessageList();
+  gridCursorIndex = 0;
+  renderMessageGrid();
   syncPreview(messages[activeMessageIndex].rows);
   saveDrafts();
 }
@@ -321,7 +440,8 @@ function addMessage() {
   if (messages.length >= MAX_MESSAGES) return;
   messages.push({ rows: Array(ROWS).fill('') });
   activeMessageIndex = messages.length - 1;
-  renderMessageList();
+  gridCursorIndex = 0;
+  renderMessageGrid();
   syncPreview(messages[activeMessageIndex].rows);
   saveDrafts();
 }
@@ -331,21 +451,22 @@ function deleteMessage(index) {
   messages.splice(index, 1);
   activeMessageIndex = Math.max(0, Math.min(activeMessageIndex, messages.length - 1));
   if (playIndex >= messages.length) playIndex = 0;
-  renderMessageList();
+  gridCursorIndex = 0;
+  renderMessageGrid();
   syncPreview(messages[activeMessageIndex].rows);
   saveDrafts();
 }
 
 function insertColorChar(char) {
-  if (!focusedInput) return;
-  const s = focusedInput.selectionStart ?? 0;
-  const e = focusedInput.selectionEnd   ?? 0;
-  const v = focusedInput.value;
-  // Write directly to .value — bypasses autocapitalize which would uppercase the char
-  focusedInput.value = v.slice(0, s) + char + v.slice(e);
-  focusedInput.setSelectionRange(s + 1, s + 1);
-  // normalizeTextareaValue (via handleTextareaInput) will truncate line if it exceeds 22
-  focusedInput.dispatchEvent(new Event('input', { bubbles: true }));
+  const cursor = gridCursorIndex;
+  const row    = Math.floor(cursor / COLS);
+  const col    = cursor % COLS;
+  setCellChar(cursor, char);
+  gridCursorIndex = col < COLS - 1
+    ? cursor + 1
+    : (row < ROWS - 1 ? (row + 1) * COLS : cursor);
+  updateCursorCell();
+  document.getElementById('grid-capture')?.focus();
 }
 
 // ── Preview scale ─────────────────────────────────────────────────────────────
@@ -437,7 +558,8 @@ function hardReset() {
   stopPlay();
   messages = DEFAULT_MESSAGES();
   activeMessageIndex = 0;
-  renderMessageList();
+  gridCursorIndex = 0;
+  renderMessageGrid();
   syncPreview(messages[0].rows);
   saveDrafts();
   ws.send({ type: 'phone_reset' });
@@ -546,7 +668,7 @@ document.fonts.ready.then(() => {
   new ResizeObserver(fitPreview).observe(wrapper);
   requestAnimationFrame(fitPreview);
   window.addEventListener('resize', fitPreview);
-  renderMessageList();
+  renderMessageGrid();
   syncPreview(messages[activeMessageIndex].rows);
 
   // Restore mode radio
@@ -554,9 +676,24 @@ document.fonts.ready.then(() => {
   document.getElementById('timer-slider').value = loopInterval;
   document.getElementById('timer-value').textContent = loopInterval;
 
+  // ── Grid capture input ────────────────────────────────────────────────────
+  // The hidden off-screen <input> captures keyboard events for the cell grid.
+  const captureEl = document.getElementById('grid-capture');
+  captureEl.addEventListener('keydown', handleGridKey);
+  // Drain any characters the browser accumulates (prevents buffer build-up)
+  captureEl.addEventListener('input', e => { e.target.value = ''; });
+  // Toggle focus ring on the grid container
+  captureEl.addEventListener('focus', () => {
+    document.getElementById('msg-grid-container')?.classList.add('grid-active');
+  });
+  captureEl.addEventListener('blur', () => {
+    document.getElementById('msg-grid-container')?.classList.remove('grid-active');
+  });
+
   // ── Color picker ─────────────────────────────────────────────────────────
   // mousedown preventDefault stops the swatch from stealing focus from the
-  // textarea — without this, blur fires before click, nulling focusedInput.
+  // capture input — without this, blur fires before click and the keyboard
+  // disappears on mobile.
   document.getElementById('emoji-picker').addEventListener('mousedown', e => {
     if (e.target.closest('.color-swatch')) e.preventDefault();
   });

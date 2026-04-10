@@ -79,6 +79,13 @@
       <!-- Active message row inputs — injected by JS -->
       <div id="message-list"></div>
 
+      <!-- Hidden off-screen input — keyboard capture shim for the cell grid.
+           Focused when user taps the grid; triggers virtual keyboard on iOS/Android. -->
+      <input id="grid-capture" type="text"
+        autocomplete="off" autocorrect="off" autocapitalize="characters"
+        spellcheck="false" inputmode="text"
+        style="position:fixed;left:-999px;top:-999px;width:1px;height:1px;opacity:0;pointer-events:none;border:none;padding:0">
+
       <div id="loop-timer-row">
         <label>LOOP EVERY <span id="timer-value">7</span>S</label>
         <input type="range" id="timer-slider" min="5" max="60" value="7">

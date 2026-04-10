@@ -75,14 +75,16 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 - `renderMessageList()` renders **only the active message's** 6 row character-grids — not all messages stacked. Rows labeled `01`–`06` on the left for 1:1 WYSIWYG mapping to the preview rows above. Switching active message via tab re-renders grids for the newly active message.
 - `renderMsgTabs()` is called by `renderMessageList()` and `updatePlayingHighlight()`.
 
-**Textarea message input architecture:**
-- A single `<textarea id="msg-textarea" rows="6">` replaces the per-row char-grid system. Clean, minimal dark look — no visible grid.
-- `handleTextareaKeydown`: blocks Enter when already at 6 lines; at col 22 on non-last line, auto-inserts `\n` + the typed char (hard-wrap); silently blocks typing at col 22 on line 6.
-- `handleTextareaInput`: calls `normalizeTextareaValue()`, restores cursor (clamped to new length), writes back to `messages[activeMessageIndex].rows`, calls `syncPreview` + `saveDrafts`.
-- `normalizeTextareaValue(raw)`: splits by `\n`, for each line keeps lowercase color chars and uppercased valid SPOOL chars (drops emoji/unsupported); hard-truncates each line at 22 chars; truncates to 6 lines. Returns `{ value: string, rows: string[6] }`.
-- `renderMessageList()`: creates one textarea, sets value from `msg.rows.map(r => r.trimEnd()).join('\n')` (trimEnd keeps leading spaces, removes trailing for clean display). `messages` state still stores full 22-char padded rows.
-- `insertColorChar(char)`: writes directly to `focusedInput.value` at cursor (bypasses `autocapitalize`); dispatches `input` event so normalization truncates if needed.
-- `focusedInput` global points to the textarea when focused, null otherwise.
+**Cell grid message input architecture:**
+- A 22×6 CSS Grid of individually-rendered `<div class="cell">` elements replaces the textarea. Each cell is one character position.
+- Keyboard input is captured by a hidden off-screen `<input id="grid-capture">` (fixed positioning, opacity 0). Tapping any cell focuses this input → triggers virtual keyboard on iOS/Android.
+- `renderMessageGrid()`: builds 132 cell divs with `data-index`, populates from `messages[activeMessageIndex].rows`, attaches click (move cursor) and pointerdown (long-press drag) handlers.
+- `handleGridKey(e)` on `grid-capture` keydown: Backspace (delete left cell, move cursor back; at start of row, wrap to end of prev row), Delete, arrow keys, Home/End, Enter (advance row), printable chars (type & advance). All operations validate against SPOOL and color chars.
+- `updateCellDOM(cellEl, ch)`: sets text content or color fill, toggles `.is-empty` / `.is-color` classes, applies `--cell-color` CSS var for color tiles.
+- `setCellChar(index, ch)`: writes to grid state, updates DOM, calls `syncPreview()` + `saveDrafts()` (full sync).
+- `setCellCharRaw(index, ch)`: writes to grid state + updates DOM only (used in drag-swap when multiple cells change — batch sync at end).
+- `insertColorChar(char)`: places color at cursor, advances cursor, re-focuses `grid-capture` to keep keyboard alive.
+- Drag-to-swap: 320ms long-press on a cell activates drag mode. `onDragPointerMove` highlights cells under pointer. `onDragPointerUp` executes move (empty target) or swap (filled target). `cleanupDrag()` removes all classes and event listeners.
 
 **Color picker:**
 - `#emoji-picker` contains 7 `.color-swatch` buttons (was emoji buttons) with inline `style="background: #XXXXXX"` using exact `COLOR_MAP` hex values. Order: white, red, orange, yellow, green, blue, purple.
