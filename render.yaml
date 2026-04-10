@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: digital-solari
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        sync: false        # Set manually in Render dashboard (your .onrender.com URL)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: VITE_POSTHOG_KEY
+        sync: false

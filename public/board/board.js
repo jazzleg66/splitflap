@@ -421,10 +421,13 @@ document.getElementById('btn-show-code').addEventListener('click', () => {
   btn.textContent = code.hidden ? 'ENTER CODE MANUALLY' : 'HIDE CODE';
 });
 
+// ── Connect ───────────────────────────────────────────────────────────────────
+// Start WebSocket immediately — independent of font/grid load.
+ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+
 document.fonts.ready.then(() => {
   buildGrid();
   syncTileSizing();
   new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
-  ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
   // Board starts hidden behind #qr-screen; demo only runs after phone approval
 });
