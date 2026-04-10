@@ -18,11 +18,21 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 function generatePairCode() {
   let code;
+  let exists;
   do {
-    code = Array.from({ length: 6 }, () =>
-      PAIR_ALPHA[Math.floor(Math.random() * PAIR_ALPHA.length)]
-    ).join('');
-  } while ([...sessions.values()].some(s => s.pairCode === code));
+    code = '';
+    for (let i = 0; i < 6; i++) {
+      code += PAIR_ALPHA[Math.floor(Math.random() * PAIR_ALPHA.length)];
+    }
+
+    exists = false;
+    for (const session of sessions.values()) {
+      if (session.pairCode === code) {
+        exists = true;
+        break;
+      }
+    }
+  } while (exists);
   return code;
 }
 
