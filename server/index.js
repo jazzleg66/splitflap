@@ -67,9 +67,17 @@ app.get('/qr/:sessionId', async (req, res) => {
   const session = getById(req.params.sessionId);
   if (!session) return res.status(404).end();
 
-  // In dev, use LAN IP so phones on the same network can scan
   const host = getLanHost(req);
-  const scheme = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+
+  let scheme = req.headers['x-forwarded-proto'] || req.protocol;
+  if (process.env.APP_URL) {
+    try {
+      scheme = new URL(process.env.APP_URL).protocol.replace(':', '');
+    } catch (e) {}
+  } else if (process.env.NODE_ENV === 'production' && !req.headers['x-forwarded-proto']) {
+    scheme = 'https';
+  }
+
   const url = `${scheme}://${host}/controller?code=${session.pairCode}`;
   console.log(`[qr] encoding URL: ${url}`);
 
@@ -110,8 +118,11 @@ function getLanHost(req) {
     }
   }
 
-  // 2. In development, prefer LAN IP for phone pairing
-  if (process.env.NODE_ENV !== 'production') {
+  const reqHost = req.get('host') || '';
+
+  // 2. If no APP_URL is provided, and we are running on localhost,
+  // substitute with the machine's LAN IP to allow phone pairing on the local network.
+  if (reqHost.startsWith('localhost') || reqHost.startsWith('127.0.0.1')) {
     const port = process.env.PORT || 3000;
     const ip = getLanIp();
     if (ip) return `${ip}:${port}`;
@@ -122,7 +133,7 @@ function getLanHost(req) {
   if (process.env.NODE_ENV === 'production') {
     console.warn('[server] APP_URL not set. Falling back to untrusted Host header.');
   }
-  return req.get('host');
+  return reqHost;
 }
 
 // Sockets watching the live counter from the homepage (no session created)

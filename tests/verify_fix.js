@@ -28,15 +28,30 @@ function getLanHost(req, env) {
     }
   }
 
-  // 2. In development, prefer LAN IP for phone pairing
-  if (env.NODE_ENV !== 'production') {
+  const reqHost = req.get('host') || '';
+
+  // 2. If no APP_URL is provided, and we are running on localhost,
+  // substitute with the machine's LAN IP to allow phone pairing on the local network.
+  if (reqHost.startsWith('localhost') || reqHost.startsWith('127.0.0.1')) {
     const port = env.PORT || 3000;
     const ip = getLanIp();
     if (ip) return `${ip}:${port}`;
   }
 
   // 3. Fallback to Host header if APP_URL and LAN IP are unavailable.
-  return req.get('host');
+  return reqHost;
+}
+
+function getScheme(req, env) {
+  let scheme = req.headers['x-forwarded-proto'] || req.protocol;
+  if (env.APP_URL) {
+    try {
+      scheme = new URL(env.APP_URL).protocol.replace(':', '');
+    } catch (e) {}
+  } else if (env.NODE_ENV === 'production' && !req.headers['x-forwarded-proto']) {
+    scheme = 'https';
+  }
+  return scheme;
 }
 
 // Test cases
@@ -68,6 +83,42 @@ function runTests() {
     const host = getLanHost(req, env);
     assert.strictEqual(host, 'legit-site.com:3000', 'Should fallback to Host header for backward compatibility');
     console.log('✅ Test 3 Passed: Fallback to Host header when APP_URL is missing');
+  }
+
+  // Test 4: LAN IP substitution for localhost
+  {
+    const env = { NODE_ENV: 'development', PORT: 3000 };
+    const req = { get: (h) => 'localhost:3000' };
+    const host = getLanHost(req, env);
+    assert.strictEqual(host !== 'localhost:3000', true, 'Should use LAN IP instead of localhost');
+    console.log('✅ Test 4 Passed: Substitutes LAN IP for localhost requests');
+  }
+
+  // Test 5: Scheme from APP_URL
+  {
+    const env = { APP_URL: 'https://mysite.com' };
+    const req = { headers: {}, protocol: 'http' };
+    const scheme = getScheme(req, env);
+    assert.strictEqual(scheme, 'https', 'Should use scheme from APP_URL');
+    console.log('✅ Test 5 Passed: Scheme from APP_URL');
+  }
+
+  // Test 6: Scheme from x-forwarded-proto
+  {
+    const env = { NODE_ENV: 'production' };
+    const req = { headers: { 'x-forwarded-proto': 'https' }, protocol: 'http' };
+    const scheme = getScheme(req, env);
+    assert.strictEqual(scheme, 'https', 'Should use scheme from x-forwarded-proto');
+    console.log('✅ Test 6 Passed: Scheme from x-forwarded-proto');
+  }
+
+  // Test 7: Scheme fallback to https in production without x-forwarded-proto
+  {
+    const env = { NODE_ENV: 'production' };
+    const req = { headers: {}, protocol: 'http' };
+    const scheme = getScheme(req, env);
+    assert.strictEqual(scheme, 'https', 'Should fallback to https in production');
+    console.log('✅ Test 7 Passed: Scheme fallback to https in production');
   }
 
   console.log('All tests passed successfully!');
