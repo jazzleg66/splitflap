@@ -75,10 +75,28 @@ function getLanIp() {
 }
 
 function getLanHost(req) {
-  if (process.env.NODE_ENV === 'production') return req.get('host');
-  const port = process.env.PORT || 3000;
-  const ip = getLanIp();
-  return ip ? `${ip}:${port}` : req.get('host');
+  // 1. Prefer explicit APP_URL from environment
+  if (process.env.APP_URL) {
+    try {
+      return new URL(process.env.APP_URL).host;
+    } catch (e) {
+      console.error(`[server] Invalid APP_URL: ${process.env.APP_URL}`);
+    }
+  }
+
+  // 2. In development, prefer LAN IP for phone pairing
+  if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT || 3000;
+    const ip = getLanIp();
+    if (ip) return `${ip}:${port}`;
+  }
+
+  // 3. Fallback to Host header if APP_URL and LAN IP are unavailable.
+  // In production, APP_URL should always be set to prevent Host Header Injection.
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[server] APP_URL not set. Falling back to untrusted Host header.');
+  }
+  return req.get('host');
 }
 
 // Sockets watching the live counter from the homepage (no session created)
