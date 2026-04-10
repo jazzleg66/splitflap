@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const path = require('path');
 const os = require('os');
 const QRCode = require('qrcode');
-const { createSession, getByCode, getById, touch, sessions } = require('./sessionManager');
+const { createSession, getByCode, getById, touch, updateState, updateRows, sessions } = require('./sessionManager');
 
 const app = express();
 const server = http.createServer(app);
@@ -200,12 +200,12 @@ wss.on('connection', socket => {
 
     if (role === 'tv') {
       if (msg.type === 'tv_approve') {
-        session.state = 'active';
+        updateState(session, 'active');
         send(session.phoneSocket, { type: 'phone_approved' });
         send(session.tvSocket,    { type: 'phone_approved' });
         broadcastLiveCount();
       } else if (msg.type === 'tv_reject') {
-        session.state = 'waiting';
+        updateState(session, 'waiting');
         send(session.phoneSocket, { type: 'phone_rejected' });
         session.phoneSocket?.close();
         session.phoneSocket = null;
@@ -215,12 +215,12 @@ wss.on('connection', socket => {
     if (role === 'phone') {
       if (msg.type === 'phone_send') {
         const rows = padRows(msg.payload?.rows ?? []);
-        session.currentRows = rows;
+        updateRows(session, rows);
         send(session.tvSocket, { type: 'display_update', rows });
       } else if (msg.type === 'phone_next') {
         send(session.tvSocket, { type: 'phone_next' });
       } else if (msg.type === 'phone_reset') {
-        session.currentRows = ['', '', '', '', '', ''];
+        updateRows(session, ['', '', '', '', '', '']);
         send(session.tvSocket, { type: 'hard_reset' });
       }
     }
@@ -238,7 +238,7 @@ wss.on('connection', socket => {
       session.phoneSocket = null;
       // Only notify TV if session was active
       if (session.state === 'active' || session.state === 'pending_approval') {
-        session.state = 'waiting';
+        updateState(session, 'waiting');
         send(session.tvSocket, { type: 'disconnected' });
       }
     }
