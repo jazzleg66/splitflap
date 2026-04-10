@@ -20,6 +20,8 @@ Full spec is in `Digital_Solari_PRD.md`.
 - `index.html` (or `/board`) — Display board, auto-starts demo loop on load
 - `controller.html` (or `/controller?code=XXXXXX`) — Mobile UI
 
+**Static asset path resolution:** The server serves board at `/board` and controller at `/controller` (no trailing slash). Relative paths like `board.css` in the HTML would resolve to `/board.css` (404) instead of `/board/board.css`. Both HTML files use `<base href="/board/">` and `<base href="/controller/">` respectively to fix this. Do not remove these base tags or use bare relative paths for assets in these files.
+
 ## Core Mechanical Rules
 
 These constraints are non-negotiable and must be preserved exactly:
@@ -96,6 +98,12 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 **Controller preview tile rendering:** Preview tiles use a simplified 2-panel structure (`tile-top`/`tile-bottom` directly containing `.tile-char`) — no inner flex wrappers. `controller.css` must add `display: flex; align-items: center; justify-content: center` to `#board-preview .tile-top` and `.tile-bottom` so the span is centered before `translateY` shifts it to the seam. `translateY` must be `±1.075rem` (= `4.3rem ÷ 4`, half-panel height) and `font-size` must be `4.3rem` (full tile height) — the `splitflap.css` defaults of `0.75rem` / `1.5rem` are sized for the old 3rem tile and are wrong here.
 
 **Controller preview scaling:** `fitPreview()` must be called via `requestAnimationFrame()` (not synchronously in `fonts.ready`) to ensure `grid.offsetWidth` is non-zero on load. A `ResizeObserver` on `#preview-wrapper` handles orientation changes and late-layout scenarios.
+
+**WebSocket init:** `ws.connect()` is called at module scope immediately after `ws.onMessage()` — NOT inside `document.fonts.ready`. Fonts and networking are independent; putting `ws.connect()` inside `fonts.ready` means any JS exception during UI setup silently prevents the connection from ever starting.
+
+**Reset button behavior:** `hardReset()` sends `{ type: 'phone_send', payload: { rows: DEFAULT_MESSAGES()[0].rows, mode: 'message' } }` — it re-sends the default message to the board. It does NOT send `phone_reset` (which would clear the board and start the demo loop). Reset = restore default content, not blank + demo.
+
+**board_offline error:** Server sends `{ type: 'board_offline' }` to the phone when `phone_hello` arrives but the board's WebSocket is not open. Phone displays "BOARD NOT OPEN — OPEN BOARD ON TV FIRST". Without this guard the phone would hang indefinitely waiting for `phone_approved`.
 
 ## Demo Mode (Display Board)
 

@@ -239,6 +239,12 @@ wss.on('connection', socket => {
           return;
         }
 
+        if (!tvOpen) {
+          send(socket, { type: 'board_offline' });
+          socket.close();
+          return;
+        }
+
         found.phoneSocket = socket;
         found.state = 'pending_approval';
         touch(found);

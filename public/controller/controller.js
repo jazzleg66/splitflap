@@ -669,9 +669,10 @@ function hardReset() {
   activeMessageIndex = 0;
   gridCursorIndex = 0;
   renderMessageGrid();
-  syncPreview(messages[0].rows);
+  const rows = messages[0].rows;
+  syncPreview(rows);
   saveDrafts();
-  ws.send({ type: 'phone_reset' });
+  ws.send({ type: 'phone_send', payload: { rows, mode: 'message' } });
 }
 
 // ── Clock mode ────────────────────────────────────────────────────────────────
@@ -764,8 +765,20 @@ ws.onMessage(msg => {
     case 'not_found':
       document.getElementById('connect-status').textContent = 'INVALID CODE';
       break;
+
+    case 'board_offline':
+      document.getElementById('connect-status').textContent = 'BOARD NOT OPEN — OPEN BOARD ON TV FIRST';
+      break;
   }
 });
+
+// ── Connect ───────────────────────────────────────────────────────────────────
+// Start WebSocket immediately — independent of font/UI load.
+if (!pairCode) {
+  document.getElementById('connect-status').textContent = 'NO CODE — SCAN QR ON BOARD';
+} else {
+  ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.fonts.ready.then(() => {
@@ -853,11 +866,4 @@ document.fonts.ready.then(() => {
 
   document.getElementById('btn-next').addEventListener('click', nextMessage);
   document.getElementById('btn-reset').addEventListener('click', hardReset);
-
-  // ── Connect ──────────────────────────────────────────────────────────────
-  if (!pairCode) {
-    document.getElementById('connect-status').textContent = 'NO CODE — SCAN QR ON BOARD';
-  } else {
-    ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-  }
 });
