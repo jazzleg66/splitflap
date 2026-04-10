@@ -38,6 +38,70 @@ const DAY_NAMES   = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'
 const MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
                      'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 
+// ── Artwork templates ─────────────────────────────────────────────────────────
+// K = space/black, R/W/Y/G/B/P/O = color tile (converted at apply-time)
+const _AW = { K:' ', R:'r', W:'w', Y:'y', G:'g', B:'b', P:'p', O:'o' };
+const artworkToRows = data =>
+  data.map(row => row.map(c => _AW[c] ?? ' ').join('').padEnd(COLS, ' '));
+
+const ARTWORKS = [
+  {
+    name: 'BLOOM',
+    data: [
+      ['K','K','R','R','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K'],
+      ['K','R','W','W','R','K','R','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K'],
+      ['R','W','Y','Y','W','R','K','K','O','K','K','K','K','K','K','K','K','K','K','K','K','K'],
+      ['K','R','W','W','R','K','K','K','K','K','R','K','K','K','K','K','K','K','K','K','K','K'],
+      ['K','K','R','R','K','G','K','K','K','K','K','K','K','O','K','K','K','K','K','K','K','K'],
+      ['K','G','G','G','G','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K'],
+    ],
+  },
+  {
+    name: 'MEADOW',
+    data: [
+      ['K','K','K','K','K','K','K','P','K','K','K','K','K','K','R','K','K','K','K','K','K','K'],
+      ['K','K','O','K','K','K','P','W','P','K','K','Y','K','R','W','R','K','K','K','P','K','K'],
+      ['K','O','W','O','K','K','K','P','K','K','Y','W','Y','K','R','K','K','K','P','W','P','K'],
+      ['K','K','G','K','K','K','G','K','K','K','K','G','K','K','G','K','K','K','K','P','K','K'],
+      ['G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G'],
+      ['G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G'],
+    ],
+  },
+  {
+    name: 'HORIZON',
+    data: [
+      ['K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K'],
+      ['B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B'],
+      ['B','B','B','B','B','B','B','B','B','P','P','P','P','P','P','P','P','B','B','B','B','B'],
+      ['P','P','P','R','R','R','R','R','R','R','R','R','R','R','R','R','R','R','R','R','R','P'],
+      ['R','R','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O'],
+      ['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'],
+    ],
+  },
+  {
+    name: 'TWINS',
+    data: [
+      ['K','K','G','G','G','K','K','K','K','K','K','K','K','R','R','R','K','K','K','K','K','K'],
+      ['K','G','W','G','W','G','K','K','K','K','K','K','R','W','R','W','R','K','K','K','K','K'],
+      ['K','G','G','G','G','G','K','K','K','K','K','K','R','R','R','R','R','K','K','K','K','K'],
+      ['K','K','G','K','G','K','K','K','K','K','K','K','K','R','K','R','K','K','K','K','K','K'],
+      ['K','G','K','K','K','G','K','K','K','K','K','K','R','K','K','K','R','K','K','K','K','K'],
+      ['K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K','K'],
+    ],
+  },
+  {
+    name: 'INVADER',
+    data: [
+      ['B','B','B','Y','B','B','B','B','B','B','B','B','B','B','B','B','B','B','Y','B','B','B'],
+      ['B','B','B','B','B','B','B','B','P','P','P','P','P','P','B','B','B','B','B','B','B','B'],
+      ['B','Y','B','B','B','B','B','P','P','W','P','P','W','P','P','B','B','B','B','B','Y','B'],
+      ['B','B','B','B','B','B','B','P','P','P','P','P','P','P','P','B','B','B','B','B','B','B'],
+      ['B','B','B','B','B','B','B','B','P','B','P','P','B','P','B','B','B','B','B','B','B','B'],
+      ['B','B','B','Y','B','B','B','P','B','B','B','B','B','B','P','B','B','B','Y','B','B','B'],
+    ],
+  },
+];
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let messages           = DEFAULT_MESSAGES();
 let activeMessageIndex = 0;
@@ -86,7 +150,7 @@ function loadDrafts() {
     if (Array.isArray(d.messages) && d.messages.length) messages = d.messages;
     activeMessageIndex = Math.min(d.activeMessageIndex ?? 0, messages.length - 1);
     loopInterval       = d.loopInterval ?? DEFAULT_LOOP_S;
-    currentMode        = d.currentMode  ?? 'message';
+    currentMode        = (d.currentMode === 'artwork' ? 'message' : d.currentMode) ?? 'message';
   } catch {}
 }
 
@@ -363,6 +427,50 @@ function onDragPointerUp() {
     saveDrafts();
   }
   cleanupDrag();
+}
+
+// ── Artwork mode ───────────────────────────────────────────────────────────────
+const MSG_ELEMENTS = ['msg-nav', 'type-row', 'message-list', 'loop-timer-row'];
+
+function showArtworkMode() {
+  MSG_ELEMENTS.forEach(id => { document.getElementById(id).hidden = true; });
+  renderArtworkList();
+  document.getElementById('artwork-section').hidden = false;
+}
+
+function hideArtworkMode() {
+  document.getElementById('artwork-section').hidden = true;
+  MSG_ELEMENTS.forEach(id => { document.getElementById(id).hidden = false; });
+}
+
+function renderArtworkList() {
+  const section = document.getElementById('artwork-section');
+  section.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.id = 'artwork-section-label';
+  label.textContent = 'CHOOSE ARTWORK';
+  section.appendChild(label);
+
+  ARTWORKS.forEach(artwork => {
+    const btn = document.createElement('button');
+    btn.className = 'artwork-item';
+    btn.textContent = artwork.name;
+    btn.addEventListener('click', () => applyArtwork(artwork));
+    section.appendChild(btn);
+  });
+}
+
+function applyArtwork(artwork) {
+  const rows = artworkToRows(artwork.data);
+  messages[activeMessageIndex].rows = rows;
+  gridCursorIndex = 0;
+  currentMode = 'message';
+  document.querySelector('input[name="mode"][value="message"]').checked = true;
+  hideArtworkMode();
+  renderMessageGrid();
+  syncPreview(rows);
+  saveDrafts();
 }
 
 // ── Message grid rendering ─────────────────────────────────────────────────────
@@ -705,13 +813,23 @@ document.fonts.ready.then(() => {
   // ── Mode toggle ──────────────────────────────────────────────────────────
   document.querySelectorAll('input[name="mode"]').forEach(radio => {
     radio.addEventListener('change', e => {
+      const prevMode = currentMode;
       currentMode = e.target.value;
-      saveDrafts();
+      // Clean up previous mode
+      if (prevMode === 'artwork') hideArtworkMode();
+      if (prevMode === 'clock') stopClockMode();
+      // Activate new mode
       if (currentMode === 'clock') {
         stopPlay();
         startClockMode();
+        saveDrafts();
+      } else if (currentMode === 'artwork') {
+        stopPlay();
+        showArtworkMode();
+        // don't persist 'artwork' — it's ephemeral
       } else {
         switchToMessage();
+        saveDrafts();
       }
     });
   });

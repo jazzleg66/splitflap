@@ -54,6 +54,10 @@
           <input type="radio" name="mode" value="clock">
           <span>CLOCK</span>
         </label>
+        <label class="mode-label">
+          <input type="radio" name="mode" value="artwork">
+          <span>ARTWORK</span>
+        </label>
       </section>
 
       <!-- Message tabs + add button -->
@@ -78,6 +82,9 @@
 
       <!-- Active message row inputs — injected by JS -->
       <div id="message-list"></div>
+
+      <!-- Artwork picker — shown in ARTWORK mode, injected by JS -->
+      <div id="artwork-section" hidden></div>
 
       <!-- Hidden off-screen input — keyboard capture shim for the cell grid.
            Focused when user taps the grid; triggers virtual keyboard on iOS/Android. -->
