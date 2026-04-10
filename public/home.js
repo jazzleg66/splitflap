@@ -15,12 +15,12 @@ const DEMO_HOLD_MS = 7000;
 
 const DEMO_MESSAGES = [
   [
-    'rrr                rrr',
     '                      ',
-    'IMPOSSIBLE IS NOTHING ',
-    '          - ADIDAS    ',
     '                      ',
-    'rrr                rrr',
+    'r   ROSES ARE RED    r',
+    'b  VIOLETS ARE BLUE  b',
+    '                      ',
+    '                      ',
   ],
   [
     '                      ',
@@ -34,7 +34,7 @@ const DEMO_MESSAGES = [
     'gggggggggggggggggggggg',
     'gbbbbbbbbbbbbbbbbbbbbg',
     'gb SCAN THE QR CODE bg',
-    'gb  AND TRY YOURSELFbg',
+    'gb  TRY IT YOURSELF bg',
     'gbbbbbbbbbbbbbbbbbbbbg',
     'gggggggggggggggggggggg',
   ],
@@ -333,6 +333,6 @@ document.fonts.ready.then(() => {
   buildGrid();
   syncTileSizing();
   new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
-  ws.connect(`ws://${location.host}/ws`);
+  ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
   startDemo();
 });

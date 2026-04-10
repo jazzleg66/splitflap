@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -30,7 +32,8 @@ app.get('/qr/:sessionId', async (req, res) => {
 
   // In dev, use LAN IP so phones on the same network can scan
   const host = getLanHost(req);
-  const url = `http://${host}/controller?code=${session.pairCode}`;
+  const scheme = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const url = `${scheme}://${host}/controller?code=${session.pairCode}`;
   console.log(`[qr] encoding URL: ${url}`);
 
   try {

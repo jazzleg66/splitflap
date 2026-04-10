@@ -856,6 +856,6 @@ document.fonts.ready.then(() => {
   if (!pairCode) {
     document.getElementById('connect-status').textContent = 'NO CODE — SCAN QR ON BOARD';
   } else {
-    ws.connect(`ws://${location.host}/ws`);
+    ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
   }
 });
