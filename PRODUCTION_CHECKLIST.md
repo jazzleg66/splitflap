@@ -14,48 +14,47 @@
 
 ## Your Tasks (in order)
 
-### 🟦 1. Supabase Setup (15 min)
-- [ ] Create Supabase account at supabase.com
-- [ ] Create a new project (free tier)
-- [ ] Copy Project URL
-- [ ] Copy Service Role Key (not anon key!)
-- [ ] Go to SQL Editor → paste `scripts/supabase-schema.sql` → run
-- [ ] Verify `sessions` table was created
-- [ ] Save credentials securely
+### ✅ 1. Supabase Setup (15 min)
+- [x] Create Supabase account at supabase.com
+- [x] Create a new project (free tier)
+- [x] Copy Project URL
+- [x] Copy Service Role Key (not anon key!)
+- [x] Go to SQL Editor → paste `scripts/supabase-schema.sql` → run
+- [x] Verify `sessions` table was created
+- [x] Save credentials securely
 
-### 🟦 2. Sentry Setup (10 min)
-- [ ] Create Sentry account at sentry.io
-- [ ] Create new project → choose "Node.js" for server
-- [ ] Copy the DSN
+### ✅ 2. Sentry Setup (10 min)
+- [x] Create Sentry account at sentry.io
+- [x] Create new project → choose "Node.js" for server
+- [x] Copy the DSN
 - [ ] (Optional) Create browser project for client-side errors
-- [ ] Save credentials securely
+- [x] Save credentials securely
 
-### 🟦 3. PostHog Setup (5 min)
-- [ ] Create PostHog account at posthog.com
-- [ ] Create new project
-- [ ] Copy Project API Key
-- [ ] Note the host: `https://app.posthog.com`
-- [ ] Save credentials
+### ✅ 3. PostHog Setup (5 min)
+- [x] Create PostHog account at posthog.com
+- [x] Create new project
+- [x] Copy Project API Key
+- [x] Note the host: `https://app.posthog.com`
+- [x] Save credentials
 
-### 🟦 4. Railway Setup (10 min)
-- [ ] Create Railway account at railway.app
-- [ ] Sign in with GitHub (easier)
-- [ ] Create new project
-- [ ] Click "Deploy from GitHub repo"
-- [ ] Select `digital-solari` repository
+### 🟦 4. Render Setup (10 min) — **BLOCKED: Waiting for credit card**
+- [ ] Create Render account at render.com (sign in with GitHub)
+- [ ] Create new Web Service
+- [ ] Connect `digital-solari` repository
 - [ ] Select `main` branch
 - [ ] **Add environment variables:**
   ```
   NODE_ENV=production
-  PORT=3000
   SUPABASE_URL=<from step 1>
   SUPABASE_SERVICE_ROLE_KEY=<from step 1>
   SENTRY_DSN=<from step 2>
   VITE_POSTHOG_KEY=<from step 3>
   VITE_POSTHOG_HOST=https://app.posthog.com
   ```
-- [ ] Watch deployment logs until "listening on port 3000"
-- [ ] Copy the Railway public URL (e.g., `https://digital-solari-prod-xxxxx.railway.app`)
+- [ ] Set Build Command: `npm install`
+- [ ] Set Start Command: `npm start`
+- [ ] Deploy and watch logs until "Server running on port 3000"
+- [ ] Copy the Render public URL (e.g., `https://digital-solari.onrender.com`)
 
 ### 🟦 5. Domain Setup (Optional, 5 min)
 - [ ] Purchase domain (if not already owned) — suggest `splitflap.cc`
@@ -83,11 +82,15 @@
 
 ---
 
-## Estimated Time
-- **Code:** Already done ✅
-- **Setup:** ~40 minutes (Supabase + Sentry + PostHog + Railway)
-- **Verification:** ~10 minutes
-- **Total:** ~50 minutes start-to-ship
+## Progress
+- **Code:** ✅ Done
+- **Setup:** 
+  - ✅ Supabase (complete)
+  - ✅ Sentry (complete)
+  - ✅ PostHog (complete)
+  - 🟦 Render (blocked — credit card needed)
+- **Verification:** Pending
+- **Estimated time to complete:** ~20 min once credit card available (Render deploy + verification)
 
 ---
 
