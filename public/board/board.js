@@ -254,6 +254,7 @@ function toggleMute() {
   audioMuted = !audioMuted;
   document.getElementById('btn-mute').textContent = audioMuted ? 'UNMUTE' : 'MUTE';
   if (audioMuted) stopAudio();
+  if (typeof posthog !== 'undefined') posthog.capture('board_mute_toggled', { muted: audioMuted });
 }
 
 // ── Demo ──────────────────────────────────────────────────────────────────────
@@ -283,6 +284,8 @@ function skipDemo() {
   stopDemo();
   demoIndex = (demoIndex + 1) % DEMO_MESSAGES.length;
   startDemo();
+  // Track demo skip event
+  if (typeof posthog !== 'undefined') posthog.capture('board_demo_skipped');
 }
 
 // ── QR screen helpers ─────────────────────────────────────────────────────────
@@ -330,6 +333,7 @@ ws.onMessage(msg => {
       stopDemo();
       displayRows(STANDBY_ROWS);
       document.getElementById('conn-dot').className = 'connected';
+      if (typeof posthog !== 'undefined') posthog.capture('board_connected');
       document.getElementById('conn-dot').setAttribute('aria-label', 'Connected');
       break;
 
@@ -384,8 +388,13 @@ document.getElementById('btn-mute').classList.add('audio-locked');
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
-  if (!document.fullscreenElement) document.body.requestFullscreen();
-  else document.exitFullscreen();
+  if (!document.fullscreenElement) {
+    document.body.requestFullscreen();
+    if (typeof posthog !== 'undefined') posthog.capture('board_fullscreen_enabled');
+  } else {
+    document.exitFullscreen();
+    if (typeof posthog !== 'undefined') posthog.capture('board_fullscreen_disabled');
+  }
 });
 document.addEventListener('fullscreenchange', () => {
   document.getElementById('btn-fullscreen').textContent =

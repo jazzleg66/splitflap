@@ -608,6 +608,7 @@ function padRows(rows) {
 function sendMessage(index) {
   const rows = padRows(messages[index]?.rows ?? []);
   ws.send({ type: 'phone_send', payload: { rows, mode: 'message' } });
+  if (typeof posthog !== 'undefined') posthog.capture('message_sent', { messageIndex: index });
 }
 
 function startPlay() {
@@ -735,6 +736,7 @@ ws.onMessage(msg => {
       document.getElementById('connect-screen').remove();
       document.getElementById('controller-ui').hidden = false;
       updateHeader(true, pairCode);
+      if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
 
       // Auto-resume loop if it was playing before disconnect
       try {

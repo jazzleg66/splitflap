@@ -1,5 +1,16 @@
 require('dotenv').config();
 
+// Initialize Sentry for error tracking (optional, only if DSN is set)
+let Sentry = null;
+if (process.env.SENTRY_DSN) {
+  Sentry = require('@sentry/node');
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  });
+}
+
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -245,6 +256,11 @@ wss.on('connection', socket => {
     broadcastLiveCount();
   });
 });
+
+// Add Sentry error handler (if initialized)
+if (Sentry) {
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
