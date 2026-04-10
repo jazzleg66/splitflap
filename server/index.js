@@ -168,7 +168,7 @@ wss.on('connection', socket => {
   let session = null;
   let role = null; // 'tv' | 'phone'
 
-  socket.on('message', raw => {
+  socket.on('message', async raw => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
@@ -199,7 +199,7 @@ wss.on('connection', socket => {
           existing.state = 'waiting';
           session = existing;
         } else {
-          session = createSession();
+          session = await createSession();
           session.tvSocket = socket;
         }
         touch(session);
