@@ -274,50 +274,51 @@ wss.on('connection', socket => {
           return;
         }
 
-      if (msg.type === 'phone_hello') {
-        role = 'phone';
-        const found = getByCode(msg.pairCode);
-        console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
-        if (!found) { send(socket, { type: 'not_found' }); socket.close(); return; }
+        if (msg.type === 'phone_hello') {
+          role = 'phone';
+          const found = getByCode(msg.pairCode);
+          console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
+          if (!found) { send(socket, { type: 'not_found' }); socket.close(); return; }
 
-        // Hijack protection: active session with live phone socket
-        if (
-          found.state === 'active' &&
-          found.phoneSocket?.readyState === WebSocket.OPEN
-        ) {
-          console.log(`[pair] board_occupied code=${msg.pairCode}`);
-          send(socket, { type: 'board_occupied' });
-          socket.close();
-          return;
-        }
+          // Hijack protection: active session with live phone socket
+          if (
+            found.state === 'active' &&
+            found.phoneSocket?.readyState === WebSocket.OPEN
+          ) {
+            console.log(`[pair] board_occupied code=${msg.pairCode}`);
+            send(socket, { type: 'board_occupied' });
+            socket.close();
+            return;
+          }
 
-        session = found;
-        const tvOpen = found.tvSocket?.readyState === WebSocket.OPEN;
-        console.log(`[pair] session state=${found.state} tvConnected=${tvOpen}`);
+          session = found;
+          const tvOpen = found.tvSocket?.readyState === WebSocket.OPEN;
+          console.log(`[pair] session state=${found.state} tvConnected=${tvOpen}`);
 
-        // Phone reconnecting to an active session (socket dropped) — skip re-approval
-        if (found.state === 'active') {
+          // Phone reconnecting to an active session (socket dropped) — skip re-approval
+          if (found.state === 'active') {
+            found.phoneSocket = socket;
+            touch(found);
+            send(socket, { type: 'phone_approved' });
+            broadcastLiveCount();
+            return;
+          }
+
+          if (!tvOpen) {
+            send(socket, { type: 'board_offline' });
+            socket.close();
+            return;
+          }
+
           found.phoneSocket = socket;
+          found.state = 'pending_approval';
           touch(found);
-          send(socket, { type: 'phone_approved' });
-          broadcastLiveCount();
+          send(found.tvSocket, { type: 'phone_request' });
           return;
         }
 
-        if (!tvOpen) {
-          send(socket, { type: 'board_offline' });
-          socket.close();
-          return;
-        }
-
-        found.phoneSocket = socket;
-        found.state = 'pending_approval';
-        touch(found);
-        send(found.tvSocket, { type: 'phone_request' });
-        return;
+        return; // unknown first message
       }
-
-      return; // unknown first message
     }
 
     // ── Subsequent messages ────────────────────────────────────────────────────
