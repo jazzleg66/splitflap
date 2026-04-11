@@ -9,13 +9,14 @@ export default class WsClient {
   constructor(onConnect) {
     this._onConnect = onConnect;   // called each (re)connect
     this._onMsg = null;
+    this._onClose = null;
     this._socket = null;
     this._url = null;
-    this._delay = 500;  // Start with 500ms instead of 1000ms for faster initial reconnection
+    this._delay = 500;
     this._reconnectTimer = null;
     this._destroyed = false;
     this._connectionTimer = null;
-    this._connectionTimeout = 5000; // 5 second timeout for faster failure detection
+    this._connectionTimeout = 5000;
   }
 
   connect(url) {
@@ -70,6 +71,7 @@ export default class WsClient {
       clearTimeout(this._connectionTimer);
       if (this._destroyed) return;
       console.log('[ws-client] Connection closed, reconnecting in', this._delay, 'ms');
+      if (this._onClose) this._onClose();
       this._reconnectTimer = setTimeout(() => this._open(), this._delay);
       this._delay = Math.min(this._delay * 2, 30000);
     });
@@ -88,6 +90,10 @@ export default class WsClient {
 
   onMessage(fn) {
     this._onMsg = fn;
+  }
+
+  onClose(fn) {
+    this._onClose = fn;
   }
 
   destroy() {

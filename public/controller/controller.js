@@ -4,71 +4,12 @@ import {
 } from '/shared/spool.js';
 import WsClient from '/shared/wsClient.js';
 
-// ── Debug logging (for Safari on iPhone without console access) ──────────────
-const debugMessages = [];
-const MAX_DEBUG_MESSAGES = 15;
-let debugPanelReady = false;
-
-function addDebugMessage(text) {
-  const now = new Date().toLocaleTimeString();
-  const msg = `[${now}] ${text}`;
-  debugMessages.push(msg);
-  if (debugMessages.length > MAX_DEBUG_MESSAGES) debugMessages.shift();
-
-  // Try to update panel
-  try {
-    updateDebugPanel();
-  } catch (e) {
-    console.error('[debug] Error updating panel:', e.message);
-  }
-
-  // Also log to console
-  console.log('[debug]', msg);
-}
-
-function updateDebugPanel() {
-  const panel = document.getElementById('debug-messages');
-  if (!panel) {
-    console.warn('[debug] debug-messages element not found');
-    return;
-  }
-
-  panel.innerHTML = debugMessages.map(m => `<div>${m}</div>`).join('');
-
-  // Auto-scroll to bottom
-  const parentPanel = document.getElementById('debug-panel');
-  if (parentPanel) {
-    setTimeout(() => {
-      parentPanel.scrollTop = parentPanel.scrollHeight;
-    }, 0);
-  }
-
-  debugPanelReady = true;
-}
-
-// Check panel exists on init
-function checkDebugPanel() {
-  const panel = document.getElementById('debug-panel');
-  const messages = document.getElementById('debug-messages');
-  console.log('[debug] Panel check - debug-panel:', panel ? 'FOUND' : 'NOT FOUND', 'debug-messages:', messages ? 'FOUND' : 'NOT FOUND');
-  if (panel && messages) {
-    console.log('[debug] Panel is ready for messages');
-    return true;
-  }
-  return false;
-}
+function addDebugMessage(text) { console.log('[debug]', text); }
 
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
 let pairCode = new URLSearchParams(location.search).get('code') || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
 
-// Check debug panel early
-console.log('[debug] Checking if debug panel elements exist...');
-checkDebugPanel();
-
-// Initialize debug messages
-console.log('[debug] Starting initialization...');
-addDebugMessage('✓ Page loaded, initializing WebSocket...');
 
 // Use head-start socket if available, otherwise create new
 let ws = window._wsHeadStart;
@@ -90,54 +31,39 @@ if (!ws) {
   // We just need to ensure the onMessage handler is attached (done below).
 }
 
+let phoneApproved = false;
+
+ws.onClose(() => {
+  if (phoneApproved) {
+    // Socket closed after we were approved — board went away
+    const ui = document.getElementById('controller-ui');
+    if (ui) { ui.hidden = true; ui.style.display = 'none'; }
+    const connectScreen = document.getElementById('connect-screen');
+    if (connectScreen) {
+      connectScreen.hidden = false;
+      connectScreen.style.display = 'flex';
+      const statusEl = document.getElementById('connect-status');
+      if (statusEl) statusEl.textContent = 'BOARD DISCONNECTED';
+    }
+    updateHeader(false, pairCode);
+    phoneApproved = false;
+  }
+});
+
 ws.onMessage(msg => {
   console.log('%c[ws] Message received: ' + msg.type, 'color: #0f0; font-weight: bold;', msg);
 
-  // CRITICAL: Update debug panel to show message received
-  try {
-    addDebugMessage(`📨 ${msg.type}`);
-  } catch (e) {
-    console.error('[ws] Error logging message:', e.message);
-  }
-
-  // Update header code to show message type (visual indicator)
-  // This is critical - it's the ONLY way we can tell if messages are arriving on Safari
-  try {
-    const codeEl = document.getElementById('header-code');
-    if (codeEl) {
-      // Show message type for 2 seconds, then revert
-      const originalText = codeEl.textContent;
-      codeEl.textContent = msg.type.substring(0, 14); // Show message type
-      codeEl.style.backgroundColor = msg.type === 'board_disconnected' ? '#CC0000' : '#333';
-      codeEl.style.color = msg.type === 'board_disconnected' ? '#FFF' : 'inherit';
-      codeEl.style.padding = '2px 4px';
-      codeEl.title = new Date().toLocaleTimeString() + ': ' + msg.type;
-
-      // Revert after 3 seconds
-      setTimeout(() => {
-        if (msg.type !== 'board_disconnected') {
-          codeEl.textContent = originalText;
-          codeEl.style.backgroundColor = 'transparent';
-          codeEl.style.color = 'inherit';
-          codeEl.style.padding = '0';
-        }
-      }, 3000);
-    }
-  } catch (e) {
-    console.error('[ws] Failed to update header:', e.message);
-  }
 
   switch (msg.type) {
     case 'phone_approved': {
       console.log('[ws] Phone approved! Transitioning UI...');
-      addDebugMessage('APPROVED - showing controller UI');
+      phoneApproved = true;
       // Hide connection screen instead of removing it (so we can show it again if board disconnects)
       const connectScreen = document.getElementById('connect-screen');
       if (connectScreen) connectScreen.hidden = true;
       const ui = document.getElementById('controller-ui');
       if (ui) ui.hidden = false;
       updateHeader(true, pairCode);
-      addDebugMessage('UI transitioned to CONNECTED');
       if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
 
       // Auto-resume loop if it was playing before disconnect
@@ -984,20 +910,6 @@ function init() {
     if (timerSlider) timerSlider.value = loopInterval;
     if (timerValue) timerValue.textContent = loopInterval;
 
-    // Debug panel is always visible now
-    addDebugMessage('Controller initialized - watching for board_disconnected');
-
-    // Log WebSocket state every 5 seconds (for debugging connection issues)
-    setInterval(() => {
-      const stateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-      const state = ws._socket ? ws._socket.readyState : -1;
-      const stateName = stateNames[state] || 'UNKNOWN';
-      // Only log if state is unusual
-      if (state !== 1) { // 1 = OPEN
-        console.log('[ws-monitor] Socket state:', stateName, '(' + state + ')');
-        addDebugMessage(`Socket state: ${stateName}`);
-      }
-    }, 5000);
 
     // ── Grid capture input ────────────────────────────────────────────────────
     const captureEl = document.getElementById('grid-capture');
