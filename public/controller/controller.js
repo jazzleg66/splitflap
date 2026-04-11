@@ -4,6 +4,33 @@ import {
 } from '/shared/spool.js';
 import WsClient from '/shared/wsClient.js';
 
+// ── Debug logging (for Safari on iPhone without console access) ──────────────
+const debugMessages = [];
+const MAX_DEBUG_MESSAGES = 10;
+function addDebugMessage(text) {
+  const now = new Date().toLocaleTimeString();
+  debugMessages.push(`[${now}] ${text}`);
+  if (debugMessages.length > MAX_DEBUG_MESSAGES) debugMessages.shift();
+  updateDebugPanel();
+}
+function updateDebugPanel() {
+  const panel = document.getElementById('debug-messages');
+  if (panel) {
+    panel.innerHTML = debugMessages.map(m => `<div>${m}</div>`).join('');
+  }
+}
+// Toggle debug panel
+document.getElementById('debug-btn')?.addEventListener('click', () => {
+  const panel = document.getElementById('debug-panel');
+  const messages = document.getElementById('debug-messages');
+  const toggle = document.getElementById('debug-toggle-text');
+  if (panel && messages && toggle) {
+    const isHidden = messages.style.display === 'none';
+    messages.style.display = isHidden ? 'block' : 'none';
+    toggle.textContent = isHidden ? 'hide' : 'show';
+  }
+});
+
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
 let pairCode = new URLSearchParams(location.search).get('code') || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
@@ -30,15 +57,18 @@ if (!ws) {
 
 ws.onMessage(msg => {
   console.log('[ws] Message received:', msg.type, msg);
+  addDebugMessage(`Message: ${msg.type}`);
   switch (msg.type) {
     case 'phone_approved': {
       console.log('[ws] Phone approved! Transitioning UI...');
+      addDebugMessage('APPROVED - showing controller UI');
       // Hide connection screen instead of removing it (so we can show it again if board disconnects)
       const connectScreen = document.getElementById('connect-screen');
       if (connectScreen) connectScreen.hidden = true;
       const ui = document.getElementById('controller-ui');
       if (ui) ui.hidden = false;
       updateHeader(true, pairCode);
+      addDebugMessage('UI transitioned to CONNECTED');
       if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
 
       // Auto-resume loop if it was playing before disconnect
@@ -76,21 +106,26 @@ ws.onMessage(msg => {
 
     case 'board_disconnected':
       console.log('[ws] Board disconnected! Reverting to disconnected state...');
+      addDebugMessage('BOARD DISCONNECTED - hiding UI');
       // Hide the main UI and show connection screen again
       const ui = document.getElementById('controller-ui');
       console.log('[ws] Hiding controller UI:', ui ? 'found' : 'not found');
+      addDebugMessage(`UI element: ${ui ? 'found' : 'NOT FOUND'}`);
       if (ui) ui.hidden = true;
 
       const connectScreen = document.getElementById('connect-screen');
       console.log('[ws] Showing connection screen:', connectScreen ? 'found' : 'not found');
+      addDebugMessage(`Connect screen: ${connectScreen ? 'found' : 'NOT FOUND'}`);
       if (connectScreen) {
         connectScreen.hidden = false;
         const statusEl = document.getElementById('connect-status');
         console.log('[ws] Setting status to DISCONNECTED:', statusEl ? 'found' : 'not found');
+        addDebugMessage(`Status el: ${statusEl ? 'found' : 'NOT FOUND'}`);
         if (statusEl) statusEl.textContent = 'DISCONNECTED';
       }
       console.log('[ws] Updating header...');
       updateHeader(false, pairCode);
+      addDebugMessage('Header updated to DISCONNECTED');
       console.log('[ws] Board disconnected state update complete');
       break;
   }
