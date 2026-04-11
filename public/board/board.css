@@ -55,7 +55,6 @@ body {
 #qr-img {
   width: 220px;
   height: 220px;
-  image-rendering: pixelated;
   display: block;
   background: #fff;
   padding: 10px;
@@ -283,7 +282,6 @@ body.pseudo-fullscreen #demo-controls button:hover {
 #qr-img {
   width: 190px;
   height: 190px;
-  image-rendering: pixelated;
   display: block;
   background: #fff; /* QR needs white background */
   padding: 8px;
