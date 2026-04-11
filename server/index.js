@@ -57,7 +57,6 @@ if (process.env.NODE_ENV === 'production') {
 const sentryDsn = process.env.SENTRY_DSN || '';
 const phKey = process.env.VITE_POSTHOG_KEY || '';
 
-const htmlCache = {};
 function preloadHtmlCache() {
   const filesToCache = [
     path.join(__dirname, '../public/index.html'),
