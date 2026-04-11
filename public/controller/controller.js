@@ -91,17 +91,26 @@ if (!ws) {
 }
 
 ws.onMessage(msg => {
-  console.log('[ws] Message received:', msg.type, msg);
-  addDebugMessage(`Message: ${msg.type}`);
+  console.log('%c[ws] Message received: ' + msg.type, 'color: #0f0; font-weight: bold;', msg);
 
-  // Fallback debug: update header with message type
+  // CRITICAL: Update debug panel to show message received
+  try {
+    addDebugMessage(`📨 ${msg.type}`);
+  } catch (e) {
+    console.error('[ws] Error logging message:', e.message);
+  }
+
+  // Update header code to show message type (visual indicator)
   try {
     const codeEl = document.getElementById('header-code');
     if (codeEl) {
-      codeEl.textContent = msg.type.substring(0, 10);
+      // Show last message type in header for visual confirmation
+      const timestamp = new Date().toLocaleTimeString();
+      codeEl.textContent = msg.type.substring(0, 12);
+      codeEl.title = timestamp + ': ' + msg.type;
     }
   } catch (e) {
-    console.error('[debug] Failed to update header:', e.message);
+    console.error('[ws] Failed to update header:', e.message);
   }
 
   switch (msg.type) {
@@ -151,28 +160,34 @@ ws.onMessage(msg => {
       break;
 
     case 'board_disconnected':
-      console.log('[ws] Board disconnected! Reverting to disconnected state...');
-      addDebugMessage('BOARD DISCONNECTED - hiding UI');
-      // Hide the main UI and show connection screen again
-      const ui = document.getElementById('controller-ui');
-      console.log('[ws] Hiding controller UI:', ui ? 'found' : 'not found');
-      addDebugMessage(`UI element: ${ui ? 'found' : 'NOT FOUND'}`);
-      if (ui) ui.hidden = true;
+      console.log('[ws] ===== BOARD DISCONNECTED MESSAGE RECEIVED =====');
+      addDebugMessage('🔴 BOARD_DISCONNECTED received!');
 
+      // Hide the main UI
+      const ui = document.getElementById('controller-ui');
+      if (ui) {
+        ui.hidden = true;
+        console.log('[ws] Hidden controller-ui');
+      }
+
+      // Show connection screen
       const connectScreen = document.getElementById('connect-screen');
-      console.log('[ws] Showing connection screen:', connectScreen ? 'found' : 'not found');
-      addDebugMessage(`Connect screen: ${connectScreen ? 'found' : 'NOT FOUND'}`);
       if (connectScreen) {
         connectScreen.hidden = false;
+        console.log('[ws] Showed connect-screen');
+
+        // Update status text
         const statusEl = document.getElementById('connect-status');
-        console.log('[ws] Setting status to DISCONNECTED:', statusEl ? 'found' : 'not found');
-        addDebugMessage(`Status el: ${statusEl ? 'found' : 'NOT FOUND'}`);
-        if (statusEl) statusEl.textContent = 'DISCONNECTED';
+        if (statusEl) {
+          statusEl.textContent = 'BOARD DISCONNECTED';
+          console.log('[ws] Updated status text');
+        }
       }
-      console.log('[ws] Updating header...');
+
+      // Update header to show disconnected
       updateHeader(false, pairCode);
-      addDebugMessage('Header updated to DISCONNECTED');
-      console.log('[ws] Board disconnected state update complete');
+      addDebugMessage('✓ UI updated to DISCONNECTED');
+      console.log('[ws] Board disconnected state update COMPLETE');
       break;
   }
 });
