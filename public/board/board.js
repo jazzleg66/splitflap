@@ -322,7 +322,7 @@ function hideQrScreen() {
 }
 
 // ── WebSocket client ──────────────────────────────────────────────────────────
-let sessionId = sessionStorage.getItem('solari_session_id') || null;
+let sessionId = null;  // Always create new session on page load — no resuming
 let lastPairCode = null;
 
 const ws = new WsClient(() => {
@@ -334,7 +334,6 @@ ws.onMessage(msg => {
     case 'tv_paired':
       sessionId = msg.sessionId;
       lastPairCode = msg.pairCode;
-      sessionStorage.setItem('solari_session_id', sessionId);
       showQrScreen(msg.pairCode, msg.sessionId);
       break;
 
