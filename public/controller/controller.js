@@ -4,6 +4,61 @@ import {
 } from '/shared/spool.js';
 import WsClient from '/shared/wsClient.js';
 
+// ── WebSocket Connect ──────────────────────────────────────────────────────────
+const pairCode = new URLSearchParams(location.search).get('code') || '';
+const ws = new WsClient(() => {
+  ws.send({ type: 'phone_hello', pairCode });
+  const statusEl = document.getElementById('connect-status');
+  if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+});
+if (pairCode) {
+  ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+}
+
+ws.onMessage(msg => {
+  switch (msg.type) {
+    case 'phone_approved': {
+      document.getElementById('connect-screen')?.remove();
+      const ui = document.getElementById('controller-ui');
+      if (ui) ui.hidden = false;
+      updateHeader(true, pairCode);
+      if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
+
+      // Auto-resume loop if it was playing before disconnect
+      try {
+        const ps = JSON.parse(localStorage.getItem('solari_play_state') || '{}');
+        if (ps.wasPlaying && ps.pairCode === pairCode) {
+          playIndex = Math.min(ps.playIndex ?? 0, messages.length - 1);
+          loopInterval = ps.loopInterval ?? loopInterval;
+          const slider = document.getElementById('timer-slider');
+          const valText = document.getElementById('timer-value');
+          if (slider) slider.value = loopInterval;
+          if (valText) valText.textContent = loopInterval;
+          startPlay();
+        }
+      } catch {}
+      break;
+    }
+
+    case 'phone_rejected':
+      document.getElementById('connect-status').textContent = 'CONNECTION DENIED';
+      updateHeader(false, pairCode);
+      break;
+
+    case 'board_occupied':
+      document.getElementById('connect-status').textContent = 'BOARD OCCUPIED — TRY AGAIN LATER';
+      break;
+
+    case 'not_found':
+      document.getElementById('connect-status').textContent = 'INVALID CODE';
+      break;
+
+    case 'board_offline':
+      document.getElementById('connect-status').textContent = 'BOARD NOT OPEN — OPEN BOARD ON TV FIRST';
+      break;
+  }
+});
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;
 const COLS = 22;
@@ -723,61 +778,9 @@ function switchToMessage() {
   syncPreview(STANDBY_ROWS);
 }
 
-// ── WebSocket ─────────────────────────────────────────────────────────────────
-const pairCode = new URLSearchParams(location.search).get('code') || '';
-
-const ws = new WsClient(() => {
-  ws.send({ type: 'phone_hello', pairCode });
-  document.getElementById('connect-status').textContent = 'WAITING FOR APPROVAL...';
-});
-
-ws.onMessage(msg => {
-  switch (msg.type) {
-    case 'phone_approved': {
-      document.getElementById('connect-screen').remove();
-      document.getElementById('controller-ui').hidden = false;
-      updateHeader(true, pairCode);
-      if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
-
-      // Auto-resume loop if it was playing before disconnect
-      try {
-        const ps = JSON.parse(localStorage.getItem('solari_play_state') || '{}');
-        if (ps.wasPlaying && ps.pairCode === pairCode) {
-          playIndex = Math.min(ps.playIndex ?? 0, messages.length - 1);
-          loopInterval = ps.loopInterval ?? loopInterval;
-          document.getElementById('timer-slider').value = loopInterval;
-          document.getElementById('timer-value').textContent = loopInterval;
-          startPlay();
-        }
-      } catch {}
-      break;
-    }
-
-    case 'phone_rejected':
-      document.getElementById('connect-status').textContent = 'CONNECTION DENIED';
-      updateHeader(false, pairCode);
-      break;
-
-    case 'board_occupied':
-      document.getElementById('connect-status').textContent = 'BOARD OCCUPIED — TRY AGAIN LATER';
-      break;
-
-    case 'not_found':
-      document.getElementById('connect-status').textContent = 'INVALID CODE';
-      break;
-
-    case 'board_offline':
-      document.getElementById('connect-status').textContent = 'BOARD NOT OPEN — OPEN BOARD ON TV FIRST';
-      break;
-  }
-});
-
-// ── Connect ───────────────────────────────────────────────────────────────────
-// Start WebSocket immediately — independent of font/UI load.
-if (!pairCode) {
-  document.getElementById('connect-status').textContent = 'NO CODE — SCAN QR ON BOARD';
-} else {
-  ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+const statusEl = document.getElementById('connect-status');
+if (!pairCode && statusEl) {
+  statusEl.textContent = 'NO CODE — SCAN QR ON BOARD';
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

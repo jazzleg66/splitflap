@@ -4,6 +4,13 @@ import {
 } from '/shared/spool.js';
 import WsClient from '/shared/wsClient.js';
 
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+let sessionId = null;
+const ws = new WsClient(() => {
+  ws.send({ type: 'tv_hello', sessionId });
+});
+ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;
 const COLS = 22;
@@ -329,6 +336,7 @@ const ws = new WsClient(() => {
   ws.send({ type: 'tv_hello', sessionId });
 });
 
+
 ws.onMessage(msg => {
   switch (msg.type) {
     case 'tv_paired':
@@ -459,10 +467,6 @@ document.getElementById('btn-show-code').addEventListener('click', () => {
   code.hidden = !code.hidden;
   btn.textContent = code.hidden ? 'ENTER CODE MANUALLY' : 'HIDE CODE';
 });
-
-// ── Connect ───────────────────────────────────────────────────────────────────
-// Start WebSocket immediately — independent of font/grid load.
-ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
 
 document.fonts.ready.then(() => {
   buildGrid();
