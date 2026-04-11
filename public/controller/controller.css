@@ -98,6 +98,13 @@ body {
   background: var(--bg);
   display: flex;
   align-items: center;
+  z-index: 50;
+}
+
+#connect-screen[hidden],
+#connect-screen:not(:defined)[hidden] {
+  display: none !important;
+}
   justify-content: center;
   font-size: 0.8rem;
   letter-spacing: 0.2em;

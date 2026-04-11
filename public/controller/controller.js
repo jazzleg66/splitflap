@@ -78,13 +78,20 @@ ws.onMessage(msg => {
       console.log('[ws] Board disconnected! Reverting to disconnected state...');
       // Hide the main UI and show connection screen again
       const ui = document.getElementById('controller-ui');
+      console.log('[ws] Hiding controller UI:', ui ? 'found' : 'not found');
       if (ui) ui.hidden = true;
+
       const connectScreen = document.getElementById('connect-screen');
+      console.log('[ws] Showing connection screen:', connectScreen ? 'found' : 'not found');
       if (connectScreen) {
         connectScreen.hidden = false;
-        document.getElementById('connect-status').textContent = 'DISCONNECTED';
+        const statusEl = document.getElementById('connect-status');
+        console.log('[ws] Setting status to DISCONNECTED:', statusEl ? 'found' : 'not found');
+        if (statusEl) statusEl.textContent = 'DISCONNECTED';
       }
+      console.log('[ws] Updating header...');
       updateHeader(false, pairCode);
+      console.log('[ws] Board disconnected state update complete');
       break;
   }
 });
