@@ -324,32 +324,32 @@ wss.on('connection', socket => {
       if (!session) return;
       touch(session);
 
-    if (role === 'tv') {
-      if (msg.type === 'tv_approve') {
-        updateState(session, 'active');
-        send(session.phoneSocket, { type: 'phone_approved' });
-        send(session.tvSocket,    { type: 'phone_approved' });
-        broadcastLiveCount();
-      } else if (msg.type === 'tv_reject') {
-        updateState(session, 'waiting');
-        send(session.phoneSocket, { type: 'phone_rejected' });
-        session.phoneSocket?.close();
-        session.phoneSocket = null;
+      if (role === 'tv') {
+        if (msg.type === 'tv_approve') {
+          updateState(session, 'active');
+          send(session.phoneSocket, { type: 'phone_approved' });
+          send(session.tvSocket,    { type: 'phone_approved' });
+          broadcastLiveCount();
+        } else if (msg.type === 'tv_reject') {
+          updateState(session, 'waiting');
+          send(session.phoneSocket, { type: 'phone_rejected' });
+          session.phoneSocket?.close();
+          session.phoneSocket = null;
+        }
       }
-    }
 
-    if (role === 'phone') {
-      if (msg.type === 'phone_send') {
-        const rows = padRows(msg.payload?.rows ?? []);
-        updateRows(session, rows);
-        send(session.tvSocket, { type: 'display_update', rows });
-      } else if (msg.type === 'phone_next') {
-        send(session.tvSocket, { type: 'phone_next' });
-      } else if (msg.type === 'phone_reset') {
-        updateRows(session, ['', '', '', '', '', '']);
-        send(session.tvSocket, { type: 'hard_reset' });
+      if (role === 'phone') {
+        if (msg.type === 'phone_send') {
+          const rows = padRows(msg.payload?.rows ?? []);
+          updateRows(session, rows);
+          send(session.tvSocket, { type: 'display_update', rows });
+        } else if (msg.type === 'phone_next') {
+          send(session.tvSocket, { type: 'phone_next' });
+        } else if (msg.type === 'phone_reset') {
+          updateRows(session, ['', '', '', '', '', '']);
+          send(session.tvSocket, { type: 'hard_reset' });
+        }
       }
-    }
     } catch (err) {
       console.error('[ws] Message handler error:', err.message, err.stack);
       send(socket, { type: 'error', message: 'Internal server error' });
