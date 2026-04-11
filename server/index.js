@@ -339,18 +339,18 @@ wss.on('connection', socket => {
       }
     }
 
-      if (role === 'phone') {
-        if (msg.type === 'phone_send') {
-          const rows = padRows(msg.payload?.rows ?? []);
-          updateRows(session, rows);
-          send(session.tvSocket, { type: 'display_update', rows });
-        } else if (msg.type === 'phone_next') {
-          send(session.tvSocket, { type: 'phone_next' });
-        } else if (msg.type === 'phone_reset') {
-          updateRows(session, ['', '', '', '', '', '']);
-          send(session.tvSocket, { type: 'hard_reset' });
-        }
+    if (role === 'phone') {
+      if (msg.type === 'phone_send') {
+        const rows = padRows(msg.payload?.rows ?? []);
+        updateRows(session, rows);
+        send(session.tvSocket, { type: 'display_update', rows });
+      } else if (msg.type === 'phone_next') {
+        send(session.tvSocket, { type: 'phone_next' });
+      } else if (msg.type === 'phone_reset') {
+        updateRows(session, ['', '', '', '', '', '']);
+        send(session.tvSocket, { type: 'hard_reset' });
       }
+    }
     } catch (err) {
       console.error('[ws] Message handler error:', err.message, err.stack);
       send(socket, { type: 'error', message: 'Internal server error' });
