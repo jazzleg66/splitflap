@@ -1,5 +1,8 @@
 require('dotenv').config();
 
+// ── Debug: Log APP_URL to verify it's set ────────────────────────────────────
+console.log('[server] DEBUG: APP_URL =', process.env.APP_URL || 'NOT SET');
+
 // Initialize Sentry for error tracking (optional, only if DSN is set)
 let Sentry = null;
 if (process.env.SENTRY_DSN) {
