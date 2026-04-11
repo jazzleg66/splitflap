@@ -22,12 +22,14 @@ const {
   updateState,
   updateRows,
   sessions,
+  sessionsByCode,
 } = require('../server/sessionManager');
 
 describe('sessionManager', () => {
   beforeEach(() => {
     // Clear all sessions before each test
     sessions.clear();
+    sessionsByCode.clear();
   });
 
   describe('createSession', () => {
