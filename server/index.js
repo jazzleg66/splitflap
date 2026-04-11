@@ -242,19 +242,23 @@ wss.on('connection', socket => {
 
         // First message determines role
         if (msg.type === 'tv_hello') {
+          console.log('[pair] tv_hello received');
           role = 'tv';
           // Try to resume existing session
           const existing = msg.sessionId ? getById(msg.sessionId) : null;
+          console.log(`[pair] Existing session: ${existing ? existing.id : 'none'}`);
           if (existing) {
             existing.tvSocket = socket;
             existing.state = 'waiting';
             session = existing;
           } else {
+            console.log('[pair] Creating new session...');
             try {
               session = await createSession();
+              console.log(`[pair] Created session: ${session.id}`);
               session.tvSocket = socket;
             } catch (createErr) {
-              console.error('[pair] createSession failed:', createErr.message);
+              console.error('[pair] createSession failed:', createErr.message, createErr.stack);
               send(socket, { type: 'error', message: 'Failed to create session' });
               socket.close();
               return;
@@ -262,8 +266,11 @@ wss.on('connection', socket => {
           }
           touch(session);
           console.log(`[pair] tv_hello → session=${session.id} code=${session.pairCode} resumed=${!!existing}`);
+          console.log(`[pair] Sending tv_paired response...`);
           send(socket, { type: 'tv_paired', sessionId: session.id, pairCode: session.pairCode });
+          console.log(`[pair] Broadcast live count`);
           broadcastLiveCount();
+          console.log(`[pair] tv_hello complete`);
           return;
         }
 
