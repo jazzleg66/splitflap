@@ -470,28 +470,30 @@ wss.on('connection', socket => {
     if (!session) return;
 
     if (role === 'tv') {
+      console.log(`[pair] TV socket closed for session ${session.id}`);
       session.tvSocket = null;
       // Notify phone if connected (board disconnected unexpectedly)
       if (session.phoneSocket) {
         const phoneState = session.phoneSocket.readyState;
         const stateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
         const stateName = stateNames[phoneState] || 'UNKNOWN';
-        console.log(`[pair] TV disconnected. Phone socket state: ${stateName} (${phoneState})`);
+        console.log(`[pair] ⚠️  TV disconnected. Phone socket state: ${stateName} (${phoneState})`);
         if (phoneState === WebSocket.OPEN) {
-          console.log('[pair] Sending board_disconnected to phone...');
+          console.log('[pair] ✅ Sending board_disconnected to phone...');
           try {
             send(session.phoneSocket, { type: 'board_disconnected' });
-            console.log('[pair] Message sent successfully');
+            console.log('[pair] ✅ Message sent successfully');
           } catch (e) {
-            console.error('[pair] Failed to send board_disconnected:', e.message);
+            console.error('[pair] ❌ Failed to send board_disconnected:', e.message);
           }
         } else {
-          console.log('[pair] Phone socket not OPEN, cannot notify phone');
+          console.log(`[pair] ❌ Phone socket not OPEN (${stateName}), cannot notify phone`);
         }
       } else {
-        console.log('[pair] TV disconnected but no phone socket exists');
+        console.log('[pair] ❌ TV disconnected but no phone socket exists');
       }
     } else if (role === 'phone') {
+      console.log(`[pair] Phone socket closed for session ${session.id}`);
       session.phoneSocket = null;
       // Only notify TV if session was active
       if (session.state === 'active' || session.state === 'pending_approval') {

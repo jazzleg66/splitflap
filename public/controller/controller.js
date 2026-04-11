@@ -160,32 +160,47 @@ ws.onMessage(msg => {
       break;
 
     case 'board_disconnected':
-      console.log('[ws] ===== BOARD DISCONNECTED MESSAGE RECEIVED =====');
+      console.log('%c===== BOARD DISCONNECTED MESSAGE RECEIVED =====', 'color: red; font-weight: bold; font-size: 14px;');
       addDebugMessage('🔴 BOARD_DISCONNECTED received!');
 
-      // Hide the main UI
+      // Hide the main UI - be aggressive with multiple methods
       const ui = document.getElementById('controller-ui');
       if (ui) {
         ui.hidden = true;
-        console.log('[ws] Hidden controller-ui');
+        ui.style.display = 'none';
+        ui.style.visibility = 'hidden';
+        console.log('[ws] Hidden controller-ui (multiple methods)');
       }
 
-      // Show connection screen
+      // Show connection screen - be aggressive
       const connectScreen = document.getElementById('connect-screen');
       if (connectScreen) {
         connectScreen.hidden = false;
-        console.log('[ws] Showed connect-screen');
+        connectScreen.style.display = 'flex';
+        connectScreen.style.visibility = 'visible';
+        console.log('[ws] Showed connect-screen (multiple methods)');
 
-        // Update status text
+        // Update status text with large text for visibility
         const statusEl = document.getElementById('connect-status');
         if (statusEl) {
           statusEl.textContent = 'BOARD DISCONNECTED';
-          console.log('[ws] Updated status text');
+          statusEl.style.color = '#CC0000';
+          statusEl.style.fontSize = '16px';
+          statusEl.style.fontWeight = 'bold';
+          console.log('[ws] Updated status text with styling');
         }
+
+        // Force scroll to top to show connection screen
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          console.log('[ws] Scrolled to top');
+        }, 0);
       }
 
       // Update header to show disconnected
       updateHeader(false, pairCode);
+      console.log('[ws] Updated header');
+
       addDebugMessage('✓ UI updated to DISCONNECTED');
       console.log('[ws] Board disconnected state update COMPLETE');
       break;
@@ -944,6 +959,18 @@ function init() {
 
     // Debug panel is always visible now
     addDebugMessage('Controller initialized - watching for board_disconnected');
+
+    // Log WebSocket state every 5 seconds (for debugging connection issues)
+    setInterval(() => {
+      const stateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+      const state = ws._socket ? ws._socket.readyState : -1;
+      const stateName = stateNames[state] || 'UNKNOWN';
+      // Only log if state is unusual
+      if (state !== 1) { // 1 = OPEN
+        console.log('[ws-monitor] Socket state:', stateName, '(' + state + ')');
+        addDebugMessage(`Socket state: ${stateName}`);
+      }
+    }, 5000);
 
     // ── Grid capture input ────────────────────────────────────────────────────
     const captureEl = document.getElementById('grid-capture');
