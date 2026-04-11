@@ -12,6 +12,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 const express = require('express');
+const compression = require('compression');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
@@ -24,7 +25,13 @@ const { createSession, getByCode, getById, touch, updateState, updateRows, sessi
 const PAIR_RE = /^[A-HJ-NP-Z2-9]{6}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// ── Performance & Caching ───────────────────────────────────────────────────
+const qrCache = new Map(); // sessionId -> buffer
+let cachedLanIp = null;
+const htmlCache = {};
+
 const app = express();
+app.use(compression()); // Gzip compression
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
@@ -101,13 +108,22 @@ app.use('/assets', express.static(path.join(__dirname, '../assets')));
 // ── QR code endpoint ──────────────────────────────────────────────────────────
 app.get('/qr/:sessionId', async (req, res) => {
   try {
-    // Validate session ID format before lookup
     if (!UUID_RE.test(req.params.sessionId)) {
       return res.status(400).end();
     }
+
+    // Performance: Return from cache if we already generated it for this session
+    if (qrCache.has(req.params.sessionId)) {
+      const cached = qrCache.get(req.params.sessionId);
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Length', cached.length);
+      // Let the browser cache the image for this session
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.send(cached);
+    }
+
     const session = getById(req.params.sessionId);
     if (!session) {
-      console.warn(`[qr] Session not found: ${req.params.sessionId}`);
       return res.status(404).end();
     }
 
@@ -117,23 +133,25 @@ app.get('/qr/:sessionId', async (req, res) => {
     if (process.env.APP_URL) {
       try {
         scheme = new URL(process.env.APP_URL).protocol.replace(':', '');
-      } catch (e) {
-        console.warn(`[qr] Invalid APP_URL for scheme extraction: ${process.env.APP_URL}`);
-      }
+      } catch (e) {}
     } else if (process.env.NODE_ENV === 'production' && !req.headers['x-forwarded-proto']) {
       scheme = 'https';
     }
 
     const url = `${scheme}://${host}/controller?code=${session.pairCode}`;
-    console.log(`[qr] encoding URL: ${url}`);
-
     const buf = await QRCode.toBuffer(url, { errorCorrectionLevel: 'M', width: 300 });
 
-    // Explicitly set Content-Type and Content-Length headers
+    // Store in cache
+    qrCache.set(req.params.sessionId, buf);
+    // Cleanup old cache entries (simple logic)
+    if (qrCache.size > 1000) {
+      const firstKey = qrCache.keys().next().value;
+      qrCache.delete(firstKey);
+    }
+
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Length', buf.length);
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(buf);
   } catch (e) {
     console.error(`[qr] Failed to generate QR code: ${e.message}`);
@@ -142,22 +160,22 @@ app.get('/qr/:sessionId', async (req, res) => {
 });
 
 function getLanIp() {
+  if (cachedLanIp) return cachedLanIp;
+
   const nets = os.networkInterfaces();
   const candidates = [];
   for (const ifaces of Object.values(nets)) {
     for (const iface of ifaces) {
-      // Support both string ('IPv4') and numeric (4) family — Node.js changed this across versions
       const isIPv4 = iface.family === 'IPv4' || iface.family === 4;
       if (isIPv4 && !iface.internal) candidates.push(iface.address);
     }
   }
-  // Prefer typical home/office LAN ranges (192.168.x.x, 10.x.x.x)
-  // over virtual adapter ranges used by VMware/Hyper-V/Docker (172.x.x.x, 169.x.x.x, etc.)
-  return (
+  cachedLanIp = (
     candidates.find(ip => ip.startsWith('192.168.')) ||
     candidates.find(ip => ip.startsWith('10.'))       ||
     candidates[0] || null
   );
+  return cachedLanIp;
 }
 
 function getLanHost(req) {

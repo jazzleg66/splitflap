@@ -294,7 +294,7 @@ function showQrScreen(pairCode, sessionId) {
     pairCode.slice(0, 3) + '-' + pairCode.slice(3);
 
   const qrImg = document.getElementById('qr-img');
-  const qrUrl = `/qr/${sessionId}?t=${Date.now()}`; // Cache-busting parameter
+  const qrUrl = `/qr/${sessionId}`;
 
   // Add error handling for QR image load failures
   qrImg.onerror = () => {
