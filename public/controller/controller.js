@@ -101,13 +101,27 @@ ws.onMessage(msg => {
   }
 
   // Update header code to show message type (visual indicator)
+  // This is critical - it's the ONLY way we can tell if messages are arriving on Safari
   try {
     const codeEl = document.getElementById('header-code');
     if (codeEl) {
-      // Show last message type in header for visual confirmation
-      const timestamp = new Date().toLocaleTimeString();
-      codeEl.textContent = msg.type.substring(0, 12);
-      codeEl.title = timestamp + ': ' + msg.type;
+      // Show message type for 2 seconds, then revert
+      const originalText = codeEl.textContent;
+      codeEl.textContent = msg.type.substring(0, 14); // Show message type
+      codeEl.style.backgroundColor = msg.type === 'board_disconnected' ? '#CC0000' : '#333';
+      codeEl.style.color = msg.type === 'board_disconnected' ? '#FFF' : 'inherit';
+      codeEl.style.padding = '2px 4px';
+      codeEl.title = new Date().toLocaleTimeString() + ': ' + msg.type;
+
+      // Revert after 3 seconds
+      setTimeout(() => {
+        if (msg.type !== 'board_disconnected') {
+          codeEl.textContent = originalText;
+          codeEl.style.backgroundColor = 'transparent';
+          codeEl.style.color = 'inherit';
+          codeEl.style.padding = '0';
+        }
+      }, 3000);
     }
   } catch (e) {
     console.error('[ws] Failed to update header:', e.message);
