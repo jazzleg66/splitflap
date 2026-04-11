@@ -138,7 +138,9 @@ app.get('/qr/:sessionId', async (req, res) => {
     }
 
     const url = `${scheme}://${host}/controller?code=${session.pairCode}`;
-    const buf = await QRCode.toBuffer(url, { errorCorrectionLevel: 'M', width: 300 });
+    // Use 'L' error correction (7% redundancy) instead of 'M' to generate QR faster
+    // This is safe since our 6-char code + URL is short and doesn't need high redundancy
+    const buf = await QRCode.toBuffer(url, { errorCorrectionLevel: 'L', width: 280, margin: 1 });
 
     // Store in cache
     qrCache.set(req.params.sessionId, buf);

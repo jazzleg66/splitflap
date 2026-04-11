@@ -52,12 +52,88 @@ body {
   opacity: 0.7;
 }
 
+#qr-container {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#qr-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+#qr-loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* CSS spinner animation */
+.qr-spinner {
+  display: inline-block;
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.qr-spinner div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: 5px;
+  border: 4px solid #E8D5A3;
+  border-radius: 50%;
+  animation: qr-spinner 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: #E8D5A3 transparent transparent transparent;
+}
+
+.qr-spinner div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+
+.qr-spinner div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.qr-spinner div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+
+@keyframes qr-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 #qr-img {
   width: 220px;
   height: 220px;
   display: block;
   background: #fff;
   padding: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#qr-img.loaded {
+  opacity: 1;
 }
 
 #qr-alt-label {

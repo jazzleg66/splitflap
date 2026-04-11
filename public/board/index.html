@@ -21,7 +21,15 @@
   <div id="qr-screen">
     <div id="qr-inner">
       <p id="qr-label">SCAN TO CONNECT</p>
-      <img id="qr-img" alt="QR Code">
+      <div id="qr-container">
+        <div id="qr-loading" class="qr-spinner">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <img id="qr-img" alt="QR Code">
+      </div>
       <button id="btn-show-code">ENTER CODE MANUALLY</button>
       <div id="pair-code" hidden>------</div>
     </div>

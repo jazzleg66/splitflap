@@ -301,20 +301,30 @@ function showQrScreen(pairCode, sessionId) {
     pairCode.slice(0, 3) + '-' + pairCode.slice(3);
 
   const qrImg = document.getElementById('qr-img');
+  const qrLoading = document.getElementById('qr-loading');
   const qrUrl = `/qr/${sessionId}`;
+
+  // Show loading spinner and hide image
+  qrLoading.classList.remove('hidden');
+  qrImg.classList.remove('loaded');
 
   // Add error handling for QR image load failures
   qrImg.onerror = () => {
     console.error(`[board] Failed to load QR image from ${qrUrl}`);
-    qrImg.style.opacity = '0.3';
+    qrLoading.classList.add('hidden');
     qrImg.style.border = '2px solid rgba(200, 50, 50, 0.5)';
   };
 
   qrImg.onload = () => {
     console.log(`[board] QR image loaded successfully from ${qrUrl}`);
-    qrImg.style.opacity = '1';
+    qrLoading.classList.add('hidden');
+    qrImg.classList.add('loaded');
     qrImg.style.border = 'none';
   };
+
+  // Pre-fetch the QR image to warm the cache on both server and browser
+  // This is especially important for Safari which can be slow at generating QR codes
+  fetch(qrUrl, { priority: 'high' }).catch(() => {});
 
   qrImg.src = qrUrl;
   document.getElementById('qr-screen').classList.remove('hidden');
