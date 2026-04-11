@@ -453,14 +453,16 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
 });
 
 // ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
+let boardGridCached = null;
 function syncTileSizing() {
   const tile = tileEls[0]?.[0];
   if (!tile) return;
   const h = tile.getBoundingClientRect().height;
   if (h === 0) return;
-  const boardGrid = document.getElementById('board-grid');
-  boardGrid.style.setProperty('--tile-fs', h + 'px');
-  boardGrid.style.setProperty('--tile-ty', (h / 4) + 'px');
+  if (!boardGridCached) boardGridCached = document.getElementById('board-grid');
+  if (!boardGridCached) return;
+  boardGridCached.style.setProperty('--tile-fs', h + 'px');
+  boardGridCached.style.setProperty('--tile-ty', (h / 4) + 'px');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
