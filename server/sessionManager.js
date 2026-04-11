@@ -93,6 +93,7 @@ function touch(session) {
       .from('sessions')
       .update({ last_active: session.lastActivity.toISOString() })
       .eq('id', session.id)
+      .then(() => {})
       .catch(err => console.error('[supabase] failed to update session:', err.message));
   }
 }
@@ -106,6 +107,7 @@ function updateState(session, newState) {
       .from('sessions')
       .update({ state: newState, last_active: new Date().toISOString() })
       .eq('id', session.id)
+      .then(() => {})
       .catch(err => console.error('[supabase] failed to update state:', err.message));
   }
 }
@@ -119,6 +121,7 @@ function updateRows(session, rows) {
       .from('sessions')
       .update({ current_rows: rows, last_active: new Date().toISOString() })
       .eq('id', session.id)
+      .then(() => {})
       .catch(err => console.error('[supabase] failed to update rows:', err.message));
   }
 }
@@ -176,6 +179,7 @@ function purgeExpired() {
       .from('sessions')
       .delete()
       .lt('last_active', new Date(cutoff).toISOString())
+      .then(() => {})
       .catch(err => console.error('[supabase] failed to purge sessions:', err.message));
   }
 }

@@ -219,9 +219,13 @@ wss.on('connection', socket => {
   let role = null; // 'tv' | 'phone'
 
   socket.on('message', async raw => {
+    console.log('[ws] Message received:', raw.toString());
     try {
       let msg;
-      try { msg = JSON.parse(raw); } catch { return; }
+      try { msg = JSON.parse(raw); } catch {
+        console.log('[ws] JSON parse failed, returning');
+        return;
+      }
 
       if (!role) {
         // Homepage live-counter watcher — no session, just receives broadcasts
@@ -355,7 +359,9 @@ wss.on('connection', socket => {
         }
       }
     } catch (err) {
-      console.error('[ws] Message handler error:', err.message, err.stack);
+      console.error('[ws] Message handler error:', err.constructor.name);
+      console.error('[ws] Error message:', err.message);
+      console.error('[ws] Error stack:', err.stack);
       send(socket, { type: 'error', message: 'Internal server error' });
     }
   });
