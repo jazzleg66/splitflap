@@ -322,7 +322,7 @@ function hideQrScreen() {
 }
 
 // ── WebSocket client ──────────────────────────────────────────────────────────
-let sessionId = localStorage.getItem('solari_session_id') || null;
+let sessionId = sessionStorage.getItem('solari_session_id') || null;
 let lastPairCode = null;
 
 const ws = new WsClient(() => {
@@ -334,7 +334,7 @@ ws.onMessage(msg => {
     case 'tv_paired':
       sessionId = msg.sessionId;
       lastPairCode = msg.pairCode;
-      localStorage.setItem('solari_session_id', sessionId);
+      sessionStorage.setItem('solari_session_id', sessionId);
       showQrScreen(msg.pairCode, msg.sessionId);
       break;
 
