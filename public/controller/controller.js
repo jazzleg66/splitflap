@@ -5,7 +5,8 @@ import {
 import WsClient from '/shared/wsClient.js';
 
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
-const pairCode = new URLSearchParams(location.search).get('code') || '';
+let pairCode = new URLSearchParams(location.search).get('code') || '';
+pairCode = pairCode.replace(/-/g, '').toUpperCase();
 const ws = new WsClient(() => {
   ws.send({ type: 'phone_hello', pairCode });
   const statusEl = document.getElementById('connect-status');

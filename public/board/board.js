@@ -329,13 +329,7 @@ function hideQrScreen() {
 }
 
 // ── WebSocket client ──────────────────────────────────────────────────────────
-let sessionId = null;  // Always create new session on page load — no resuming
 let lastPairCode = null;
-
-const ws = new WsClient(() => {
-  ws.send({ type: 'tv_hello', sessionId });
-});
-
 
 ws.onMessage(msg => {
   switch (msg.type) {
