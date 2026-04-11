@@ -363,7 +363,7 @@ wss.on('connection', socket => {
           const t0 = Date.now();
           // Validate pair code format before lookup
           if (typeof msg.pairCode !== 'string' || !PAIR_RE.test(msg.pairCode)) {
-            console.log('[pair] phone_hello code=${msg.pairCode} INVALID FORMAT');
+            console.log(`[pair] phone_hello code=${msg.pairCode} INVALID FORMAT`);
             send(socket, { type: 'not_found' }); socket.close(); return;
           }
           const t1 = Date.now();
