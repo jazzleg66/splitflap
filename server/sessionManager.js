@@ -62,7 +62,12 @@ async function createSession() {
         current_rows: session.currentRows,
         last_active: new Date().toISOString(),
       }])
-      .catch(err => console.error('[supabase] failed to insert session:', err.message));
+      .then(() => {
+        console.log(`[supabase] session persisted: ${id}`);
+      })
+      .catch(err => {
+        console.error('[supabase] failed to insert session:', err.message);
+      });
   }
 
   return session;
