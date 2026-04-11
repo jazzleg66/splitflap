@@ -1,8 +1,5 @@
 require('dotenv').config();
 
-// ── Debug: Log APP_URL to verify it's set ────────────────────────────────────
-console.log('[server] DEBUG: APP_URL =', process.env.APP_URL || 'NOT SET');
-
 // Initialize Sentry for error tracking (optional, only if DSN is set)
 let Sentry = null;
 if (process.env.SENTRY_DSN) {
@@ -82,10 +79,6 @@ app.use('/assets', express.static(path.join(__dirname, '../assets')));
 // ── QR code endpoint ──────────────────────────────────────────────────────────
 app.get('/qr/:sessionId', async (req, res) => {
   try {
-    console.log(`[qr] endpoint called for sessionId: ${req.params.sessionId}`);
-    console.log(`[qr] req.get('host'): ${req.get('host')}`);
-    console.log(`[qr] process.env.APP_URL: ${process.env.APP_URL}`);
-
     const session = getById(req.params.sessionId);
     if (!session) {
       console.warn(`[qr] Session not found: ${req.params.sessionId}`);
@@ -93,7 +86,6 @@ app.get('/qr/:sessionId', async (req, res) => {
     }
 
     const host = getLanHost(req);
-    console.log(`[qr] getLanHost returned: ${host}`);
 
     let scheme = req.headers['x-forwarded-proto'] || req.protocol;
     if (process.env.APP_URL) {
@@ -144,19 +136,17 @@ function getLanIp() {
 
 function getLanHost(req) {
   // 1. Prefer explicit APP_URL from environment
-  console.log(`[getLanHost] APP_URL: ${process.env.APP_URL}`);
   if (process.env.APP_URL) {
     try {
       const appHost = new URL(process.env.APP_URL).host;
-      console.log(`[getLanHost] ✓ Using APP_URL host: ${appHost}`);
+      console.log(`[server] Using APP_URL host: ${appHost}`);
       return appHost;
     } catch (e) {
-      console.error(`[getLanHost] ✗ Invalid APP_URL: ${process.env.APP_URL}, error: ${e.message}`);
+      console.error(`[server] Invalid APP_URL: ${process.env.APP_URL}, error: ${e.message}`);
     }
   }
 
   const reqHost = req.get('host') || '';
-  console.log(`[getLanHost] reqHost: ${reqHost}`);
 
   // 2. If no APP_URL is provided, and we are running on localhost,
   // substitute with the machine's LAN IP to allow phone pairing on the local network.
@@ -165,7 +155,7 @@ function getLanHost(req) {
     const ip = getLanIp();
     if (ip) {
       const lanHost = `${ip}:${port}`;
-      console.log(`[getLanHost] ✓ Using LAN IP: ${lanHost}`);
+      console.log(`[server] Using LAN IP: ${lanHost}`);
       return lanHost;
     }
   }
@@ -173,15 +163,15 @@ function getLanHost(req) {
   // 3. Fallback to Host header if APP_URL and LAN IP are unavailable.
   // In production, APP_URL should always be set to prevent Host Header Injection.
   if (process.env.NODE_ENV === 'production') {
-    console.warn('[getLanHost] ⚠ APP_URL not set. Falling back to Host header (consider setting APP_URL for security).');
+    console.warn('[server] APP_URL not set. Falling back to Host header (consider setting APP_URL for security).');
   }
 
   if (!reqHost) {
-    console.warn('[getLanHost] ⚠ No Host header found, using default localhost:3000');
+    console.warn('[server] No Host header found, using default localhost:3000');
     return 'localhost:3000';
   }
 
-  console.log(`[getLanHost] ✓ Using Host header: ${reqHost}`);
+  console.log(`[server] Using Host header: ${reqHost}`);
   return reqHost;
 }
 
@@ -294,14 +284,18 @@ wss.on('connection', socket => {
           console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
           if (!found) { send(socket, { type: 'not_found' }); socket.close(); return; }
 
-          // Hijack protection: active session with live phone socket
+          // Phone reconnecting with same pair code: close old socket and admit new one
+          // (The pair code itself is the security token — whoever has it is authorized)
           if (
             found.state === 'active' &&
             found.phoneSocket?.readyState === WebSocket.OPEN
           ) {
-            console.log(`[pair] board_occupied code=${msg.pairCode}`);
-            send(socket, { type: 'board_occupied' });
-            socket.close();
+            console.log(`[pair] phone reconnect — closing old socket for code=${msg.pairCode}`);
+            found.phoneSocket.close();
+            found.phoneSocket = socket;
+            touch(found);
+            send(socket, { type: 'phone_approved' });
+            broadcastLiveCount();
             return;
           }
 

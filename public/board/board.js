@@ -448,3 +448,9 @@ document.fonts.ready.then(() => {
   new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
   // Board starts hidden behind #qr-screen; demo only runs after phone approval
 });
+
+// Unlock audio on first user interaction so phone-connect flip has sound
+document.addEventListener('click', function _unlock() {
+  unlockAudio();
+  document.removeEventListener('click', _unlock);
+});
