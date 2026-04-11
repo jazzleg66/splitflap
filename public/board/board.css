@@ -155,17 +155,28 @@ body.board-active #board-grid {
 /* ── Fullscreen — 100vw wide, matching homepage layout ───────────────────────── */
 /* body.requestFullscreen() is called, so body:fullscreen selectors correctly match */
 body:fullscreen,
-body:-webkit-full-screen {
+body:-webkit-full-screen,
+body.pseudo-fullscreen {
   background: #1B1B1B;
 }
 
+body.pseudo-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+}
+
 body:fullscreen #board-header,
-body:-webkit-full-screen #board-header {
+body:-webkit-full-screen #board-header,
+body.pseudo-fullscreen #board-header {
   display: none;
 }
 
 body:fullscreen #board-container,
-body:-webkit-full-screen #board-container {
+body:-webkit-full-screen #board-container,
+body.pseudo-fullscreen #board-container {
   padding: 2vh 0;
   align-items: center;
 }
@@ -174,18 +185,21 @@ body:-webkit-full-screen #board-container {
  * Compensate with matching bottom padding so the board sits identically to
  * the homepage fullscreen, which retains its demo-controls as the bottom gap. */
 body.board-active:fullscreen #board-container,
-body.board-active:-webkit-full-screen #board-container {
+body.board-active:-webkit-full-screen #board-container,
+body.board-active.pseudo-fullscreen #board-container {
   padding-bottom: 40px;
 }
 
 body:fullscreen #board-grid,
-body:-webkit-full-screen #board-grid {
+body:-webkit-full-screen #board-grid,
+body.pseudo-fullscreen #board-grid {
   width: 100vw;
   max-width: 100vw;
 }
 
 body:fullscreen #demo-controls button:hover,
-body:-webkit-full-screen #demo-controls button:hover {
+body:-webkit-full-screen #demo-controls button:hover,
+body.pseudo-fullscreen #demo-controls button:hover {
   border-color: #E8D5A3;
   color: #E8D5A3;
 }

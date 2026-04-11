@@ -403,18 +403,41 @@ document.getElementById('btn-mute').classList.add('audio-locked');
 
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
-document.getElementById('btn-fullscreen').addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    document.body.requestFullscreen();
+function toggleFullscreen(element) {
+  const isFs = document.fullscreenElement || document.webkitFullscreenElement || element.classList.contains('pseudo-fullscreen');
+
+  if (!isFs) {
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else {
+      element.classList.add('pseudo-fullscreen');
+      document.dispatchEvent(new Event('fullscreenchange'));
+    }
     if (typeof posthog !== 'undefined') posthog.capture('board_fullscreen_enabled');
   } else {
-    document.exitFullscreen();
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else {
+      element.classList.remove('pseudo-fullscreen');
+      document.dispatchEvent(new Event('fullscreenchange'));
+    }
     if (typeof posthog !== 'undefined') posthog.capture('board_fullscreen_disabled');
   }
+}
+
+document.getElementById('btn-fullscreen').addEventListener('click', () => {
+  toggleFullscreen(document.body);
 });
-document.addEventListener('fullscreenchange', () => {
-  document.getElementById('btn-fullscreen').textContent =
-    document.fullscreenElement ? '\u2715' : '\u26F6';
+
+['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.body.classList.contains('pseudo-fullscreen'));
+    document.getElementById('btn-fullscreen').textContent = isFs ? '\u2715' : '\u26F6';
+  });
 });
 
 // ── Tile sizing — sync font-size and translateY to actual rendered tile height ─

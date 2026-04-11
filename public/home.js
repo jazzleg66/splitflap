@@ -274,14 +274,40 @@ document.getElementById('btn-mute').classList.add('audio-locked');
 
 document.getElementById('btn-skip').addEventListener('click', skipDemo);
 document.getElementById('btn-mute').addEventListener('click', toggleMute);
+function toggleFullscreen(element) {
+  const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || element.classList.contains('pseudo-fullscreen');
+
+  if (!isFullscreen) {
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else {
+      // Fallback for iOS iPhone where native fullscreen is unavailable
+      element.classList.add('pseudo-fullscreen');
+      document.dispatchEvent(new Event('fullscreenchange'));
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else {
+      element.classList.remove('pseudo-fullscreen');
+      document.dispatchEvent(new Event('fullscreenchange'));
+    }
+  }
+}
+
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
-  const hero = document.getElementById('hero');
-  if (!document.fullscreenElement) hero.requestFullscreen();
-  else document.exitFullscreen();
+  toggleFullscreen(document.getElementById('hero'));
 });
-document.addEventListener('fullscreenchange', () => {
-  document.getElementById('btn-fullscreen').textContent =
-    document.fullscreenElement ? '\u2715' : '\u26F6';
+
+['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.getElementById('hero').classList.contains('pseudo-fullscreen'));
+    document.getElementById('btn-fullscreen').textContent = isFs ? '\u2715' : '\u26F6';
+  });
 });
 
 // ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
