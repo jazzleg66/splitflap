@@ -471,6 +471,11 @@ wss.on('connection', socket => {
 
     if (role === 'tv') {
       session.tvSocket = null;
+      // Notify phone if connected (board disconnected unexpectedly)
+      if (session.phoneSocket && session.phoneSocket.readyState === WebSocket.OPEN) {
+        console.log('[pair] TV disconnected, notifying phone...');
+        send(session.phoneSocket, { type: 'board_disconnected' });
+      }
     } else if (role === 'phone') {
       session.phoneSocket = null;
       // Only notify TV if session was active

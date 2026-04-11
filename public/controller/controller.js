@@ -71,6 +71,20 @@ ws.onMessage(msg => {
     case 'board_offline':
       document.getElementById('connect-status').textContent = 'BOARD NOT OPEN — OPEN BOARD ON TV FIRST';
       break;
+
+    case 'board_disconnected':
+      console.log('[ws] Board disconnected! Reverting to disconnected state...');
+      document.getElementById('connect-status').textContent = 'DISCONNECTED';
+      updateHeader(false, pairCode);
+      // Hide the main UI and show connection screen again
+      document.getElementById('controller-ui')?.setAttribute('hidden', '');
+      const connectScreen = document.getElementById('connect-screen');
+      if (!connectScreen.parentElement) {
+        document.body.insertBefore(connectScreen, document.body.firstChild);
+      } else {
+        connectScreen.hidden = false;
+      }
+      break;
   }
 });
 
