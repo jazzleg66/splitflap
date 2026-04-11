@@ -319,11 +319,10 @@ wss.on('connection', socket => {
 
         return; // unknown first message
       }
-    }
 
-    // ── Subsequent messages ────────────────────────────────────────────────────
-    if (!session) return;
-    touch(session);
+      // ── Subsequent messages ────────────────────────────────────────────────────
+      if (!session) return;
+      touch(session);
 
     if (role === 'tv') {
       if (msg.type === 'tv_approve') {
