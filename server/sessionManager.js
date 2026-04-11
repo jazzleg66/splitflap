@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -22,7 +23,7 @@ function generatePairCode() {
   do {
     code = '';
     for (let i = 0; i < 6; i++) {
-      code += PAIR_ALPHA[Math.floor(Math.random() * PAIR_ALPHA.length)];
+      code += PAIR_ALPHA[crypto.randomInt(PAIR_ALPHA.length)];
     }
 
     exists = false;
