@@ -19,6 +19,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+  <!-- Preconnect to WebSocket server (same origin, so just prime the connection) -->
+  <script>
+    // Detect WebSocket protocol early
+    const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+    // Hint browser to preconnect (won't actually preconnect for WS, but helps with DNS)
+    const link = document.createElement('link');
+    link.rel = 'dns-prefetch';
+    link.href = wsProto + '://' + location.host + '/ws';
+    document.head.appendChild(link);
+  </script>
+
   <!-- Async Google Fonts -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Roboto+Mono:wght@400&display=swap" media="print" onload="this.media='all'">
   <noscript>
@@ -31,16 +42,28 @@
   <!-- HEAD-START WEBSOCKET: Start connection while CSS/JS are still downloading -->
   <script type="module">
     import WsClient from '/shared/wsClient.js';
+    const startTime = performance.now();
     const pairCode = new URLSearchParams(location.search).get('code')?.replace(/-/g, '').toUpperCase();
+    console.log('[head-start] Page load started, pairCode:', pairCode);
+
     if (pairCode) {
       window._wsHeadStart = new WsClient(() => {
-        console.log('[head-start] Socket open, sending hello...');
+        const elapsed = performance.now() - startTime;
+        console.log('[head-start] Socket open after', elapsed.toFixed(0), 'ms, sending hello...');
         window._wsHeadStart.send({ type: 'phone_hello', pairCode });
         const statusEl = document.getElementById('connect-status');
         if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
       });
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      window._wsHeadStart.connect(`${proto}://${location.host}/ws`);
+      const wsUrl = `${proto}://${location.host}/ws`;
+      console.log('[head-start] Connecting to:', wsUrl);
+      window._wsHeadStart.connect(wsUrl);
+
+      // Attach message handler immediately to log incoming messages
+      window._wsHeadStart.onMessage(msg => {
+        const elapsed = performance.now() - startTime;
+        console.log('[head-start] Message received after', elapsed.toFixed(0), 'ms:', msg.type);
+      });
     }
   </script>
 </head>
@@ -58,7 +81,18 @@
   <!-- Connection screen (covers body until approved) -->
   <div id="connect-screen">
     <div id="connect-status">CONNECTING...</div>
+    <div id="connect-timer" style="font-size: 10px; margin-top: 10px; opacity: 0.7;">(<span id="timer-seconds">0</span>s)</div>
   </div>
+
+  <script>
+    // Show elapsed time while connecting — helps diagnose connection issues
+    let elapsedSeconds = 0;
+    const timerEl = document.getElementById('timer-seconds');
+    setInterval(() => {
+      elapsedSeconds++;
+      if (timerEl) timerEl.textContent = elapsedSeconds;
+    }, 1000);
+  </script>
 
   <!-- Main UI (hidden until phone_approved) -->
   <div id="controller-ui" hidden>

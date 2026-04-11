@@ -77,6 +77,20 @@ function preloadHtmlCache() {
 }
 preloadHtmlCache();
 
+// Warm up DNS cache for critical domains — reduces latency on first requests
+function warmDnsCache() {
+  const dns = require('dns');
+  const domains = ['fonts.googleapis.com', 'fonts.gstatic.com'];
+  domains.forEach(domain => {
+    dns.lookup(domain, (err) => {
+      if (err) console.warn(`[dns] Failed to warm ${domain}:`, err.message);
+      else console.log(`[dns] Warmed ${domain}`);
+    });
+  });
+}
+// Warm DNS on startup (fire-and-forget)
+setImmediate(warmDnsCache);
+
 // ── Static files ──────────────────────────────────────────────────────────────
 // Intercept requests for HTML files before express.static to serve the injected versions
 app.use((req, res, next) => {
@@ -281,11 +295,13 @@ function padRows(rows) {
 wss.on('connection', socket => {
   let session = null;
   let role = null; // 'tv' | 'phone'
+  const msgStartTime = {};
 
   socket.on('message', async raw => {
     try {
       let msg;
       try { msg = JSON.parse(raw); } catch { return; }
+      msgStartTime[msg.type] = Date.now();
 
       if (!role) {
         // Homepage live-counter watcher — no session, just receives broadcasts
@@ -344,12 +360,16 @@ wss.on('connection', socket => {
 
         if (msg.type === 'phone_hello') {
           role = 'phone';
+          const t0 = Date.now();
           // Validate pair code format before lookup
           if (typeof msg.pairCode !== 'string' || !PAIR_RE.test(msg.pairCode)) {
+            console.log('[pair] phone_hello code=${msg.pairCode} INVALID FORMAT');
             send(socket, { type: 'not_found' }); socket.close(); return;
           }
+          const t1 = Date.now();
           const found = getByCode(msg.pairCode);
-          console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
+          const t2 = Date.now();
+          console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found} (lookup: ${t2-t1}ms, total: ${t2-t0}ms)`);
           if (!found) { send(socket, { type: 'not_found' }); socket.close(); return; }
 
           // Phone reconnecting with same pair code: close old socket and admit new one
@@ -364,6 +384,7 @@ wss.on('connection', socket => {
             touch(found);
             send(socket, { type: 'phone_approved' });
             broadcastLiveCount();
+            console.log(`[pair] phone_approved sent (${Date.now()-t0}ms)`);
             return;
           }
 
@@ -377,10 +398,12 @@ wss.on('connection', socket => {
             touch(found);
             send(socket, { type: 'phone_approved' });
             broadcastLiveCount();
+            console.log(`[pair] phone_approved sent (${Date.now()-t0}ms)`);
             return;
           }
 
           if (!tvOpen) {
+            console.log(`[pair] board_offline — TV not connected`);
             send(socket, { type: 'board_offline' });
             socket.close();
             return;
@@ -395,6 +418,7 @@ wss.on('connection', socket => {
           send(socket, { type: 'phone_approved' });
 
           broadcastLiveCount();
+          console.log(`[pair] phone_approved sent (${Date.now()-t0}ms)`);
           return;
         }
 

@@ -14,6 +14,8 @@ export default class WsClient {
     this._delay = 1000;
     this._reconnectTimer = null;
     this._destroyed = false;
+    this._connectionTimer = null;
+    this._connectionTimeout = 8000; // 8 second timeout instead of default 30s
   }
 
   connect(url) {
@@ -23,9 +25,24 @@ export default class WsClient {
 
   _open() {
     if (this._destroyed) return;
+    const startTime = Date.now();
+    console.log('[ws-client] Attempting connection to:', this._url);
     this._socket = new WebSocket(this._url);
 
+    // Add a connection timeout — if socket doesn't open within 8 seconds, close it
+    // and try reconnecting. This prevents hanging on network issues.
+    this._connectionTimer = setTimeout(() => {
+      if (this._socket && this._socket.readyState === WebSocket.CONNECTING) {
+        console.warn('[ws-client] Connection timeout after', this._connectionTimeout, 'ms');
+        this._socket.close();
+        // Let the close handler trigger reconnection
+      }
+    }, this._connectionTimeout);
+
     this._socket.addEventListener('open', () => {
+      clearTimeout(this._connectionTimer);
+      const elapsed = Date.now() - startTime;
+      console.log('[ws-client] Connected in', elapsed, 'ms');
       this._delay = 1000; // reset backoff
       if (this._onConnect) this._onConnect();
     });
@@ -36,9 +53,16 @@ export default class WsClient {
     });
 
     this._socket.addEventListener('close', () => {
+      clearTimeout(this._connectionTimer);
       if (this._destroyed) return;
+      console.log('[ws-client] Connection closed, reconnecting in', this._delay, 'ms');
       this._reconnectTimer = setTimeout(() => this._open(), this._delay);
       this._delay = Math.min(this._delay * 2, 30000);
+    });
+
+    this._socket.addEventListener('error', (e) => {
+      clearTimeout(this._connectionTimer);
+      console.error('[ws-client] Connection error:', e);
     });
   }
 
