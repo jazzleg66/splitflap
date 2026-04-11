@@ -29,33 +29,47 @@ const sentryDsn = process.env.SENTRY_DSN || '';
 const phKey = process.env.VITE_POSTHOG_KEY || '';
 
 const htmlCache = {};
-function getInjectedHtml(filePath) {
-  if (!htmlCache[filePath]) {
+function preloadHtmlCache() {
+  const filesToCache = [
+    path.join(__dirname, '../public/index.html'),
+    path.join(__dirname, '../public/board/index.html'),
+    path.join(__dirname, '../public/controller/index.html')
+  ];
+
+  for (const filePath of filesToCache) {
     try {
       let data = fs.readFileSync(filePath, 'utf8');
       data = data.replace(/var sentryDsn = 'YOUR_SENTRY_DSN_HERE';?/g, `var sentryDsn = '${sentryDsn}';`);
       data = data.replace(/var phKey = 'YOUR_POSTHOG_KEY_HERE';?/g, `var phKey = '${phKey}';`);
       htmlCache[filePath] = data;
     } catch (err) {
-      console.error('Error reading HTML file:', err);
-      return 'Internal Server Error';
+      console.error(`[server] Error preloading HTML file ${filePath}:`, err.message);
     }
   }
-  return htmlCache[filePath];
 }
+preloadHtmlCache();
 
 // ── Static files ──────────────────────────────────────────────────────────────
 // Intercept requests for HTML files before express.static to serve the injected versions
 app.use((req, res, next) => {
+  let targetPath = null;
+
   if (req.path === '/' || req.path === '/index.html') {
-    return res.send(getInjectedHtml(path.join(__dirname, '../public/index.html')));
+    targetPath = path.join(__dirname, '../public/index.html');
+  } else if (req.path === '/board' || req.path === '/board/' || req.path === '/board/index.html') {
+    targetPath = path.join(__dirname, '../public/board/index.html');
+  } else if (req.path === '/controller' || req.path === '/controller/' || req.path === '/controller/index.html') {
+    targetPath = path.join(__dirname, '../public/controller/index.html');
   }
-  if (req.path === '/board' || req.path === '/board/' || req.path === '/board/index.html') {
-    return res.send(getInjectedHtml(path.join(__dirname, '../public/board/index.html')));
+
+  if (targetPath) {
+    if (htmlCache[targetPath]) {
+      return res.send(htmlCache[targetPath]);
+    } else {
+      return res.status(500).send('Internal Server Error: Application failed to initialize correctly.');
+    }
   }
-  if (req.path === '/controller' || req.path === '/controller/' || req.path === '/controller/index.html') {
-    return res.send(getInjectedHtml(path.join(__dirname, '../public/controller/index.html')));
-  }
+
   next();
 });
 
