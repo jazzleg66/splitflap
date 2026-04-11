@@ -20,9 +20,31 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 const { createSession, getByCode, getById, touch, updateState, updateRows, sessions } = require('./sessionManager');
 
+// ── Validation helpers ────────────────────────────────────────────────────────
+const PAIR_RE = /^[A-HJ-NP-Z2-9]{6}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
+
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// ── HTTPS redirect in production ──────────────────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') && req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(301, `https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
 
 // ── Preload and inject env vars into HTML ─────────────────────────────────────
 const sentryDsn = process.env.SENTRY_DSN || '';
@@ -79,6 +101,10 @@ app.use('/assets', express.static(path.join(__dirname, '../assets')));
 // ── QR code endpoint ──────────────────────────────────────────────────────────
 app.get('/qr/:sessionId', async (req, res) => {
   try {
+    // Validate session ID format before lookup
+    if (!UUID_RE.test(req.params.sessionId)) {
+      return res.status(400).end();
+    }
     const session = getById(req.params.sessionId);
     if (!session) {
       console.warn(`[qr] Session not found: ${req.params.sessionId}`);
@@ -244,8 +270,8 @@ wss.on('connection', socket => {
         if (msg.type === 'tv_hello') {
           console.log('[pair] tv_hello received');
           role = 'tv';
-          // Try to resume existing session
-          const existing = msg.sessionId ? getById(msg.sessionId) : null;
+          // Try to resume existing session (validate session ID format first)
+          const existing = (msg.sessionId && UUID_RE.test(msg.sessionId)) ? getById(msg.sessionId) : null;
           console.log(`[pair] Existing session: ${existing ? existing.id : 'none'}`);
           if (existing) {
             existing.tvSocket = socket;
@@ -280,6 +306,10 @@ wss.on('connection', socket => {
 
         if (msg.type === 'phone_hello') {
           role = 'phone';
+          // Validate pair code format before lookup
+          if (typeof msg.pairCode !== 'string' || !PAIR_RE.test(msg.pairCode)) {
+            send(socket, { type: 'not_found' }); socket.close(); return;
+          }
           const found = getByCode(msg.pairCode);
           console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
           if (!found) { send(socket, { type: 'not_found' }); socket.close(); return; }
@@ -348,7 +378,9 @@ wss.on('connection', socket => {
 
       if (role === 'phone') {
         if (msg.type === 'phone_send') {
-          const rows = padRows(msg.payload?.rows ?? []);
+          // Validate rows payload shape
+          if (!Array.isArray(msg.payload?.rows)) return;
+          const rows = padRows(msg.payload.rows);
           updateRows(session, rows);
           send(session.tvSocket, { type: 'display_update', rows });
         } else if (msg.type === 'phone_next') {
@@ -390,6 +422,18 @@ if (Sentry && Sentry.Handlers && Sentry.Handlers.errorHandler) {
 } else if (Sentry && Sentry.setupExpressErrorHandler) {
   Sentry.setupExpressErrorHandler(app);
 }
+
+// Fallback error handler (always present, regardless of Sentry)
+app.use((err, req, res, _next) => {
+  console.error('[error]', err.message, err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandled rejection]', reason);
+  if (Sentry) Sentry.captureException(reason);
+});
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;

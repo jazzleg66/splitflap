@@ -13,17 +13,20 @@
   <link rel="stylesheet" href="/shared/splitflap.css">
   <link rel="stylesheet" href="controller.css">
 
-  <!-- Sentry error monitoring (optional) -->
+  <!-- Sentry error monitoring (optional — injected by server) -->
   <script>
-    if (window.location.hostname !== 'localhost') {
-      var sentryDsn = 'YOUR_SENTRY_DSN_HERE'; // Replace with your Sentry DSN
-      if (sentryDsn && !sentryDsn.includes('YOUR_')) {
-        fetch('https://browser.sentry-cdn.com/7.80.0/bundle.min.js', { mode: 'no-cors' })
-          .then(() => {
-            Sentry?.init({ dsn: sentryDsn, environment: 'production' });
-          });
+    var sentryDsn = 'YOUR_SENTRY_DSN_HERE';
+  </script>
+  <script
+    src="https://browser.sentry-cdn.com/7.119.0/bundle.min.js"
+    crossorigin="anonymous"
+    defer></script>
+  <script>
+    window.addEventListener('load', function () {
+      if (window.Sentry && sentryDsn && !sentryDsn.includes('YOUR_') && window.location.hostname !== 'localhost') {
+        Sentry.init({ dsn: sentryDsn, environment: 'production' });
       }
-    }
+    });
   </script>
 
   <!-- PostHog analytics (optional) -->

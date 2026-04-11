@@ -1,5 +1,30 @@
+# Dependencies
 node_modules/
+
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Logs
 *.log
+npm-debug.log*
+
+# Screenshots (development)
 .screenshots/
 temporary screenshots/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-*
+*.swp
+*.swo
+
+# Development assets (not needed in repo)
+references/
+colors/

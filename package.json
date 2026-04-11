@@ -1,7 +1,7 @@
 {
   "name": "digital-solari",
   "version": "1.0.0",
-  "description": "Web-based split-flap display system",
+  "description": "Web-based split-flap display system — turn any screen into a mechanical departure board",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
@@ -10,6 +10,28 @@
     "screenshot:board": "node scripts/screenshot.js board",
     "screenshot:controller": "node scripts/screenshot.js controller",
     "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jazzleg66/splitflap.git"
+  },
+  "author": "jazzleg66",
+  "license": "MIT",
+  "keywords": [
+    "split-flap",
+    "solari",
+    "departure-board",
+    "display",
+    "websocket",
+    "splitflap",
+    "vestaboard"
+  ],
+  "homepage": "https://github.com/jazzleg66/splitflap#readme",
+  "bugs": {
+    "url": "https://github.com/jazzleg66/splitflap/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@sentry/node": "^10.48.0",
