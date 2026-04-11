@@ -254,12 +254,16 @@ wss.on('connection', socket => {
           } else {
             console.log('[pair] Creating new session...');
             try {
+              console.log('[pair] About to call createSession()...');
               session = await createSession();
               console.log(`[pair] Created session: ${session.id}`);
               session.tvSocket = socket;
             } catch (createErr) {
-              console.error('[pair] createSession failed:', createErr.message, createErr.stack);
-              send(socket, { type: 'error', message: 'Failed to create session' });
+              console.error('[pair] ❌ createSession FAILED!');
+              console.error('[pair] Error type:', createErr.constructor.name);
+              console.error('[pair] Error message:', createErr.message);
+              console.error('[pair] Error stack:', createErr.stack);
+              send(socket, { type: 'error', message: `Session creation failed: ${createErr.message}` });
               socket.close();
               return;
             }
