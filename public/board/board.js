@@ -292,7 +292,24 @@ function skipDemo() {
 function showQrScreen(pairCode, sessionId) {
   document.getElementById('pair-code').textContent =
     pairCode.slice(0, 3) + '-' + pairCode.slice(3);
-  document.getElementById('qr-img').src = `/qr/${sessionId}`;
+
+  const qrImg = document.getElementById('qr-img');
+  const qrUrl = `/qr/${sessionId}`;
+
+  // Add error handling for QR image load failures
+  qrImg.onerror = () => {
+    console.error(`[board] Failed to load QR image from ${qrUrl}`);
+    qrImg.style.opacity = '0.3';
+    qrImg.style.border = '2px solid rgba(200, 50, 50, 0.5)';
+  };
+
+  qrImg.onload = () => {
+    console.log(`[board] QR image loaded successfully`);
+    qrImg.style.opacity = '1';
+    qrImg.style.border = 'none';
+  };
+
+  qrImg.src = qrUrl;
   document.getElementById('qr-screen').classList.remove('hidden');
   document.body.classList.remove('board-active');
 }

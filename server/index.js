@@ -78,28 +78,40 @@ app.use('/assets', express.static(path.join(__dirname, '../assets')));
 
 // ── QR code endpoint ──────────────────────────────────────────────────────────
 app.get('/qr/:sessionId', async (req, res) => {
-  const session = getById(req.params.sessionId);
-  if (!session) return res.status(404).end();
-
-  const host = getLanHost(req);
-
-  let scheme = req.headers['x-forwarded-proto'] || req.protocol;
-  if (process.env.APP_URL) {
-    try {
-      scheme = new URL(process.env.APP_URL).protocol.replace(':', '');
-    } catch (e) {}
-  } else if (process.env.NODE_ENV === 'production' && !req.headers['x-forwarded-proto']) {
-    scheme = 'https';
-  }
-
-  const url = `${scheme}://${host}/controller?code=${session.pairCode}`;
-  console.log(`[qr] encoding URL: ${url}`);
-
   try {
+    const session = getById(req.params.sessionId);
+    if (!session) {
+      console.warn(`[qr] Session not found: ${req.params.sessionId}`);
+      return res.status(404).end();
+    }
+
+    const host = getLanHost(req);
+
+    let scheme = req.headers['x-forwarded-proto'] || req.protocol;
+    if (process.env.APP_URL) {
+      try {
+        scheme = new URL(process.env.APP_URL).protocol.replace(':', '');
+      } catch (e) {
+        console.warn(`[qr] Invalid APP_URL for scheme extraction: ${process.env.APP_URL}`);
+      }
+    } else if (process.env.NODE_ENV === 'production' && !req.headers['x-forwarded-proto']) {
+      scheme = 'https';
+    }
+
+    const url = `${scheme}://${host}/controller?code=${session.pairCode}`;
+    console.log(`[qr] encoding URL: ${url}`);
+
     const buf = await QRCode.toBuffer(url, { errorCorrectionLevel: 'M', width: 300 });
-    res.type('png').send(buf);
+
+    // Explicitly set Content-Type and Content-Length headers
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', buf.length);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+
+    res.send(buf);
   } catch (e) {
-    res.status(500).end();
+    console.error(`[qr] Failed to generate QR code: ${e.message}`);
+    res.status(500).send('Failed to generate QR code');
   }
 });
 
@@ -126,9 +138,11 @@ function getLanHost(req) {
   // 1. Prefer explicit APP_URL from environment
   if (process.env.APP_URL) {
     try {
-      return new URL(process.env.APP_URL).host;
+      const appHost = new URL(process.env.APP_URL).host;
+      console.log(`[server] Using APP_URL host: ${appHost}`);
+      return appHost;
     } catch (e) {
-      console.error(`[server] Invalid APP_URL: ${process.env.APP_URL}`);
+      console.error(`[server] Invalid APP_URL: ${process.env.APP_URL}, error: ${e.message}`);
     }
   }
 
@@ -139,14 +153,25 @@ function getLanHost(req) {
   if (reqHost.startsWith('localhost') || reqHost.startsWith('127.0.0.1')) {
     const port = process.env.PORT || 3000;
     const ip = getLanIp();
-    if (ip) return `${ip}:${port}`;
+    if (ip) {
+      const lanHost = `${ip}:${port}`;
+      console.log(`[server] Using LAN IP: ${lanHost}`);
+      return lanHost;
+    }
   }
 
   // 3. Fallback to Host header if APP_URL and LAN IP are unavailable.
   // In production, APP_URL should always be set to prevent Host Header Injection.
   if (process.env.NODE_ENV === 'production') {
-    console.warn('[server] APP_URL not set. Falling back to untrusted Host header.');
+    console.warn('[server] APP_URL not set. Falling back to Host header (consider setting APP_URL for security).');
   }
+
+  if (!reqHost) {
+    console.warn('[server] No Host header found, using default localhost:3000');
+    return 'localhost:3000';
+  }
+
+  console.log(`[server] Using Host header: ${reqHost}`);
   return reqHost;
 }
 
