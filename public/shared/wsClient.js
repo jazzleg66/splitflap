@@ -53,8 +53,17 @@ export default class WsClient {
     });
 
     this._socket.addEventListener('message', e => {
-      if (!this._onMsg) return;
-      try { this._onMsg(JSON.parse(e.data)); } catch {}
+      try {
+        const msg = JSON.parse(e.data);
+        console.log('[ws-client] Raw message received:', msg.type);
+        if (!this._onMsg) {
+          console.warn('[ws-client] No message handler attached, ignoring message:', msg.type);
+          return;
+        }
+        this._onMsg(msg);
+      } catch (err) {
+        console.error('[ws-client] Failed to parse or handle message:', err.message);
+      }
     });
 
     this._socket.addEventListener('close', () => {

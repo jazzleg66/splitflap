@@ -19,17 +19,27 @@ function updateDebugPanel() {
     panel.innerHTML = debugMessages.map(m => `<div>${m}</div>`).join('');
   }
 }
-// Toggle debug panel
-document.getElementById('debug-btn')?.addEventListener('click', () => {
-  const panel = document.getElementById('debug-panel');
-  const messages = document.getElementById('debug-messages');
-  const toggle = document.getElementById('debug-toggle-text');
-  if (panel && messages && toggle) {
-    const isHidden = messages.style.display === 'none';
-    messages.style.display = isHidden ? 'block' : 'none';
-    toggle.textContent = isHidden ? 'hide' : 'show';
+// Toggle debug panel - defer until init
+function setupDebugPanel() {
+  const btn = document.getElementById('debug-btn');
+  if (!btn) {
+    console.warn('[debug] debug-btn not found');
+    addDebugMessage('ERROR: debug-btn not found');
+    return;
   }
-});
+  btn.addEventListener('click', () => {
+    const panel = document.getElementById('debug-panel');
+    const messages = document.getElementById('debug-messages');
+    const toggle = document.getElementById('debug-toggle-text');
+    if (panel && messages && toggle) {
+      const isHidden = messages.style.display === 'none';
+      messages.style.display = isHidden ? 'block' : 'none';
+      toggle.textContent = isHidden ? 'hide' : 'show';
+    }
+  });
+  console.log('[debug] debug panel initialized');
+  addDebugMessage('Debug panel ready - tap 🐛');
+}
 
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
 let pairCode = new URLSearchParams(location.search).get('code') || '';
@@ -880,6 +890,9 @@ function init() {
     const timerValue = document.getElementById('timer-value');
     if (timerSlider) timerSlider.value = loopInterval;
     if (timerValue) timerValue.textContent = loopInterval;
+
+    // Setup debug panel
+    setupDebugPanel();
 
     // ── Grid capture input ────────────────────────────────────────────────────
     const captureEl = document.getElementById('grid-capture');

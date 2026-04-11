@@ -472,9 +472,24 @@ wss.on('connection', socket => {
     if (role === 'tv') {
       session.tvSocket = null;
       // Notify phone if connected (board disconnected unexpectedly)
-      if (session.phoneSocket && session.phoneSocket.readyState === WebSocket.OPEN) {
-        console.log('[pair] TV disconnected, notifying phone...');
-        send(session.phoneSocket, { type: 'board_disconnected' });
+      if (session.phoneSocket) {
+        const phoneState = session.phoneSocket.readyState;
+        const stateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+        const stateName = stateNames[phoneState] || 'UNKNOWN';
+        console.log(`[pair] TV disconnected. Phone socket state: ${stateName} (${phoneState})`);
+        if (phoneState === WebSocket.OPEN) {
+          console.log('[pair] Sending board_disconnected to phone...');
+          try {
+            send(session.phoneSocket, { type: 'board_disconnected' });
+            console.log('[pair] Message sent successfully');
+          } catch (e) {
+            console.error('[pair] Failed to send board_disconnected:', e.message);
+          }
+        } else {
+          console.log('[pair] Phone socket not OPEN, cannot notify phone');
+        }
+      } else {
+        console.log('[pair] TV disconnected but no phone socket exists');
       }
     } else if (role === 'phone') {
       session.phoneSocket = null;
