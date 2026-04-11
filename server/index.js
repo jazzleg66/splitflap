@@ -219,45 +219,53 @@ wss.on('connection', socket => {
   let role = null; // 'tv' | 'phone'
 
   socket.on('message', async raw => {
-    let msg;
-    try { msg = JSON.parse(raw); } catch { return; }
+    try {
+      let msg;
+      try { msg = JSON.parse(raw); } catch { return; }
 
-    if (!role) {
-      // Homepage live-counter watcher — no session, just receives broadcasts
-      if (msg.type === 'counter_watch') {
-        counterWatchers.add(socket);
-        // Send current count immediately
-        let count = 0;
-        for (const s of sessions.values()) {
-          if (
-            s.state === 'active' &&
-            s.tvSocket?.readyState === WebSocket.OPEN &&
-            s.phoneSocket?.readyState === WebSocket.OPEN
-          ) count++;
+      if (!role) {
+        // Homepage live-counter watcher — no session, just receives broadcasts
+        if (msg.type === 'counter_watch') {
+          counterWatchers.add(socket);
+          // Send current count immediately
+          let count = 0;
+          for (const s of sessions.values()) {
+            if (
+              s.state === 'active' &&
+              s.tvSocket?.readyState === WebSocket.OPEN &&
+              s.phoneSocket?.readyState === WebSocket.OPEN
+            ) count++;
+          }
+          send(socket, { type: 'boards_live', count });
+          return;
         }
-        send(socket, { type: 'boards_live', count });
-        return;
-      }
 
-      // First message determines role
-      if (msg.type === 'tv_hello') {
-        role = 'tv';
-        // Try to resume existing session
-        const existing = msg.sessionId ? getById(msg.sessionId) : null;
-        if (existing) {
-          existing.tvSocket = socket;
-          existing.state = 'waiting';
-          session = existing;
-        } else {
-          session = await createSession();
-          session.tvSocket = socket;
+        // First message determines role
+        if (msg.type === 'tv_hello') {
+          role = 'tv';
+          // Try to resume existing session
+          const existing = msg.sessionId ? getById(msg.sessionId) : null;
+          if (existing) {
+            existing.tvSocket = socket;
+            existing.state = 'waiting';
+            session = existing;
+          } else {
+            try {
+              session = await createSession();
+              session.tvSocket = socket;
+            } catch (createErr) {
+              console.error('[pair] createSession failed:', createErr.message);
+              send(socket, { type: 'error', message: 'Failed to create session' });
+              socket.close();
+              return;
+            }
+          }
+          touch(session);
+          console.log(`[pair] tv_hello → session=${session.id} code=${session.pairCode} resumed=${!!existing}`);
+          send(socket, { type: 'tv_paired', sessionId: session.id, pairCode: session.pairCode });
+          broadcastLiveCount();
+          return;
         }
-        touch(session);
-        console.log(`[pair] tv_hello → session=${session.id} code=${session.pairCode} resumed=${!!existing}`);
-        send(socket, { type: 'tv_paired', sessionId: session.id, pairCode: session.pairCode });
-        broadcastLiveCount();
-        return;
-      }
 
       if (msg.type === 'phone_hello') {
         role = 'phone';
@@ -323,17 +331,21 @@ wss.on('connection', socket => {
       }
     }
 
-    if (role === 'phone') {
-      if (msg.type === 'phone_send') {
-        const rows = padRows(msg.payload?.rows ?? []);
-        updateRows(session, rows);
-        send(session.tvSocket, { type: 'display_update', rows });
-      } else if (msg.type === 'phone_next') {
-        send(session.tvSocket, { type: 'phone_next' });
-      } else if (msg.type === 'phone_reset') {
-        updateRows(session, ['', '', '', '', '', '']);
-        send(session.tvSocket, { type: 'hard_reset' });
+      if (role === 'phone') {
+        if (msg.type === 'phone_send') {
+          const rows = padRows(msg.payload?.rows ?? []);
+          updateRows(session, rows);
+          send(session.tvSocket, { type: 'display_update', rows });
+        } else if (msg.type === 'phone_next') {
+          send(session.tvSocket, { type: 'phone_next' });
+        } else if (msg.type === 'phone_reset') {
+          updateRows(session, ['', '', '', '', '', '']);
+          send(session.tvSocket, { type: 'hard_reset' });
+        }
       }
+    } catch (err) {
+      console.error('[ws] Message handler error:', err.message, err.stack);
+      send(socket, { type: 'error', message: 'Internal server error' });
     }
   });
 
