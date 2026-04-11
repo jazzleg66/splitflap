@@ -294,7 +294,7 @@ function showQrScreen(pairCode, sessionId) {
     pairCode.slice(0, 3) + '-' + pairCode.slice(3);
 
   const qrImg = document.getElementById('qr-img');
-  const qrUrl = `/qr/${sessionId}`;
+  const qrUrl = `/qr/${sessionId}?t=${Date.now()}`; // Cache-busting parameter
 
   // Add error handling for QR image load failures
   qrImg.onerror = () => {
@@ -304,7 +304,7 @@ function showQrScreen(pairCode, sessionId) {
   };
 
   qrImg.onload = () => {
-    console.log(`[board] QR image loaded successfully`);
+    console.log(`[board] QR image loaded successfully from ${qrUrl}`);
     qrImg.style.opacity = '1';
     qrImg.style.border = 'none';
   };

@@ -114,7 +114,7 @@ app.get('/qr/:sessionId', async (req, res) => {
     // Explicitly set Content-Type and Content-Length headers
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Length', buf.length);
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
     res.send(buf);
   } catch (e) {
