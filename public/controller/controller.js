@@ -169,9 +169,22 @@ ws.onMessage(msg => {
       document.getElementById('connect-status').textContent = 'INVALID CODE';
       break;
 
-    case 'board_offline':
-      document.getElementById('connect-status').textContent = 'BOARD NOT OPEN — OPEN BOARD ON TV FIRST';
+    case 'board_offline': {
+      // Received when phone reconnects after board closes.
+      // Treat same as board_disconnected — hide UI, show connect screen.
+      const offlineUi = document.getElementById('controller-ui');
+      if (offlineUi) { offlineUi.hidden = true; offlineUi.style.display = 'none'; }
+      const offlineScreen = document.getElementById('connect-screen');
+      if (offlineScreen) {
+        offlineScreen.hidden = false;
+        offlineScreen.style.display = 'flex';
+        const offlineStatus = document.getElementById('connect-status');
+        if (offlineStatus) offlineStatus.textContent = 'BOARD DISCONNECTED';
+      }
+      updateHeader(false, pairCode);
+      addDebugMessage('📴 board_offline → UI reset to disconnected');
       break;
+    }
 
     case 'board_disconnected':
       console.log('%c===== BOARD DISCONNECTED MESSAGE RECEIVED =====', 'color: red; font-weight: bold; font-size: 14px;');

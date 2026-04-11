@@ -472,26 +472,23 @@ wss.on('connection', socket => {
     if (role === 'tv') {
       console.log(`[pair] TV socket closed for session ${session.id}`);
       session.tvSocket = null;
-      // Notify phone if connected (board disconnected unexpectedly)
+      // Close the phone's socket so its wsClient detects the drop and reconnects.
+      // On reconnect, phone sends phone_hello → server sends board_offline.
+      // This is more reliable than sending a message, especially on Safari/iOS.
       if (session.phoneSocket) {
         const phoneState = session.phoneSocket.readyState;
         const stateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-        const stateName = stateNames[phoneState] || 'UNKNOWN';
-        console.log(`[pair] ⚠️  TV disconnected. Phone socket state: ${stateName} (${phoneState})`);
-        if (phoneState === WebSocket.OPEN) {
-          console.log('[pair] ✅ Sending board_disconnected to phone...');
-          try {
-            send(session.phoneSocket, { type: 'board_disconnected' });
-            console.log('[pair] ✅ Message sent successfully');
-          } catch (e) {
-            console.error('[pair] ❌ Failed to send board_disconnected:', e.message);
-          }
-        } else {
-          console.log(`[pair] ❌ Phone socket not OPEN (${stateName}), cannot notify phone`);
+        console.log(`[pair] TV disconnected. Closing phone socket (state: ${stateNames[phoneState]})`);
+        try {
+          session.phoneSocket.close();
+          console.log('[pair] ✅ Phone socket closed — phone will reconnect and get board_offline');
+        } catch (e) {
+          console.error('[pair] ❌ Failed to close phone socket:', e.message);
         }
-      } else {
-        console.log('[pair] ❌ TV disconnected but no phone socket exists');
       }
+      // Reset session so next phone_hello gets board_offline
+      session.state = 'waiting';
+      session.phoneSocket = null;
     } else if (role === 'phone') {
       console.log(`[pair] Phone socket closed for session ${session.id}`);
       session.phoneSocket = null;
