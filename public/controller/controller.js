@@ -7,18 +7,32 @@ import WsClient from '/shared/wsClient.js';
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
 let pairCode = new URLSearchParams(location.search).get('code') || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
-const ws = new WsClient(() => {
-  ws.send({ type: 'phone_hello', pairCode });
-  const statusEl = document.getElementById('connect-status');
-  if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
-});
-if (pairCode) {
-  ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+
+// Use head-start socket if available, otherwise create new
+let ws = window._wsHeadStart;
+if (!ws) {
+  ws = new WsClient(() => {
+    console.log('[ws] Socket connected, sending phone_hello for pairCode:', pairCode);
+    ws.send({ type: 'phone_hello', pairCode });
+    const statusEl = document.getElementById('connect-status');
+    if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+  });
+  if (pairCode) {
+    const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+    console.log('[ws] Attempting connection to:', url);
+    ws.connect(url);
+  }
+} else {
+  console.log('[ws] Inherited head-start socket');
+  // If socket is already open, wait-for-approval text might already be set by head-start script.
+  // We just need to ensure the onMessage handler is attached (done below).
 }
 
 ws.onMessage(msg => {
+  console.log('[ws] Message received:', msg.type, msg);
   switch (msg.type) {
     case 'phone_approved': {
+      console.log('[ws] Phone approved! Transitioning UI...');
       document.getElementById('connect-screen')?.remove();
       const ui = document.getElementById('controller-ui');
       if (ui) ui.hidden = false;
@@ -785,89 +799,106 @@ if (!pairCode && statusEl) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-document.fonts.ready.then(() => {
-  loadDrafts();
-  buildPreviewGrid();
-  // Defer fitPreview until after layout paint — fonts.ready can fire before
-  // the browser has calculated offsetWidth (especially on iOS Safari).
-  // ResizeObserver catches any subsequent wrapper-width changes (orientation, etc.).
-  const wrapper = document.getElementById('preview-wrapper');
-  new ResizeObserver(fitPreview).observe(wrapper);
-  requestAnimationFrame(fitPreview);
-  window.addEventListener('resize', fitPreview);
-  renderMessageGrid();
-  syncPreview(messages[activeMessageIndex].rows);
+function init() {
+  console.log('[init] Starting controller initialization...');
+  try {
+    loadDrafts();
+    buildPreviewGrid();
 
-  // Restore mode radio
-  document.querySelector(`input[name="mode"][value="${currentMode}"]`).checked = true;
-  document.getElementById('timer-slider').value = loopInterval;
-  document.getElementById('timer-value').textContent = loopInterval;
+    const wrapper = document.getElementById('preview-wrapper');
+    if (wrapper) {
+      new ResizeObserver(fitPreview).observe(wrapper);
+      requestAnimationFrame(fitPreview);
+    }
+    window.addEventListener('resize', fitPreview);
 
-  // ── Grid capture input ────────────────────────────────────────────────────
-  // The hidden off-screen <input> captures keyboard events for the cell grid.
-  const captureEl = document.getElementById('grid-capture');
-  captureEl.addEventListener('keydown', handleGridKey);
-  // Drain any characters the browser accumulates (prevents buffer build-up)
-  captureEl.addEventListener('input', e => { e.target.value = ''; });
-  // Toggle focus ring on the grid container
-  captureEl.addEventListener('focus', () => {
-    document.getElementById('msg-grid-container')?.classList.add('grid-active');
-  });
-  captureEl.addEventListener('blur', () => {
-    document.getElementById('msg-grid-container')?.classList.remove('grid-active');
-  });
+    renderMessageGrid();
+    syncPreview(messages[activeMessageIndex].rows);
 
-  // ── Color picker ─────────────────────────────────────────────────────────
-  // mousedown preventDefault stops the swatch from stealing focus from the
-  // capture input — without this, blur fires before click and the keyboard
-  // disappears on mobile.
-  document.getElementById('emoji-picker').addEventListener('mousedown', e => {
-    if (e.target.closest('.color-swatch')) e.preventDefault();
-  });
-  document.getElementById('emoji-picker').addEventListener('click', e => {
-    const btn = e.target.closest('.color-swatch');
-    if (btn) insertColorChar(btn.dataset.color);
-  });
+    // Restore mode radio
+    const modeInput = document.querySelector(`input[name="mode"][value="${currentMode}"]`);
+    if (modeInput) modeInput.checked = true;
 
-  // ── Mode toggle ──────────────────────────────────────────────────────────
-  document.querySelectorAll('input[name="mode"]').forEach(radio => {
-    radio.addEventListener('change', e => {
-      const prevMode = currentMode;
-      currentMode = e.target.value;
-      // Clean up previous mode
-      if (prevMode === 'artwork') hideArtworkMode();
-      if (prevMode === 'clock') stopClockMode();
-      // Activate new mode
-      if (currentMode === 'clock') {
-        stopPlay();
-        startClockMode();
-        saveDrafts();
-      } else if (currentMode === 'artwork') {
-        stopPlay();
-        showArtworkMode();
-        // don't persist 'artwork' — it's ephemeral
-      } else {
-        switchToMessage();
-        saveDrafts();
-      }
+    const timerSlider = document.getElementById('timer-slider');
+    const timerValue = document.getElementById('timer-value');
+    if (timerSlider) timerSlider.value = loopInterval;
+    if (timerValue) timerValue.textContent = loopInterval;
+
+    // ── Grid capture input ────────────────────────────────────────────────────
+    const captureEl = document.getElementById('grid-capture');
+    if (captureEl) {
+      captureEl.addEventListener('keydown', handleGridKey);
+      captureEl.addEventListener('input', e => { e.target.value = ''; });
+      captureEl.addEventListener('focus', () => {
+        document.getElementById('msg-grid-container')?.classList.add('grid-active');
+      });
+      captureEl.addEventListener('blur', () => {
+        document.getElementById('msg-grid-container')?.classList.remove('grid-active');
+      });
+    }
+
+    // ── Color picker ─────────────────────────────────────────────────────────
+    const emojiPicker = document.getElementById('emoji-picker');
+    if (emojiPicker) {
+      emojiPicker.addEventListener('mousedown', e => {
+        if (e.target.closest('.color-swatch')) e.preventDefault();
+      });
+      emojiPicker.addEventListener('click', e => {
+        const btn = e.target.closest('.color-swatch');
+        if (btn) insertColorChar(btn.dataset.color);
+      });
+    }
+
+    // ── Mode toggle ──────────────────────────────────────────────────────────
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        const prevMode = currentMode;
+        currentMode = e.target.value;
+        if (prevMode === 'artwork') hideArtworkMode();
+        if (prevMode === 'clock') stopClockMode();
+        if (currentMode === 'clock') {
+          stopPlay();
+          startClockMode();
+          saveDrafts();
+        } else if (currentMode === 'artwork') {
+          stopPlay();
+          showArtworkMode();
+        } else {
+          switchToMessage();
+          saveDrafts();
+        }
+      });
     });
-  });
 
-  // ── Loop timer ───────────────────────────────────────────────────────────
-  document.getElementById('timer-slider').addEventListener('input', e => {
-    loopInterval = Number(e.target.value);
-    document.getElementById('timer-value').textContent = loopInterval;
-    saveDrafts();
-    if (isPlaying) scheduleNext();
-  });
+    // ── Loop timer ───────────────────────────────────────────────────────────
+    const slider = document.getElementById('timer-slider');
+    if (slider) {
+      slider.addEventListener('input', e => {
+        loopInterval = Number(e.target.value);
+        if (timerValue) timerValue.textContent = loopInterval;
+        saveDrafts();
+        if (isPlaying) scheduleNext();
+      });
+    }
 
-  // ── Buttons ──────────────────────────────────────────────────────────────
-  document.getElementById('btn-add-message').addEventListener('click', addMessage);
+    // ── Buttons ──────────────────────────────────────────────────────────────
+    document.getElementById('btn-add-message')?.addEventListener('click', addMessage);
+    document.getElementById('btn-play')?.addEventListener('click', () => {
+      if (isPlaying) stopPlay(); else startPlay();
+    });
+    document.getElementById('btn-next')?.addEventListener('click', nextMessage);
+    document.getElementById('btn-reset')?.addEventListener('click', hardReset);
 
-  document.getElementById('btn-play').addEventListener('click', () => {
-    if (isPlaying) stopPlay(); else startPlay();
-  });
+    console.log('[init] Controller initialization complete.');
+  } catch (err) {
+    console.error('[init] FATAL ERROR during initialization:', err);
+  }
+}
 
-  document.getElementById('btn-next').addEventListener('click', nextMessage);
-  document.getElementById('btn-reset').addEventListener('click', hardReset);
+// Run init immediately, don't wait for fonts if they are hanging.
+// We still check fonts.ready for any late-joining adjustments.
+init();
+document.fonts.ready.then(() => {
+  console.log('[fonts] Fonts ready, refreshing layout...');
+  fitPreview();
 });

@@ -80,6 +80,12 @@ preloadHtmlCache();
 // ── Static files ──────────────────────────────────────────────────────────────
 // Intercept requests for HTML files before express.static to serve the injected versions
 app.use((req, res, next) => {
+  // Ensure trailing slash for /board and /controller to fix relative path issues
+  if ((req.path === '/board' || req.path === '/controller') && !req.url.endsWith('/')) {
+    const query = req.url.slice(req.path.length);
+    return res.redirect(301, req.path + '/' + query);
+  }
+
   let targetPath = null;
 
   if (req.path === '/' || req.path === '/index.html') {
@@ -101,8 +107,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/assets', express.static(path.join(__dirname, '../assets')));
+app.use(express.static(path.join(__dirname, '../public'), {
+  maxAge: '1h', // Cache HTML/JS/CSS for 1 hour by default
+  setHeaders: (res, path) => {
+    if (path.includes('shared/')) {
+      // Shared libraries change rarely, cache longer
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
+
+// Assets (fonts, audio) are truly static and should be cached aggressively
+app.use('/assets', express.static(path.join(__dirname, '../assets'), {
+  maxAge: '365d',
+  immutable: true
+}));
 
 // ── QR code endpoint ──────────────────────────────────────────────────────────
 app.get('/qr/:sessionId', async (req, res) => {
@@ -368,9 +387,14 @@ wss.on('connection', socket => {
           }
 
           found.phoneSocket = socket;
-          found.state = 'pending_approval';
+          found.state = 'active'; // Skip 'pending_approval' — the QR scan is our security token
           touch(found);
-          send(found.tvSocket, { type: 'phone_request' });
+
+          // Notify BOTH parties immediately to save a full round-trip (TV auto-approval was slow over WAN)
+          send(found.tvSocket, { type: 'phone_approved' });
+          send(socket, { type: 'phone_approved' });
+
+          broadcastLiveCount();
           return;
         }
 

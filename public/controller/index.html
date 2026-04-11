@@ -7,12 +7,42 @@
   <title>Solari Controller</title>
   <meta name="robots" content="noindex, follow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+  <!-- Preload critical assets for faster paint and connection -->
+  <link rel="preload" href="/shared/splitflap.css" as="style">
+  <link rel="preload" href="/controller/controller.css" as="style">
+  <link rel="modulepreload" href="/controller/controller.js">
+  <link rel="modulepreload" href="/shared/wsClient.js">
+  <link rel="modulepreload" href="/shared/spool.js">
+
+  <!-- Preconnect to fonts and start handshake early -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+
+  <!-- Async Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Roboto+Mono:wght@400&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+  </noscript>
 
   <link rel="stylesheet" href="/shared/splitflap.css">
-  <link rel="stylesheet" href="controller.css">
+  <link rel="stylesheet" href="/controller/controller.css">
+
+  <!-- HEAD-START WEBSOCKET: Start connection while CSS/JS are still downloading -->
+  <script type="module">
+    import WsClient from '/shared/wsClient.js';
+    const pairCode = new URLSearchParams(location.search).get('code')?.replace(/-/g, '').toUpperCase();
+    if (pairCode) {
+      window._wsHeadStart = new WsClient(() => {
+        console.log('[head-start] Socket open, sending hello...');
+        window._wsHeadStart.send({ type: 'phone_hello', pairCode });
+        const statusEl = document.getElementById('connect-status');
+        if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+      });
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      window._wsHeadStart.connect(`${proto}://${location.host}/ws`);
+    }
+  </script>
 </head>
 <body>
 
@@ -112,7 +142,7 @@
     <button id="btn-reset">RESET</button>
   </footer>
 
-  <script type="module" src="controller.js"></script>
+  <script type="module" src="/controller/controller.js"></script>
 
   <!-- Sentry error monitoring (optional — injected by server) -->
   <script>
