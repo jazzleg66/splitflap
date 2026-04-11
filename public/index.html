@@ -75,6 +75,7 @@
 
       <div id="hero-ctas">
         <a href="/board" id="cta-primary">CONNECT BOARD &nbsp;&#x2192;</a>
+        <button id="cta-enter-code">ENTER CODE &nbsp;&#x2192;</button>
         <a href="#hero" id="cta-secondary">SEE IT LIVE &nbsp;&#x2193;</a>
       </div>
 
@@ -112,6 +113,7 @@
       <button id="btn-mute">MUTE</button>
       <button id="btn-fullscreen">&#x26F6;</button>
       <a id="btn-connect" href="/board">CONNECT BOARD &nbsp;&#x2192;</a>
+      <button id="demo-enter-code">ENTER CODE &nbsp;&#x2192;</button>
     </div>
   </section>
 
@@ -120,6 +122,25 @@
     <span>DIGITAL SOLARI &copy; 2026</span>
     <span>Node.js &middot; WebSockets &middot; No database</span>
   </footer>
+
+  <!-- ── Code entry modal ────────────────────────────────────────────────────────── -->
+  <div id="code-modal" class="hidden" role="dialog" aria-modal="true">
+    <div id="code-modal-inner">
+      <button id="code-modal-close" aria-label="Close">&#x2715;</button>
+      <p id="code-modal-label">ENTER PAIR CODE</p>
+      <p id="code-modal-hint">Find the code on the TV board — click "ENTER CODE MANUALLY"</p>
+      <div id="code-boxes">
+        <input class="code-box" maxlength="1" inputmode="text" autocomplete="off">
+        <input class="code-box" maxlength="1" inputmode="text" autocomplete="off">
+        <input class="code-box" maxlength="1" inputmode="text" autocomplete="off">
+        <input class="code-box" maxlength="1" inputmode="text" autocomplete="off">
+        <input class="code-box" maxlength="1" inputmode="text" autocomplete="off">
+        <input class="code-box" maxlength="1" inputmode="text" autocomplete="off">
+      </div>
+      <p id="code-error" class="hidden">INVALID CHARACTER</p>
+      <button id="code-connect" disabled>CONNECT &nbsp;&#x2192;</button>
+    </div>
+  </div>
 
   <!-- Sentry error monitoring (optional — injected by server) -->
   <script>

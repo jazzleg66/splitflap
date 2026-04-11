@@ -183,6 +183,26 @@ body {
   color: var(--about-text);
 }
 
+#cta-enter-code {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid #cccccc;
+  color: var(--about-dim);
+  font-family: var(--rht);
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  padding: 0.65rem 1.5rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+#cta-enter-code:hover {
+  border-color: var(--about-text);
+  color: var(--about-text);
+}
+
 /* How-it-works steps — horizontal 3-column */
 #how-it-works {
   display: grid;
@@ -356,6 +376,172 @@ body {
   color: var(--about-bg);
 }
 
+#demo-enter-code {
+  display: inline-block;
+  border: 1px solid var(--about-text);
+  color: var(--about-text);
+  font-family: var(--rht);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.8rem;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+#demo-enter-code:hover {
+  background: var(--about-text);
+  color: var(--about-bg);
+}
+
+/* ── Code Entry Modal ────────────────────────────────────────────────────────── */
+#code-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 1.5rem;
+}
+
+#code-modal.hidden {
+  display: none;
+}
+
+#code-modal-inner {
+  background: #1B1B1B;
+  border: 1px solid rgba(232, 213, 163, 0.2);
+  border-radius: 6px;
+  padding: 2rem;
+  max-width: 380px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+#code-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #E8D5A3;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+#code-modal-close:hover {
+  color: #FFFFFF;
+}
+
+#code-modal-label {
+  font-family: "Doto", monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #E8D5A3;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+#code-modal-hint {
+  font-family: var(--rht);
+  font-size: 0.8rem;
+  color: rgba(232, 213, 163, 0.7);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+#code-boxes {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.code-box {
+  width: 2.8rem;
+  height: 3.6rem;
+  background: rgba(27, 27, 27, 0.8);
+  border: 2px solid rgba(232, 213, 163, 0.4);
+  border-radius: 4px;
+  color: #E8D5A3;
+  font-family: "Doto", monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.code-box:focus {
+  outline: none;
+  border-color: #E8D5A3;
+  color: #FFFFFF;
+}
+
+.code-box.filled {
+  border-color: #E8D5A3;
+}
+
+.code-box.invalid {
+  animation: codeBoxInvalid 0.5s ease;
+}
+
+@keyframes codeBoxInvalid {
+  0%, 100% {
+    border-color: rgba(232, 213, 163, 0.4);
+    background-color: rgba(27, 27, 27, 0.8);
+  }
+  50% {
+    border-color: #CC2200;
+    background-color: rgba(204, 34, 0, 0.1);
+  }
+}
+
+#code-error {
+  color: #CC2200;
+  font-family: var(--rht);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 1rem;
+  text-align: center;
+  transition: opacity 0.3s;
+}
+
+#code-error.hidden {
+  display: none;
+}
+
+#code-connect {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #E8D5A3;
+  color: #E8D5A3;
+  font-family: var(--rht);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+#code-connect:hover:not(:disabled) {
+  background: #E8D5A3;
+  color: #1B1B1B;
+}
+
+#code-connect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Footer ──────────────────────────────────────────────────────────────────── */
 #site-footer {
   display: flex;
@@ -459,6 +645,21 @@ body {
   color: #1B1B1B;
 }
 
+/* Enter Code button in demo controls */
+#hero:fullscreen #demo-enter-code,
+#hero:-webkit-full-screen #demo-enter-code,
+#hero.pseudo-fullscreen #demo-enter-code {
+  border-color: #5a5a5a;
+  color: #7a6e54;
+}
+
+#hero:fullscreen #demo-enter-code:hover,
+#hero:-webkit-full-screen #demo-enter-code:hover,
+#hero.pseudo-fullscreen #demo-enter-code:hover {
+  background: #E8D5A3;
+  color: #1B1B1B;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   #about {
@@ -480,7 +681,8 @@ body {
   }
 
   #cta-primary,
-  #cta-secondary {
+  #cta-secondary,
+  #cta-enter-code {
     text-align: center;
   }
 

@@ -310,6 +310,237 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
   });
 });
 
+// ── Code Entry Modal ──────────────────────────────────────────────────────────
+const VALID_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No O, I, 0, 1
+const codeBoxes = document.querySelectorAll('.code-box');
+const codeModal = document.getElementById('code-modal');
+const codeModalInner = document.getElementById('code-modal-inner');
+const codeError = document.getElementById('code-error');
+const codeConnectBtn = document.getElementById('code-connect');
+
+// Track the current code being entered
+let currentCode = ['', '', '', '', '', ''];
+
+function openModal() {
+  codeModal.classList.remove('hidden');
+  resetModal();
+  codeBoxes[0].focus();
+}
+
+function closeModal() {
+  codeModal.classList.add('hidden');
+  resetModal();
+}
+
+function resetModal() {
+  currentCode = ['', '', '', '', '', ''];
+  codeBoxes.forEach(box => {
+    box.value = '';
+    box.classList.remove('filled', 'invalid');
+  });
+  codeError.classList.add('hidden');
+  codeConnectBtn.disabled = true;
+}
+
+function isValidCodeChar(char) {
+  return VALID_CODE_CHARS.includes(char.toUpperCase());
+}
+
+function updateBoxDisplay(index) {
+  const box = codeBoxes[index];
+  box.classList.toggle('filled', currentCode[index] !== '');
+}
+
+function updateConnectButton() {
+  const isFull = currentCode.every(c => c !== '');
+  codeConnectBtn.disabled = !isFull;
+}
+
+function setCodeChar(index, char) {
+  if (index < 0 || index >= 6) return;
+  currentCode[index] = char.toUpperCase();
+  codeBoxes[index].value = currentCode[index];
+  updateBoxDisplay(index);
+  updateConnectButton();
+}
+
+function advanceBox(index) {
+  if (index < 5) {
+    codeBoxes[index + 1].focus();
+  }
+}
+
+function backtrackBox(index) {
+  if (index > 0) {
+    codeBoxes[index - 1].focus();
+  }
+}
+
+// Handle typing in code boxes
+codeBoxes.forEach((box, index) => {
+  box.addEventListener('keydown', (e) => {
+    const char = e.key.toUpperCase();
+
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      if (currentCode[index]) {
+        setCodeChar(index, '');
+        updateConnectButton();
+      } else if (index > 0) {
+        setCodeChar(index - 1, '');
+        codeBoxes[index - 1].focus();
+      }
+      return;
+    }
+
+    if (e.key === 'Delete') {
+      e.preventDefault();
+      setCodeChar(index, '');
+      updateConnectButton();
+      return;
+    }
+
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      backtrackBox(index);
+      return;
+    }
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      advanceBox(index);
+      return;
+    }
+
+    if (e.key === 'Home') {
+      e.preventDefault();
+      codeBoxes[0].focus();
+      return;
+    }
+
+    if (e.key === 'End') {
+      e.preventDefault();
+      codeBoxes[5].focus();
+      return;
+    }
+
+    // Printable characters
+    if (char.length === 1 && /[A-Z0-9\-]/.test(char)) {
+      e.preventDefault();
+
+      // Skip dashes
+      if (char === '-') {
+        advanceBox(index);
+        return;
+      }
+
+      if (!isValidCodeChar(char)) {
+        // Flash error on this box
+        box.classList.add('invalid');
+        codeError.classList.remove('hidden');
+        setTimeout(() => box.classList.remove('invalid'), 500);
+        setTimeout(() => codeError.classList.add('hidden'), 2000);
+        return;
+      }
+
+      setCodeChar(index, char);
+      advanceBox(index);
+    }
+  });
+
+  // Handle paste
+  box.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text');
+    const cleaned = paste.replace(/-/g, '').toUpperCase();
+
+    let boxIdx = index;
+    for (let i = 0; i < cleaned.length && boxIdx < 6; i++) {
+      const char = cleaned[i];
+      if (isValidCodeChar(char)) {
+        setCodeChar(boxIdx, char);
+        boxIdx++;
+      }
+    }
+    updateConnectButton();
+
+    if (boxIdx < 6) {
+      codeBoxes[boxIdx].focus();
+    }
+  });
+
+  // Also handle input event for programmatic changes (e.g., from paste via execCommand)
+  box.addEventListener('input', (e) => {
+    let value = box.value.toUpperCase().trim();
+
+    // If multiple characters pasted, try to distribute them
+    if (value.length > 1) {
+      value = value.replace(/-/g, '');
+      let boxIdx = index;
+      for (let i = 0; i < value.length && boxIdx < 6; i++) {
+        const char = value[i];
+        if (isValidCodeChar(char)) {
+          setCodeChar(boxIdx, char);
+          boxIdx++;
+        }
+      }
+      updateConnectButton();
+      if (boxIdx < 6) {
+        codeBoxes[boxIdx].focus();
+      }
+    } else if (value.length === 1) {
+      // Single character - validate and advance
+      if (!isValidCodeChar(value)) {
+        box.classList.add('invalid');
+        codeError.classList.remove('hidden');
+        setTimeout(() => box.classList.remove('invalid'), 500);
+        setTimeout(() => codeError.classList.add('hidden'), 2000);
+        box.value = '';
+        return;
+      }
+      setCodeChar(index, value);
+      if (value) advanceBox(index);
+    } else {
+      // Empty
+      currentCode[index] = '';
+      updateBoxDisplay(index);
+      updateConnectButton();
+    }
+  });
+
+  // Handle click to focus
+  box.addEventListener('click', () => {
+    box.focus();
+  });
+});
+
+// Modal controls
+document.getElementById('cta-enter-code').addEventListener('click', openModal);
+document.getElementById('demo-enter-code').addEventListener('click', openModal);
+document.getElementById('code-modal-close').addEventListener('click', closeModal);
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !codeModal.classList.contains('hidden')) {
+    closeModal();
+  }
+});
+
+// Close on backdrop click (click outside modal)
+codeModal.addEventListener('click', (e) => {
+  if (e.target === codeModal) {
+    closeModal();
+  }
+});
+
+// Connect button handler
+codeConnectBtn.addEventListener('click', () => {
+  const code = currentCode.join('');
+  if (code.length === 6) {
+    location.href = `/controller?code=${code}`;
+  }
+});
+
 // ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
 // CSS container queries (cqi/cqh) have cross-browser inconsistencies when the
 // tile height comes from aspect-ratio. ResizeObserver gives exact pixel values.
