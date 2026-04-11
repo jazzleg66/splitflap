@@ -33,7 +33,9 @@ ws.onMessage(msg => {
   switch (msg.type) {
     case 'phone_approved': {
       console.log('[ws] Phone approved! Transitioning UI...');
-      document.getElementById('connect-screen')?.remove();
+      // Hide connection screen instead of removing it (so we can show it again if board disconnects)
+      const connectScreen = document.getElementById('connect-screen');
+      if (connectScreen) connectScreen.hidden = true;
       const ui = document.getElementById('controller-ui');
       if (ui) ui.hidden = false;
       updateHeader(true, pairCode);
@@ -74,16 +76,15 @@ ws.onMessage(msg => {
 
     case 'board_disconnected':
       console.log('[ws] Board disconnected! Reverting to disconnected state...');
-      document.getElementById('connect-status').textContent = 'DISCONNECTED';
-      updateHeader(false, pairCode);
       // Hide the main UI and show connection screen again
-      document.getElementById('controller-ui')?.setAttribute('hidden', '');
+      const ui = document.getElementById('controller-ui');
+      if (ui) ui.hidden = true;
       const connectScreen = document.getElementById('connect-screen');
-      if (!connectScreen.parentElement) {
-        document.body.insertBefore(connectScreen, document.body.firstChild);
-      } else {
+      if (connectScreen) {
         connectScreen.hidden = false;
+        document.getElementById('connect-status').textContent = 'DISCONNECTED';
       }
+      updateHeader(false, pairCode);
       break;
   }
 });
