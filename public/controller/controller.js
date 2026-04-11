@@ -7,30 +7,68 @@ import WsClient from '/shared/wsClient.js';
 // ── Debug logging (for Safari on iPhone without console access) ──────────────
 const debugMessages = [];
 const MAX_DEBUG_MESSAGES = 15;
+let debugPanelReady = false;
+
 function addDebugMessage(text) {
   const now = new Date().toLocaleTimeString();
   const msg = `[${now}] ${text}`;
   debugMessages.push(msg);
   if (debugMessages.length > MAX_DEBUG_MESSAGES) debugMessages.shift();
-  updateDebugPanel();
+
+  // Try to update panel
+  try {
+    updateDebugPanel();
+  } catch (e) {
+    console.error('[debug] Error updating panel:', e.message);
+  }
+
   // Also log to console
   console.log('[debug]', msg);
 }
+
 function updateDebugPanel() {
   const panel = document.getElementById('debug-messages');
-  if (panel) {
-    panel.innerHTML = debugMessages.map(m => `<div>${m}</div>`).join('');
-    // Auto-scroll to bottom
-    panel.parentElement.scrollTop = panel.parentElement.scrollHeight;
+  if (!panel) {
+    console.warn('[debug] debug-messages element not found');
+    return;
   }
+
+  panel.innerHTML = debugMessages.map(m => `<div>${m}</div>`).join('');
+
+  // Auto-scroll to bottom
+  const parentPanel = document.getElementById('debug-panel');
+  if (parentPanel) {
+    setTimeout(() => {
+      parentPanel.scrollTop = parentPanel.scrollHeight;
+    }, 0);
+  }
+
+  debugPanelReady = true;
+}
+
+// Check panel exists on init
+function checkDebugPanel() {
+  const panel = document.getElementById('debug-panel');
+  const messages = document.getElementById('debug-messages');
+  console.log('[debug] Panel check - debug-panel:', panel ? 'FOUND' : 'NOT FOUND', 'debug-messages:', messages ? 'FOUND' : 'NOT FOUND');
+  if (panel && messages) {
+    console.log('[debug] Panel is ready for messages');
+    return true;
+  }
+  return false;
 }
 
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
 let pairCode = new URLSearchParams(location.search).get('code') || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
 
-// Initialize debug on page load
-addDebugMessage('Page loaded, initializing WebSocket...');
+// Check debug panel early
+console.log('[debug] Checking if debug panel elements exist...');
+checkDebugPanel();
+
+// Initialize debug messages
+console.log('[debug] Starting initialization...');
+addDebugMessage('✓ Page loaded, initializing WebSocket...');
 
 // Use head-start socket if available, otherwise create new
 let ws = window._wsHeadStart;
@@ -55,6 +93,17 @@ if (!ws) {
 ws.onMessage(msg => {
   console.log('[ws] Message received:', msg.type, msg);
   addDebugMessage(`Message: ${msg.type}`);
+
+  // Fallback debug: update header with message type
+  try {
+    const codeEl = document.getElementById('header-code');
+    if (codeEl) {
+      codeEl.textContent = msg.type.substring(0, 10);
+    }
+  } catch (e) {
+    console.error('[debug] Failed to update header:', e.message);
+  }
+
   switch (msg.type) {
     case 'phone_approved': {
       console.log('[ws] Phone approved! Transitioning UI...');
