@@ -44,15 +44,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Red+Hat+Text:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
-  <link rel="link" rel="modulepreload" href="/shared/spool.js">
-  <link rel="link" rel="modulepreload" href="/shared/wsClient.js">
-  <link rel="link" rel="modulepreload" href="home.js">
+
   <link rel="stylesheet" href="/shared/splitflap.css">
   <link rel="stylesheet" href="home.css">
-
-    }
-  </script>
-
 </head>
 <body>
 
@@ -134,7 +128,7 @@
   <script
     src="https://browser.sentry-cdn.com/7.119.0/bundle.min.js"
     crossorigin="anonymous"
-    defer></script>
+    async></script>
   <script>
     window.addEventListener('load', function () {
       if (window.Sentry && sentryDsn && !sentryDsn.includes('YOUR_') && window.location.hostname !== 'localhost') {
