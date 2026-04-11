@@ -6,44 +6,31 @@ import WsClient from '/shared/wsClient.js';
 
 // ── Debug logging (for Safari on iPhone without console access) ──────────────
 const debugMessages = [];
-const MAX_DEBUG_MESSAGES = 10;
+const MAX_DEBUG_MESSAGES = 15;
 function addDebugMessage(text) {
   const now = new Date().toLocaleTimeString();
-  debugMessages.push(`[${now}] ${text}`);
+  const msg = `[${now}] ${text}`;
+  debugMessages.push(msg);
   if (debugMessages.length > MAX_DEBUG_MESSAGES) debugMessages.shift();
   updateDebugPanel();
+  // Also log to console
+  console.log('[debug]', msg);
 }
 function updateDebugPanel() {
   const panel = document.getElementById('debug-messages');
   if (panel) {
     panel.innerHTML = debugMessages.map(m => `<div>${m}</div>`).join('');
+    // Auto-scroll to bottom
+    panel.parentElement.scrollTop = panel.parentElement.scrollHeight;
   }
-}
-// Toggle debug panel - defer until init
-function setupDebugPanel() {
-  const btn = document.getElementById('debug-btn');
-  if (!btn) {
-    console.warn('[debug] debug-btn not found');
-    addDebugMessage('ERROR: debug-btn not found');
-    return;
-  }
-  btn.addEventListener('click', () => {
-    const panel = document.getElementById('debug-panel');
-    const messages = document.getElementById('debug-messages');
-    const toggle = document.getElementById('debug-toggle-text');
-    if (panel && messages && toggle) {
-      const isHidden = messages.style.display === 'none';
-      messages.style.display = isHidden ? 'block' : 'none';
-      toggle.textContent = isHidden ? 'hide' : 'show';
-    }
-  });
-  console.log('[debug] debug panel initialized');
-  addDebugMessage('Debug panel ready - tap 🐛');
 }
 
 // ── WebSocket Connect ──────────────────────────────────────────────────────────
 let pairCode = new URLSearchParams(location.search).get('code') || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
+
+// Initialize debug on page load
+addDebugMessage('Page loaded, initializing WebSocket...');
 
 // Use head-start socket if available, otherwise create new
 let ws = window._wsHeadStart;
@@ -891,8 +878,8 @@ function init() {
     if (timerSlider) timerSlider.value = loopInterval;
     if (timerValue) timerValue.textContent = loopInterval;
 
-    // Setup debug panel
-    setupDebugPanel();
+    // Debug panel is always visible now
+    addDebugMessage('Controller initialized - watching for board_disconnected');
 
     // ── Grid capture input ────────────────────────────────────────────────────
     const captureEl = document.getElementById('grid-capture');
