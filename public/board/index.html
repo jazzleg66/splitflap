@@ -84,15 +84,19 @@
 
   <!-- PostHog analytics (optional) -->
   <script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");for(var n=0;n<o.length;n++)t=t[o[n]];return t}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src="https://cdn.posthog.com/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(var c in s)u["__SV_"+c]=s[c];u.__SV_loaded=!0,e.config=s,e.opt_in_capturing=function(t){e.__opt_in_capturing=t},e.opt_out_capturing=function(t){e.__opt_out_capturing=t},e.opt_out_capturing(e.__opt_out_capturing===!0),e.identify=function(t){e.people.set(e.people.identify_flag||"distinct_id",t)},e.reset=function(){delete window.posthog.distinctID},e.register=function(t){e.config=Object.assign({},e.config,t)},e.register({config_name:e.config.name,loaded:new Date().toISOString(),version:e.config.version})},e.capture=function(t,o,n){e._i.push([t,o,n])},e.pageview=function(t,o){e._i.push(["$pageview",{$current_url:t}])},e.page_view=function(t,o){e._i.push(["$pageview",{$current_url:t},o])},e.people.set=function(t){e._i.push(["people.set",t])},e.people.set_once=function(t){e._i.push(["people.set_once",t])},e.people.unset=function(t){e._i.push(["people.unset",t])},e.people.increment=function(t){e._i.push(["people.increment",t])},e.people.append=function(t){e._i.push(["people.append",t])},e.people.union=function(t){e._i.push(["people.union",t])},e.group.identify=function(t){e._i.push(["group.identify",t])},e.group.set=function(t){e._i.push(["group.set",t])},e.group.set_once=function(t){e._i.push(["group.set_once",t])},e.group.unset=function(t){e._i.push(["group.unset",t])},e.group.increment=function(t){e._i.push(["group.increment",t])},e.group.append=function(t){e._i.push(["group.append",t])},e.group.union=function(t){e._i.push(["group.union",t])},e.getFeatureFlags=function(t,o){e._i.push(["getFeatureFlags",t])},e.getVariant=function(t,o){e._i.push(["getVariant",t,o])},e.isFeatureEnabled=function(t){e._i.push(["isFeatureEnabled",t])},e.reloadFeatureFlags=function(){e._i.push(["reloadFeatureFlags"])},e.opt_in_capturing(),e._i.push(["_setToken",e.config.token]),e._i.push(["_setAutoCapture",{}]))}(document,window.posthog||[]);
-    // Initialize PostHog if key is available
-    var phKey = 'YOUR_POSTHOG_KEY_HERE'; // Replace with your PostHog key
-    if (phKey && !phKey.includes('YOUR_')) {
-      posthog.init(phKey, {
-        api_host: 'https://app.posthog.com',
-        person_profiles: 'identified_only',
-        capture_pageleave: true
-      });
+    try {
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");for(var n=0;n<o.length;n++)t=t[o[n]];return t}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src="https://cdn.posthog.com/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(var c in s)u["__SV_"+c]=s[c];u.__SV_loaded=!0,e.config=s,e.opt_in_capturing=function(t){e.__opt_in_capturing=t},e.opt_out_capturing=function(t){e.__opt_out_capturing=t},e.opt_out_capturing(e.__opt_out_capturing===!0),e.identify=function(t){e.people&&e.people.set&&e.people.set(e.people.identify_flag||"distinct_id",t)},e.reset=function(){delete window.posthog.distinctID},e.register=function(t){e.config=Object.assign({},e.config,t)},e.register({config_name:e.config.name,loaded:new Date().toISOString(),version:e.config.version})},e.capture=function(t,o,n){e._i.push([t,o,n])},e.pageview=function(t,o){e._i.push(["$pageview",{$current_url:t}])},e.page_view=function(t,o){e._i.push(["$pageview",{$current_url:t},o])},e.people=e.people||{},e.people.set=function(t){e._i.push(["people.set",t])},e.people.set_once=function(t){e._i.push(["people.set_once",t])},e.people.unset=function(t){e._i.push(["people.unset",t])},e.people.increment=function(t){e._i.push(["people.increment",t])},e.people.append=function(t){e._i.push(["people.append",t])},e.people.union=function(t){e._i.push(["people.union",t])},e.group=e.group||{},e.group.identify=function(t){e._i.push(["group.identify",t])},e.group.set=function(t){e._i.push(["group.set",t])},e.group.set_once=function(t){e._i.push(["group.set_once",t])},e.group.unset=function(t){e._i.push(["group.unset",t])},e.group.increment=function(t){e._i.push(["group.increment",t])},e.group.append=function(t){e._i.push(["group.append",t])},e.group.union=function(t){e._i.push(["group.union",t])},e.getFeatureFlags=function(t,o){e._i.push(["getFeatureFlags",t])},e.getVariant=function(t,o){e._i.push(["getVariant",t,o])},e.isFeatureEnabled=function(t){e._i.push(["isFeatureEnabled",t])},e.reloadFeatureFlags=function(){e._i.push(["reloadFeatureFlags"])},e.opt_in_capturing(),e._i.push(["_setToken",e.config.token]),e._i.push(["_setAutoCapture",{}]))}(document,window.posthog||[]);
+      // Initialize PostHog if key is available
+      var phKey = 'YOUR_POSTHOG_KEY_HERE'; // Replace with your PostHog key
+      if (phKey && !phKey.includes('YOUR_')) {
+        posthog.init(phKey, {
+          api_host: 'https://app.posthog.com',
+          person_profiles: 'identified_only',
+          capture_pageleave: true
+        });
+      }
+    } catch (e) {
+      console.warn('[PostHog] Failed to initialize (this is optional):', e.message);
     }
   </script>
 </body>
