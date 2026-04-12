@@ -54,8 +54,12 @@ function transitionToApproved() {
     const ui = document.getElementById('controller-ui');
     
     if (connectScreen) {
+      console.log('[ui] Hiding connect screen (Safari compatibility modes applied)');
       connectScreen.hidden = true;
       connectScreen.style.setProperty('display', 'none', 'important');
+      connectScreen.style.visibility = 'hidden';
+      connectScreen.style.opacity = '0';
+      connectScreen.style.pointerEvents = 'none';
     }
     
     if (ui) {
@@ -169,6 +173,18 @@ if (approvalInHistory) {
   console.log('[ws] Found existing approval in history, triggering transition');
   transitionToApproved();
 }
+
+// ── Safari/iOS Fallback Polling ──────────────────────────────────────────────
+// Specifically to catch cases where message flush or top-level logic fails
+// to trigger transition due to Safari-specific lifecycle/rendering quirks.
+setInterval(() => {
+  if (phoneApproved) return;
+  const inHistory = ws.history?.some(m => m.type === 'phone_approved');
+  if (inHistory) {
+    console.log('[fallback] Polling found approval message — forcing transition');
+    transitionToApproved();
+  }
+}, 1000);
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;

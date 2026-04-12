@@ -66,7 +66,7 @@
             if (window._phoneApproved) return;
             console.log('[head-start] Approval watchdog fired — resetting zombie socket');
             window._wsHeadStart.reset();
-          }, 10000);
+          }, 6000); // Wait 6s instead of 10s for faster recovery
         }
       });
       window._clearApprovalWatchdog = () => clearTimeout(_approvalWatchdog);
@@ -94,9 +94,10 @@
 
 
   <!-- Connection screen (covers body until approved) -->
-  <div id="connect-screen">
+  <div id="connect-screen" onclick="if(!window._phoneApproved) { console.log('[ui] Manual reset triggered'); window._wsHeadStart?.reset(); }">
     <div id="connect-status">CONNECTING...</div>
     <div id="connect-timer" style="font-size: 10px; margin-top: 10px; opacity: 0.7;">(<span id="timer-seconds">0</span>s)</div>
+    <div id="safari-hint" style="font-size: 9px; margin-top: 20px; opacity: 0.4; letter-spacing: 1px;">TAP SCREEN TO RETRY</div>
   </div>
 
   <script>
