@@ -7,6 +7,7 @@ const PAIR_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 // Map<sessionId, session>
 const sessions = new Map();
+const sessionsByCode = new Map();
 
 // Supabase client (initialized if env vars are set)
 let supabase = null;
@@ -26,13 +27,7 @@ function generatePairCode() {
       code += PAIR_ALPHA[crypto.randomInt(PAIR_ALPHA.length)];
     }
 
-    exists = false;
-    for (const session of sessions.values()) {
-      if (session.pairCode === code) {
-        exists = true;
-        break;
-      }
-    }
+    exists = sessionsByCode.has(code);
   } while (exists);
   return code;
 }
@@ -51,6 +46,7 @@ async function createSession() {
     currentRows: ['', '', '', '', '', ''],
   };
   sessions.set(id, session);
+  sessionsByCode.set(pairCode, session);
 
   // Persist to Supabase (fire-and-forget, never block)
   if (supabase) {
@@ -75,10 +71,7 @@ async function createSession() {
 }
 
 function getByCode(code) {
-  for (const s of sessions.values()) {
-    if (s.pairCode === code) return s;
-  }
-  return null;
+  return sessionsByCode.get(code) || null;
 }
 
 function getById(id) {
@@ -145,7 +138,7 @@ async function loadSessionsFromDB() {
     // Repopulate in-memory map (sockets are transient, so set to null)
     for (const row of rows) {
       if (!sessions.has(row.id)) {
-        sessions.set(row.id, {
+        const session = {
           id: row.id,
           pairCode: row.pair_code,
           tvSocket: null,
@@ -153,7 +146,9 @@ async function loadSessionsFromDB() {
           state: row.state,
           lastActivity: new Date(row.last_active),
           currentRows: row.current_rows || ['', '', '', '', '', ''],
-        });
+        };
+        sessions.set(row.id, session);
+        sessionsByCode.set(row.pair_code, session);
       }
     }
     console.log(`[supabase] loaded ${rows.length} sessions from database`);
@@ -169,6 +164,7 @@ function purgeExpired() {
     const idle = s.lastActivity.getTime() < cutoff;
     const noSockets = !s.tvSocket && !s.phoneSocket;
     if (idle && noSockets) {
+      sessionsByCode.delete(s.pairCode);
       sessions.delete(id);
       expiredIds.push(id);
     }
@@ -200,4 +196,5 @@ module.exports = {
   updateRows,
   loadSessionsFromDB,
   sessions,
+  sessionsByCode,
 };
