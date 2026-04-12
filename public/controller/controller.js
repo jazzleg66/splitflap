@@ -32,12 +32,22 @@ if (!ws) {
 let phoneApproved = false;
 
 function transitionToApproved() {
+  if (phoneApproved) return;
   console.log('[ws] Transitioning UI to APPROVED state');
   phoneApproved = true;
+  
   const connectScreen = document.getElementById('connect-screen');
-  if (connectScreen) connectScreen.hidden = true;
+  if (connectScreen) {
+    connectScreen.hidden = true;
+    connectScreen.style.display = 'none';
+  }
+  
   const ui = document.getElementById('controller-ui');
-  if (ui) ui.hidden = false;
+  if (ui) {
+    ui.hidden = false;
+    ui.style.display = ''; // Reset to default CSS (flex/block)
+  }
+  
   updateHeader(true, pairCode);
 }
 
@@ -130,8 +140,13 @@ ws.onMessage(msg => {
   }
 });
 
-// Note: No history check needed here — WsClient's message buffer handles replay
-// automatically when ws.onMessage(handler) is called above.
+// NOTE: Check history as a safety net specifically for browsers (like Safari) 
+// that might have race conditions during module script parsing.
+const approvalInHistory = ws.history?.some(m => m.type === 'phone_approved');
+if (approvalInHistory) {
+  console.log('[ws] Found existing approval in history, triggering transition');
+  transitionToApproved();
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;
