@@ -10,6 +10,11 @@ function addDebugMessage(text) { console.log('[debug]', text); }
 let pairCode = new URLSearchParams(location.search).get('code') || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
 
+// Initial header state: show the code if we have it, even if not yet connected
+document.addEventListener('DOMContentLoaded', () => {
+  updateHeader(false, pairCode);
+});
+
 
 // Use head-start socket if available, otherwise create new
 let ws = window._wsHeadStart;
@@ -37,18 +42,22 @@ function transitionToApproved() {
   phoneApproved = true;
   
   const connectScreen = document.getElementById('connect-screen');
+  const ui = document.getElementById('controller-ui');
+  
   if (connectScreen) {
     connectScreen.hidden = true;
-    connectScreen.style.display = 'none';
+    connectScreen.style.setProperty('display', 'none', 'important');
   }
   
-  const ui = document.getElementById('controller-ui');
   if (ui) {
     ui.hidden = false;
-    ui.style.display = ''; // Reset to default CSS (flex/block)
+    ui.style.display = 'block';
   }
   
   updateHeader(true, pairCode);
+  
+  // Re-run layout fixes just in case
+  fitPreview();
 }
 
 ws.onClose(() => {
@@ -306,21 +315,25 @@ function updateHeader(connected, code) {
 
   if (code) {
     currentPairCode = code;
-    const formatted = code.slice(0, 3) + '-' + code.slice(3);
-    codeEl.textContent = formatted;
+    const formatted = code.length === 6 ? (code.slice(0, 3) + '-' + code.slice(3)) : code;
+    if (codeEl) codeEl.textContent = formatted;
     const badge = document.getElementById('preview-code-badge');
     if (badge) badge.textContent = formatted;
   }
 
   if (connected) {
-    dot.classList.add('connected');
-    box.classList.add('connected');
-    box.textContent = 'CONNECTED';
+    if (dot) dot.classList.add('connected');
+    if (box) {
+      box.classList.add('connected');
+      box.textContent = 'CONNECTED';
+    }
     document.querySelector('.preview-dot')?.classList.add('connected');
   } else {
-    dot.classList.remove('connected');
-    box.classList.remove('connected');
-    box.textContent = 'DISCONNECTED';
+    if (dot) dot.classList.remove('connected');
+    if (box) {
+      box.classList.remove('connected');
+      box.textContent = 'DISCONNECTED';
+    }
     document.querySelector('.preview-dot')?.classList.remove('connected');
   }
 }
@@ -881,7 +894,9 @@ function init() {
 
     const wrapper = document.getElementById('preview-wrapper');
     if (wrapper) {
-      new ResizeObserver(fitPreview).observe(wrapper);
+      if (window.ResizeObserver) {
+        new ResizeObserver(fitPreview).observe(wrapper);
+      }
       requestAnimationFrame(fitPreview);
     }
     window.addEventListener('resize', fitPreview);
