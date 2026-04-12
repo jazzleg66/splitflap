@@ -40,7 +40,9 @@ function transitionToApproved() {
   if (phoneApproved) return;
   console.log('[ws] Transitioning UI to APPROVED state');
   phoneApproved = true;
-  
+  window._phoneApproved = true; // Let head-start watchdog know
+  window._clearApprovalWatchdog?.(); // Cancel the zombie-socket watchdog
+
   const connectScreen = document.getElementById('connect-screen');
   const ui = document.getElementById('controller-ui');
   
@@ -74,6 +76,7 @@ ws.onClose(() => {
     }
     updateHeader(false, pairCode);
     phoneApproved = false;
+    window._phoneApproved = false; // Re-arm watchdog for next connect attempt
   }
 });
 

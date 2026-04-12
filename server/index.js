@@ -320,8 +320,28 @@ function padRows(rows) {
   return out;
 }
 
+// ── WebSocket heartbeat — detect dead iOS Safari / mobile connections ─────────
+// iOS Safari can leave WebSocket connections in a zombie state (TCP gone but no
+// close event). A periodic ping detects this and terminates stale sockets so
+// wsClient on the phone can reconnect and get phone_approved.
+const HEARTBEAT_INTERVAL = 20000; // ping every 20 seconds
+setInterval(() => {
+  wss.clients.forEach(socket => {
+    if (socket.isAlive === false) {
+      console.log('[heartbeat] No pong received — terminating zombie socket');
+      socket.terminate();
+      return;
+    }
+    socket.isAlive = false;
+    try { socket.ping(); } catch (_) {}
+  });
+}, HEARTBEAT_INTERVAL);
+
 // ── WebSocket connection handler ───────────────────────────────────────────────
 wss.on('connection', socket => {
+  socket.isAlive = true;
+  socket.on('pong', () => { socket.isAlive = true; });
+
   let session = null;
   let role = null; // 'tv' | 'phone'
   const msgStartTime = {};
@@ -519,6 +539,15 @@ wss.on('connection', socket => {
       updateActiveCount(session);
     } else if (role === 'phone') {
       console.log(`[pair] Phone socket closed for session ${session.id}`);
+      // Guard against stale close events: if this socket was already replaced by a
+      // new reconnect, do NOT null out the new socket or reset session state.
+      // This race occurs when the old socket close event fires AFTER phone_hello
+      // from the new socket has already updated session.phoneSocket.
+      if (session.phoneSocket !== socket) {
+        console.log(`[pair] Stale phone close ignored (socket already replaced) for session ${session.id}`);
+        broadcastLiveCount();
+        return;
+      }
       session.phoneSocket = null;
       // Only notify TV if session was active
       if (session.state === 'active' || session.state === 'pending_approval') {

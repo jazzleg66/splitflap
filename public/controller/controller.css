@@ -97,19 +97,18 @@ body {
   max-width: 480px;
   background: var(--bg);
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--dim);
   z-index: 50;
 }
 
 #connect-screen[hidden],
 #controller-ui[hidden] {
   display: none !important;
-}
-  justify-content: center;
-  font-size: 0.8rem;
-  letter-spacing: 0.2em;
-  color: var(--dim);
-  z-index: 50;
 }
 
 /* ── Mirror section (Part A) ─────────────────────────────────────────────────── */

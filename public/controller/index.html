@@ -47,13 +47,30 @@
     console.log('[head-start] Page load started, pairCode:', pairCode);
 
     if (pairCode) {
+      // Approval watchdog: if the socket stays OPEN for 10s without receiving
+      // phone_approved (e.g. zombie connection on iOS Safari), force a reset so
+      // WsClient reconnects and tries again.
+      let _approvalWatchdog = null;
+
       window._wsHeadStart = new WsClient(() => {
         const elapsed = performance.now() - startTime;
         console.log('[head-start] Socket open after', elapsed.toFixed(0), 'ms, sending hello...');
         window._wsHeadStart.send({ type: 'phone_hello', pairCode });
         const statusEl = document.getElementById('connect-status');
         if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+
+        // Start watchdog — cleared when phone_approved is received (see controller.js)
+        clearTimeout(_approvalWatchdog);
+        if (!window._phoneApproved) {
+          _approvalWatchdog = setTimeout(() => {
+            if (window._phoneApproved) return;
+            console.log('[head-start] Approval watchdog fired — resetting zombie socket');
+            window._wsHeadStart.reset();
+          }, 10000);
+        }
       });
+      window._clearApprovalWatchdog = () => clearTimeout(_approvalWatchdog);
+
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       const wsUrl = `${proto}://${location.host}/ws`;
       console.log('[head-start] Connecting to:', wsUrl);

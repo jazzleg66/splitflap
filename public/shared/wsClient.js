@@ -116,6 +116,14 @@ export default class WsClient {
     this._onClose = fn;
   }
 
+  // Force-close the current socket so the reconnect logic kicks in.
+  // Use this to escape zombie connections (open readyState but no data flowing).
+  reset() {
+    if (this._socket && this._socket.readyState !== WebSocket.CLOSED) {
+      try { this._socket.close(); } catch (_) {}
+    }
+  }
+
   destroy() {
     this._destroyed = true;
     if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
