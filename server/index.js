@@ -33,7 +33,7 @@ const htmlCache = {};
 const app = express();
 app.use(compression()); // Gzip compression
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server, path: '/ws' });
+const wss = new WebSocket.Server({ server, path: '/ws', maxPayload: 1024 * 10 });
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use((req, res, next) => {
