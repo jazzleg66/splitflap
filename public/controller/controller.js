@@ -1,8 +1,8 @@
 import {
   SPOOL, initGrid, setTargets, snapToTargets,
   isColorChar, COLOR_MAP,
-} from '/shared/spool.js';
-import WsClient from '/shared/wsClient.js';
+} from '/shared/spool.js?v=2';
+import WsClient from '/shared/wsClient.js?v=2';
 
 function addDebugMessage(text) { console.log('[debug]', text); }
 
@@ -108,23 +108,30 @@ function transitionToApproved() {
   });
 }
 
-ws.onClose(() => {
-  if (phoneApproved) {
-    // Socket closed after we were approved — board went away
-    const ui = document.getElementById('controller-ui');
-    if (ui) { ui.hidden = true; ui.style.display = 'none'; }
-    const connectScreen = document.getElementById('connect-screen');
-    if (connectScreen) {
+// Defensive check for Safari cache issues
+if (ws && typeof ws.onClose === 'function') {
+  ws.onClose(() => {
+    if (phoneApproved) {
+      // Socket closed after we were approved - board went away
+      const ui = document.getElementById('controller-ui');
+      if (ui) {
+        ui.hidden = true;
+        ui.style.display = 'none';
+      }
+      const connectScreen = document.getElementById('connect-screen');
+      if (!connectScreen) {
+        location.reload(); 
+        return;
+      }
       connectScreen.hidden = false;
       connectScreen.style.display = 'flex';
       const statusEl = document.getElementById('connect-status');
       if (statusEl) statusEl.textContent = 'BOARD DISCONNECTED';
+      updateHeader(false, pairCode);
+      phoneApproved = false;
     }
-    updateHeader(false, pairCode);
-    phoneApproved = false;
-    window._phoneApproved = false; // Re-arm watchdog for next connect attempt
-  }
-});
+  });
+}
 
 ws.onMessage(msg => {
 
