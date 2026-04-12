@@ -112,23 +112,20 @@ function transitionToApproved() {
 if (ws && typeof ws.onClose === 'function') {
   ws.onClose(() => {
     if (phoneApproved) {
-      // Socket closed after we were approved - board went away
-      const ui = document.getElementById('controller-ui');
-      if (ui) {
-        ui.hidden = true;
-        ui.style.display = 'none';
-      }
-      const connectScreen = document.getElementById('connect-screen');
-      if (!connectScreen) {
+      console.log('[ws] approved socket closed - attempting quick recovery');
+      // Instead of immediate disconnect screen, wait 1s to see if it auto-reconnects
+      setTimeout(() => {
+        if (ws._socket?.readyState === 1) return; // Already re-opened
+        
+        // Really disconnected
+        const ui = document.getElementById('controller-ui');
+        if (ui) {
+          ui.hidden = true;
+          ui.style.display = 'none';
+        }
+        // If we removed it, we must reload
         location.reload(); 
-        return;
-      }
-      connectScreen.hidden = false;
-      connectScreen.style.display = 'flex';
-      const statusEl = document.getElementById('connect-status');
-      if (statusEl) statusEl.textContent = 'BOARD DISCONNECTED';
-      updateHeader(false, pairCode);
-      phoneApproved = false;
+      }, 1000);
     }
   });
 }
@@ -983,7 +980,11 @@ function init() {
     const wrapper = document.getElementById('preview-wrapper');
     if (wrapper) {
       if (window.ResizeObserver) {
-        new ResizeObserver(fitPreview).observe(wrapper);
+        let resizeTimer;
+        new ResizeObserver(() => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(fitPreview, 50);
+        }).observe(wrapper);
       }
       requestAnimationFrame(fitPreview);
     }
