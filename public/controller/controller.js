@@ -12,7 +12,10 @@ pairCode = pairCode.replace(/-/g, '').toUpperCase();
 
 // Initial header state: show the code if we have it, even if not yet connected
 document.addEventListener('DOMContentLoaded', () => {
-  updateHeader(false, pairCode);
+  // Only set to disconnected if we haven't already transitioned to approved
+  if (!phoneApproved) {
+    updateHeader(false, pairCode);
+  }
 });
 
 
@@ -43,23 +46,30 @@ function transitionToApproved() {
   window._phoneApproved = true; // Let head-start watchdog know
   window._clearApprovalWatchdog?.(); // Cancel the zombie-socket watchdog
 
-  const connectScreen = document.getElementById('connect-screen');
-  const ui = document.getElementById('controller-ui');
-  
-  if (connectScreen) {
-    connectScreen.hidden = true;
-    connectScreen.style.setProperty('display', 'none', 'important');
-  }
-  
-  if (ui) {
-    ui.hidden = false;
-    ui.style.display = 'block';
-  }
-  
-  updateHeader(true, pairCode);
-  
-  // Re-run layout fixes just in case
-  fitPreview();
+  // Use requestAnimationFrame to ensure we don't fight with any immediate layout passes
+  // or module initialization steps.
+  requestAnimationFrame(() => {
+    console.log('[ui] Hiding connect screen, showing controller UI');
+    const connectScreen = document.getElementById('connect-screen');
+    const ui = document.getElementById('controller-ui');
+    
+    if (connectScreen) {
+      connectScreen.hidden = true;
+      connectScreen.style.setProperty('display', 'none', 'important');
+    }
+    
+    if (ui) {
+      ui.hidden = false;
+      ui.style.display = 'block';
+    }
+    
+    updateHeader(true, pairCode);
+    
+    // Re-run layout fixes
+    fitPreview();
+    // Second pass after a short delay for mobile browsers
+    setTimeout(fitPreview, 100);
+  });
 }
 
 ws.onClose(() => {

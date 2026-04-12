@@ -459,11 +459,12 @@ wss.on('connection', socket => {
           updateActiveCount(found);
 
           // Notify BOTH parties immediately to save a full round-trip (TV auto-approval was slow over WAN)
+          console.log(`[pair] session ${found.id} approved: sending phone_approved to TV and Phone...`);
           send(found.tvSocket, { type: 'phone_approved' });
           send(socket, { type: 'phone_approved' });
 
           broadcastLiveCount();
-          console.log(`[pair] phone_approved sent (${Date.now()-t0}ms)`);
+          console.log(`[pair] phone_approved sent to both socket (total time: ${Date.now()-t0}ms)`);
           return;
         }
 
