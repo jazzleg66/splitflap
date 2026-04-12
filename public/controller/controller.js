@@ -102,8 +102,11 @@ function transitionToApproved() {
     
     updateHeader(true, pairCode);
     
-    // Re-run layout fixes
+    // ── Render/Layout Fix ─────────────────────────────────────────────────────
+    // Call these AFTER the UI is visible so Safari can calculate offsetWidth
+    renderMessageGrid();
     fitPreview();
+    
     // Second pass after a short delay for mobile browsers
     setTimeout(fitPreview, 100);
   });
@@ -141,9 +144,14 @@ ws.onMessage(msg => {
     case 'phone_approved': {
       console.log('[ws] phone_approved message received');
       if (!phoneApproved) transitionToApproved();
-      // Ensure grid is rendered even on reconnect
-      renderMessageGrid();
-      fitPreview();
+
+      // Ensure grid is rendered even on reconnect (done inside transitionToApproved now, 
+      // but we can call it here too as a safety net if already approved)
+      if (phoneApproved) {
+        renderMessageGrid();
+        fitPreview();
+      }
+
       if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
 
       // Auto-resume loop if it was playing before disconnect
@@ -158,7 +166,7 @@ ws.onMessage(msg => {
           if (valText) valText.textContent = loopInterval;
           startPlay();
         }
-      } catch {}
+      } catch (err) {}
       break;
     }
 
