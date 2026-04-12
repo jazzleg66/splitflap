@@ -113,59 +113,25 @@ ws.onMessage(msg => {
       break;
     }
 
-    case 'board_disconnected':
-      console.log('%c===== BOARD DISCONNECTED MESSAGE RECEIVED =====', 'color: red; font-weight: bold; font-size: 14px;');
-      addDebugMessage('🔴 BOARD_DISCONNECTED received!');
-
-      // Hide the main UI - be aggressive with multiple methods
+    case 'board_disconnected': {
+      console.log('[ws] board_disconnected received');
       const ui = document.getElementById('controller-ui');
-      if (ui) {
-        ui.hidden = true;
-        ui.style.display = 'none';
-        ui.style.visibility = 'hidden';
-        console.log('[ws] Hidden controller-ui (multiple methods)');
-      }
-
-      // Show connection screen - be aggressive
+      if (ui) { ui.hidden = true; ui.style.display = 'none'; }
       const connectScreen = document.getElementById('connect-screen');
       if (connectScreen) {
         connectScreen.hidden = false;
         connectScreen.style.display = 'flex';
-        connectScreen.style.visibility = 'visible';
-        console.log('[ws] Showed connect-screen (multiple methods)');
-
-        // Update status text with large text for visibility
         const statusEl = document.getElementById('connect-status');
-        if (statusEl) {
-          statusEl.textContent = 'BOARD DISCONNECTED';
-          statusEl.style.color = '#CC0000';
-          statusEl.style.fontSize = '16px';
-          statusEl.style.fontWeight = 'bold';
-          console.log('[ws] Updated status text with styling');
-        }
-
-        // Force scroll to top to show connection screen
-        setTimeout(() => {
-          window.scrollTo(0, 0);
-          console.log('[ws] Scrolled to top');
-        }, 0);
+        if (statusEl) statusEl.textContent = 'BOARD DISCONNECTED';
       }
-
-      // Update header to show disconnected
       updateHeader(false, pairCode);
-      console.log('[ws] Updated header');
-
-      console.log('[ws] Board disconnected state update COMPLETE');
       break;
     }
   }
 });
 
-// Final check: did we miss phone_approved during head-start?
-if (ws.history?.find(m => m.type === 'phone_approved')) {
-  console.log('[ws] Found phone_approved in history, triggering transition');
-  transitionToApproved();
-}
+// Note: No history check needed here — WsClient's message buffer handles replay
+// automatically when ws.onMessage(handler) is called above.
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;

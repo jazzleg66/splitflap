@@ -58,12 +58,9 @@
       const wsUrl = `${proto}://${location.host}/ws`;
       console.log('[head-start] Connecting to:', wsUrl);
       window._wsHeadStart.connect(wsUrl);
-
-      // Attach message handler immediately to log incoming messages
-      window._wsHeadStart.onMessage(msg => {
-        const elapsed = performance.now() - startTime;
-        console.log('[head-start] Message received after', elapsed.toFixed(0), 'ms:', msg.type);
-      });
+      // NOTE: We intentionally do NOT attach onMessage here.
+      // Any messages (e.g. phone_approved) that arrive before controller.js loads
+      // will be buffered by WsClient and replayed to the real handler automatically.
     }
   </script>
 </head>
