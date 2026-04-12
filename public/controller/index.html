@@ -54,10 +54,17 @@
 
       window._wsHeadStart = new WsClient(() => {
         const elapsed = performance.now() - startTime;
-        console.log('[head-start] Socket open after', elapsed.toFixed(0), 'ms, sending hello...');
-        window._wsHeadStart.send({ type: 'phone_hello', pairCode });
-        const statusEl = document.getElementById('connect-status');
-        if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+        console.log('[head-start] Socket open after', elapsed.toFixed(0), 'ms');
+        
+        // ── Safari Stability: Wait 300ms before sending the first hello ────────
+        // This allows Safari's socket buffer and message loop to stabilize
+        // before we start the bi-directional pairing handshake.
+        setTimeout(() => {
+          console.log('[head-start] Sending hello for pairCode:', pairCode);
+          window._wsHeadStart.send({ type: 'phone_hello', pairCode });
+          const statusEl = document.getElementById('connect-status');
+          if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+        }, 300);
 
         // Start watchdog — cleared when phone_approved is received (see controller.js)
         clearTimeout(_approvalWatchdog);
@@ -98,6 +105,7 @@
     <div id="connect-status">CONNECTING...</div>
     <div id="connect-timer" style="font-size: 10px; margin-top: 10px; opacity: 0.7;">(<span id="timer-seconds">0</span>s)</div>
     <div id="safari-hint" style="font-size: 9px; margin-top: 20px; opacity: 0.4; letter-spacing: 1px;">TAP SCREEN TO RETRY</div>
+    <div id="debug-status" style="font-size: 7px; margin-top: 30px; opacity: 0.2; color: #fff;"></div>
   </div>
 
   <script>

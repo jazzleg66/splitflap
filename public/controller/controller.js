@@ -164,6 +164,10 @@ ws.onMessage(msg => {
       break;
     }
   }
+
+  // Debug: show last message type on screen for easier troubleshooting
+  const debugEl = document.getElementById('debug-status');
+  if (debugEl) debugEl.textContent = `LAST: ${msg.type} | HIST: ${ws.history?.length || 0}`;
 });
 
 // NOTE: Check history as a safety net specifically for browsers (like Safari) 
@@ -180,6 +184,14 @@ if (approvalInHistory) {
 setInterval(() => {
   if (phoneApproved) return;
   const inHistory = ws.history?.some(m => m.type === 'phone_approved');
+  
+  // Debug output
+  const debugEl = document.getElementById('debug-status');
+  if (debugEl) {
+    const readyState = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws._socket?.readyState] || 'UNKNOWN';
+    debugEl.textContent = `STATE: ${readyState} | HIST: ${ws.history?.length || 0} | CODE: ${pairCode}`;
+  }
+
   if (inHistory) {
     console.log('[fallback] Polling found approval message — forcing transition');
     transitionToApproved();
