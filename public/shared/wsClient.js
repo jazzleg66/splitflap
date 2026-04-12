@@ -17,6 +17,8 @@ export default class WsClient {
     this._destroyed = false;
     this._connectionTimer = null;
     this._connectionTimeout = 5000;
+    this._messageQueue = [];
+    this.history = []; // History of last 10 messages
   }
 
   connect(url) {
@@ -57,8 +59,14 @@ export default class WsClient {
       try {
         const msg = JSON.parse(e.data);
         console.log('[ws-client] Raw message received:', msg.type);
+        
+        // Keep a history of the last 10 messages
+        this.history.push(msg);
+        if (this.history.length > 10) this.history.shift();
+
         if (!this._onMsg) {
-          console.warn('[ws-client] No message handler attached, ignoring message:', msg.type);
+          console.log('[ws-client] No message handler attached yet, buffering message:', msg.type);
+          this._messageQueue.push(msg);
           return;
         }
         this._onMsg(msg);
@@ -90,6 +98,18 @@ export default class WsClient {
 
   onMessage(fn) {
     this._onMsg = fn;
+    if (this._onMsg && this._messageQueue.length > 0) {
+      console.log('[ws-client] Flushing buffered messages:', this._messageQueue.length);
+      const queue = [...this._messageQueue];
+      this._messageQueue = [];
+      queue.forEach(msg => {
+        try {
+          this._onMsg(msg);
+        } catch (err) {
+          console.error('[ws-client] Error processing buffered message:', err.message);
+        }
+      });
+    }
   }
 
   onClose(fn) {

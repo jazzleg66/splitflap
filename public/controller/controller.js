@@ -27,11 +27,19 @@ if (!ws) {
   }
 } else {
   console.log('[ws] Inherited head-start socket');
-  // If socket is already open, wait-for-approval text might already be set by head-start script.
-  // We just need to ensure the onMessage handler is attached (done below).
 }
 
 let phoneApproved = false;
+
+function transitionToApproved() {
+  console.log('[ws] Transitioning UI to APPROVED state');
+  phoneApproved = true;
+  const connectScreen = document.getElementById('connect-screen');
+  if (connectScreen) connectScreen.hidden = true;
+  const ui = document.getElementById('controller-ui');
+  if (ui) ui.hidden = false;
+  updateHeader(true, pairCode);
+}
 
 ws.onClose(() => {
   if (phoneApproved) {
@@ -55,14 +63,8 @@ ws.onMessage(msg => {
 
   switch (msg.type) {
     case 'phone_approved': {
-      console.log('[ws] Phone approved! Transitioning UI...');
-      phoneApproved = true;
-      // Hide connection screen instead of removing it (so we can show it again if board disconnects)
-      const connectScreen = document.getElementById('connect-screen');
-      if (connectScreen) connectScreen.hidden = true;
-      const ui = document.getElementById('controller-ui');
-      if (ui) ui.hidden = false;
-      updateHeader(true, pairCode);
+      console.log('[ws] phone_approved message received');
+      if (!phoneApproved) transitionToApproved();
       if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
 
       // Auto-resume loop if it was playing before disconnect
@@ -153,11 +155,17 @@ ws.onMessage(msg => {
       updateHeader(false, pairCode);
       console.log('[ws] Updated header');
 
-      addDebugMessage('✓ UI updated to DISCONNECTED');
       console.log('[ws] Board disconnected state update COMPLETE');
       break;
+    }
   }
 });
+
+// Final check: did we miss phone_approved during head-start?
+if (ws.history?.find(m => m.type === 'phone_approved')) {
+  console.log('[ws] Found phone_approved in history, triggering transition');
+  transitionToApproved();
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;
