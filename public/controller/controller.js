@@ -6,17 +6,39 @@ import WsClient from '/shared/wsClient.js';
 
 function addDebugMessage(text) { console.log('[debug]', text); }
 
-// ── WebSocket Connect ──────────────────────────────────────────────────────────
-let pairCode = new URLSearchParams(location.search).get('code') || '';
+// ── Pair Code Extraction ──────────────────────────────────────────────────────
+const getParamCode = () => new URLSearchParams(location.search).get('code');
+const getStoredCode = () => {
+  try {
+    const drafts = JSON.parse(localStorage.getItem('solari_drafts') || '{}');
+    return drafts.pairCode || '';
+  } catch(e) { return ''; }
+};
+
+let pairCode = getParamCode() || getStoredCode() || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
 
 // Initial header state: show the code if we have it, even if not yet connected
 document.addEventListener('DOMContentLoaded', () => {
+  if (pairCode) updateHeader(false, pairCode);
   // Only set to disconnected if we haven't already transitioned to approved
   if (!phoneApproved) {
     updateHeader(false, pairCode);
   }
 });
+
+function manualCodeEntry() {
+  const code = prompt('ENTER BOARD CODE (e.g. CZQ-UHE):');
+  if (code) {
+    pairCode = code.replace(/-/g, '').toUpperCase();
+    console.log('[ui] Manual code entered:', pairCode);
+    updateHeader(false, pairCode);
+    ws.send({ type: 'phone_hello', pairCode });
+    const statusEl = document.getElementById('connect-status');
+    if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+  }
+}
+window.manualCodeEntry = manualCodeEntry;
 
 
 // Use head-start socket if available, otherwise create new
@@ -185,11 +207,19 @@ setInterval(() => {
   if (phoneApproved) return;
   const inHistory = ws.history?.some(m => m.type === 'phone_approved');
   
-  // Debug output
+  // Debug output (more visible for troubleshooting)
   const debugEl = document.getElementById('debug-status');
   if (debugEl) {
     const readyState = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws._socket?.readyState] || 'UNKNOWN';
-    debugEl.textContent = `STATE: ${readyState} | HIST: ${ws.history?.length || 0} | CODE: ${pairCode}`;
+    const hasCode = !!pairCode;
+    debugEl.style.opacity = '0.5'; // Make it visible enough to read
+    debugEl.textContent = `V3 | STATE: ${readyState} | CODE: ${hasCode ? 'OK' : 'MISSING'} | HIST: ${ws.history?.length || 0}`;
+    
+    // If we have no code and we've been waiting, show manual entry hint
+    if (!hasCode) {
+      const statusEl = document.getElementById('connect-status');
+      if (statusEl) statusEl.innerHTML = 'CODE MISSING<br><span style="font-size:10px; color:var(--text); text-decoration:underline;">TAP TO ENTER CODE</span>';
+    }
   }
 
   if (inHistory) {
@@ -325,7 +355,7 @@ const previewTileEls = [];
 // ── Persistence ───────────────────────────────────────────────────────────────
 function saveDrafts() {
   localStorage.setItem('solari_drafts', JSON.stringify({
-    version: DEFAULT_VERSION, messages, activeMessageIndex, loopInterval, currentMode,
+    version: DEFAULT_VERSION, messages, activeMessageIndex, loopInterval, currentMode, pairCode,
   }));
 }
 

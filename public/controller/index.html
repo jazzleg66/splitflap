@@ -101,7 +101,7 @@
 
 
   <!-- Connection screen (covers body until approved) -->
-  <div id="connect-screen" onclick="if(!window._phoneApproved) { console.log('[ui] Manual reset triggered'); window._wsHeadStart?.reset(); }">
+  <div id="connect-screen" onclick="if(!window._phoneApproved) { if(!pairCode) { window.manualCodeEntry(); } else { console.log('[ui] Manual reset triggered'); window._wsHeadStart?.reset(); } }">
     <div id="connect-status">CONNECTING...</div>
     <div id="connect-timer" style="font-size: 10px; margin-top: 10px; opacity: 0.7;">(<span id="timer-seconds">0</span>s)</div>
     <div id="safari-hint" style="font-size: 9px; margin-top: 20px; opacity: 0.4; letter-spacing: 1px;">TAP SCREEN TO RETRY</div>
