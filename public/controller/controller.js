@@ -90,8 +90,9 @@ function transitionToApproved() {
     const ui = document.getElementById('controller-ui');
     
     if (connectScreen) {
-      console.log('[ui] Removing connect screen from DOM');
-      connectScreen.remove(); // PHYSICAL REMOVAL for Safari/iOS
+      console.log('[ui] Hiding connect screen');
+      connectScreen.hidden = true;
+      connectScreen.style.setProperty('display', 'none', 'important');
     }
     
     if (ui) {
@@ -113,19 +114,22 @@ if (ws && typeof ws.onClose === 'function') {
   ws.onClose(() => {
     if (phoneApproved) {
       console.log('[ws] approved socket closed - attempting quick recovery');
-      // Instead of immediate disconnect screen, wait 1s to see if it auto-reconnects
       setTimeout(() => {
-        if (ws._socket?.readyState === 1) return; // Already re-opened
+        if (ws._socket?.readyState === 1) return; 
         
-        // Really disconnected
+        // Show disconnected notice but don't reload
         const ui = document.getElementById('controller-ui');
-        if (ui) {
-          ui.hidden = true;
-          ui.style.display = 'none';
+        if (ui) ui.hidden = true;
+        const connectScreen = document.getElementById('connect-screen');
+        if (connectScreen) {
+          connectScreen.hidden = false;
+          connectScreen.style.display = 'flex';
+          const statusEl = document.getElementById('connect-status');
+          if (statusEl) statusEl.textContent = 'BOARD DISCONNECTED';
         }
-        // If we removed it, we must reload
-        location.reload(); 
-      }, 1000);
+        updateHeader(false, pairCode);
+        phoneApproved = false;
+      }, 500);
     }
   });
 }
@@ -137,6 +141,9 @@ ws.onMessage(msg => {
     case 'phone_approved': {
       console.log('[ws] phone_approved message received');
       if (!phoneApproved) transitionToApproved();
+      // Ensure grid is rendered even on reconnect
+      renderMessageGrid();
+      fitPreview();
       if (typeof posthog !== 'undefined') posthog.capture('phone_connected');
 
       // Auto-resume loop if it was playing before disconnect
@@ -214,33 +221,12 @@ if (approvalInHistory) {
   transitionToApproved();
 }
 
-// ── Safari/iOS Fallback Polling ──────────────────────────────────────────────
-// Specifically to catch cases where message flush or top-level logic fails
-// to trigger transition due to Safari-specific lifecycle/rendering quirks.
+// Send a ping every 10 seconds to keep the connection alive on mobile Safari
 setInterval(() => {
-  if (phoneApproved) return;
-  const inHistory = ws.history?.some(m => m.type === 'phone_approved');
-  
-  // Debug output (more visible for troubleshooting)
-  const debugEl = document.getElementById('debug-status');
-  if (debugEl) {
-    const readyState = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws._socket?.readyState] || 'UNKNOWN';
-    const hasCode = !!pairCode;
-    debugEl.style.opacity = '0.5'; // Make it visible enough to read
-    debugEl.textContent = `V3 | STATE: ${readyState} | CODE: ${hasCode ? 'OK' : 'MISSING'} | HIST: ${ws.history?.length || 0}`;
-    
-    // If we have no code and we've been waiting, show manual entry hint
-    if (!hasCode) {
-      const statusEl = document.getElementById('connect-status');
-      if (statusEl) statusEl.innerHTML = 'CODE MISSING<br><span style="font-size:10px; color:var(--text); text-decoration:underline;">TAP TO ENTER CODE</span>';
-    }
+  if (ws && ws._socket?.readyState === 1) {
+    ws.send({ type: 'ping' });
   }
-
-  if (inHistory) {
-    console.log('[fallback] Polling found approval message — forcing transition');
-    transitionToApproved();
-  }
-}, 1000);
+}, 10000);
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROWS = 6;

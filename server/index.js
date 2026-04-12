@@ -361,7 +361,8 @@ wss.on('connection', socket => {
           return;
         }
 
-        // First message determines role
+        // Silent heartbeat
+        if (msg.type === 'ping') return;
         if (msg.type === 'tv_hello') {
           console.log('[pair] tv_hello received');
           role = 'tv';
