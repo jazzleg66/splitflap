@@ -42,13 +42,30 @@
   <!-- HEAD-START WEBSOCKET: Start connection while CSS/JS are still downloading -->
   <script type="module">
     import WsClient from '/shared/wsClient.js';
-    const startTime = performance.now();
+    console.log('[head-start] Initiating WebSocket sequence...');
+    
+    // ── Global Error Catching for Safari ──────────────────────────────────────
+    window.onerror = function(msg, url, line, col, error) {
+      const debugEl = document.getElementById('debug-status');
+      if (debugEl) {
+        debugEl.style.opacity = '1';
+        debugEl.style.color = '#ff4444';
+        debugEl.textContent = `JS ERR: ${msg}`;
+      }
+    };
+
     const pairCode = new URLSearchParams(location.search).get('code')?.replace(/-/g, '').toUpperCase();
+    const startTime = performance.now();
     console.log('[head-start] Page load started, pairCode:', pairCode);
 
-    if (pairCode) {
-      // Approval watchdog: if the socket stays OPEN for 10s without receiving
-      // phone_approved (e.g. zombie connection on iOS Safari), force a reset so
+    if (!pairCode) {
+      setTimeout(() => {
+        const statusEl = document.getElementById('connect-status');
+        if (statusEl) statusEl.innerHTML = 'CODE MISSING<br><span style="font-size:10px; color:var(--text); text-decoration:underline;">TAP TO ENTER CODE</span>';
+      }, 500);
+    } else {
+      // Initiate head-start connection. 
+      // If code approval message arrives before main controller.js loads, 
       // WsClient reconnects and tries again.
       let _approvalWatchdog = null;
 

@@ -6,6 +6,16 @@ import WsClient from '/shared/wsClient.js';
 
 function addDebugMessage(text) { console.log('[debug]', text); }
 
+// ── Global Error Catching for Safari ──────────────────────────────────────────
+window.onerror = function(msg, url, line, col, error) {
+  const debugEl = document.getElementById('debug-status');
+  if (debugEl) {
+    debugEl.style.opacity = '1';
+    debugEl.style.color = '#ff4444';
+    debugEl.textContent = `ERR: ${msg} | L:${line}`;
+  }
+};
+
 // ── Pair Code Extraction ──────────────────────────────────────────────────────
 const getParamCode = () => new URLSearchParams(location.search).get('code');
 const getStoredCode = () => {
@@ -45,6 +55,10 @@ window.manualCodeEntry = manualCodeEntry;
 let ws = window._wsHeadStart;
 if (!ws) {
   ws = new WsClient(() => {
+    if (!pairCode) {
+      console.warn('[ws] No pairCode, waiting for manual entry');
+      return;
+    }
     console.log('[ws] Socket connected, sending phone_hello for pairCode:', pairCode);
     ws.send({ type: 'phone_hello', pairCode });
     const statusEl = document.getElementById('connect-status');
@@ -76,12 +90,8 @@ function transitionToApproved() {
     const ui = document.getElementById('controller-ui');
     
     if (connectScreen) {
-      console.log('[ui] Hiding connect screen (Safari compatibility modes applied)');
-      connectScreen.hidden = true;
-      connectScreen.style.setProperty('display', 'none', 'important');
-      connectScreen.style.visibility = 'hidden';
-      connectScreen.style.opacity = '0';
-      connectScreen.style.pointerEvents = 'none';
+      console.log('[ui] Removing connect screen from DOM');
+      connectScreen.remove(); // PHYSICAL REMOVAL for Safari/iOS
     }
     
     if (ui) {
