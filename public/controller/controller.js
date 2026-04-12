@@ -6,16 +6,6 @@ import WsClient from '/shared/wsClient.js?v=2';
 
 function addDebugMessage(text) { console.log('[debug]', text); }
 
-// ── Global Error Catching for Safari ──────────────────────────────────────────
-window.onerror = function(msg, url, line, col, error) {
-  const debugEl = document.getElementById('debug-status');
-  if (debugEl) {
-    debugEl.style.opacity = '1';
-    debugEl.style.color = '#ff4444';
-    debugEl.textContent = `ERR: ${msg} | L:${line}`;
-  }
-};
-
 // ── Pair Code Extraction ──────────────────────────────────────────────────────
 const getParamCode = () => new URLSearchParams(location.search).get('code');
 const getStoredCode = () => {
@@ -62,7 +52,7 @@ if (!ws) {
     console.log('[ws] Socket connected, sending phone_hello for pairCode:', pairCode);
     ws.send({ type: 'phone_hello', pairCode });
     const statusEl = document.getElementById('connect-status');
-    if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
+    if (statusEl) statusEl.textContent = ''; 
   });
   if (pairCode) {
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
@@ -171,16 +161,16 @@ ws.onMessage(msg => {
     }
 
     case 'phone_rejected':
-      document.getElementById('connect-status').textContent = 'CONNECTION DENIED';
+      document.getElementById('connect-status').textContent = '';
       updateHeader(false, pairCode);
       break;
 
     case 'board_occupied':
-      document.getElementById('connect-status').textContent = 'BOARD OCCUPIED — TRY AGAIN LATER';
+      document.getElementById('connect-status').textContent = '';
       break;
 
     case 'not_found':
-      document.getElementById('connect-status').textContent = 'INVALID CODE';
+      document.getElementById('connect-status').textContent = '';
       break;
 
     case 'board_offline': {
