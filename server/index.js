@@ -67,8 +67,14 @@ function preloadHtmlCache() {
   for (const filePath of filesToCache) {
     try {
       let data = fs.readFileSync(filePath, 'utf8');
-      data = data.replace(/var sentryDsn = 'YOUR_SENTRY_DSN_HERE';?/g, `var sentryDsn = '${sentryDsn}';`);
-      data = data.replace(/var phKey = 'YOUR_POSTHOG_KEY_HERE';?/g, `var phKey = '${phKey}';`);
+      // Safely stringify and escape variables before injection to prevent XSS and broken JS.
+      // We also escape '<' as '\u003c' and '>' as '\u003e' to prevent </script> tag breakout,
+      // and use a replacement function to avoid special regex patterns like '$&'.
+      const safeSentryDsn = JSON.stringify(sentryDsn).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+      const safePhKey = JSON.stringify(phKey).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+
+      data = data.replace(/var sentryDsn = 'YOUR_SENTRY_DSN_HERE';?/g, () => `var sentryDsn = ${safeSentryDsn};`);
+      data = data.replace(/var phKey = 'YOUR_POSTHOG_KEY_HERE';?/g, () => `var phKey = ${safePhKey};`);
       htmlCache[filePath] = data;
     } catch (err) {
       console.error(`[server] Error preloading HTML file ${filePath}:`, err.message);
