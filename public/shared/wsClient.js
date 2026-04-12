@@ -27,66 +27,55 @@ export default class WsClient {
   }
 
   _open() {
-    if (this._destroyed) return;
+    if (this._destroyed || this._isConnecting) return;
+    this._isConnecting = true;
+    
     const startTime = Date.now();
-    console.log('[ws-client] Attempting connection to:', this._url, 'timeout:', this._connectionTimeout, 'ms');
+    console.log('[ws-client] Attempting connection...');
     this._socket = new WebSocket(this._url);
 
-    // Add a connection timeout — if socket doesn't open within 8 seconds, close it
-    // and try reconnecting. This prevents hanging on network issues.
-    // Edge and Safari need more aggressive timeout handling.
     this._connectionTimer = setTimeout(() => {
       if (this._socket && this._socket.readyState === WebSocket.CONNECTING) {
-        console.warn('[ws-client] Connection timeout triggered after', this._connectionTimeout, 'ms');
-        try {
-          this._socket.close();
-        } catch (e) {
-          console.error('[ws-client] Error closing socket:', e.message);
-        }
-        // Let the close handler trigger reconnection
+        console.warn('[ws-client] Connection timeout');
+        this._isConnecting = false;
+        try { this._socket.close(); } catch (e) {}
       }
     }, this._connectionTimeout);
 
     this._socket.addEventListener('open', () => {
+      this._isConnecting = false;
       clearTimeout(this._connectionTimer);
-      const elapsed = Date.now() - startTime;
-      console.log('[ws-client] Connected in', elapsed, 'ms');
-      this._delay = 1000; // reset backoff
+      this._delay = 1000;
       if (this._onConnect) this._onConnect();
     });
 
     this._socket.addEventListener('message', e => {
       try {
         const msg = JSON.parse(e.data);
-        console.log('[ws-client] Raw message received:', msg.type);
-        
-        // Keep a history of the last 10 messages
         this.history.push(msg);
         if (this.history.length > 10) this.history.shift();
 
         if (!this._onMsg) {
-          console.log('[ws-client] No message handler attached yet, buffering message:', msg.type);
           this._messageQueue.push(msg);
           return;
         }
         this._onMsg(msg);
-      } catch (err) {
-        console.error('[ws-client] Failed to parse or handle message:', err.message);
-      }
+      } catch (err) {}
     });
 
     this._socket.addEventListener('close', () => {
+      this._isConnecting = false;
       clearTimeout(this._connectionTimer);
       if (this._destroyed) return;
-      console.log('[ws-client] Connection closed, reconnecting in', this._delay, 'ms');
-      if (this._onClose) this._onClose();
+      if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
       this._reconnectTimer = setTimeout(() => this._open(), this._delay);
       this._delay = Math.min(this._delay * 2, 30000);
+      if (this._onClose) this._onClose();
     });
 
     this._socket.addEventListener('error', (e) => {
+      this._isConnecting = false;
       clearTimeout(this._connectionTimer);
-      console.error('[ws-client] Connection error:', e);
     });
   }
 
@@ -99,15 +88,10 @@ export default class WsClient {
   onMessage(fn) {
     this._onMsg = fn;
     if (this._onMsg && this._messageQueue.length > 0) {
-      console.log('[ws-client] Flushing buffered messages:', this._messageQueue.length);
       const queue = [...this._messageQueue];
       this._messageQueue = [];
       queue.forEach(msg => {
-        try {
-          this._onMsg(msg);
-        } catch (err) {
-          console.error('[ws-client] Error processing buffered message:', err.message);
-        }
+        try { this._onMsg(msg); } catch (err) {}
       });
     }
   }

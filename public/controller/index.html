@@ -83,17 +83,10 @@
           if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
         }, 300);
 
-        // Start watchdog — cleared when phone_approved is received (see controller.js)
-        clearTimeout(_approvalWatchdog);
-        if (!window._phoneApproved) {
-          _approvalWatchdog = setTimeout(() => {
-            if (window._phoneApproved) return;
-            console.log('[head-start] Approval watchdog fired — resetting zombie socket');
-            window._wsHeadStart.reset();
-          }, 6000); // Wait 6s instead of 10s for faster recovery
-        }
+        // Start heartbeat delay stability check if needed, but no watchdog
+        console.log('[head-start] Socket open, handshake starting...');
       });
-      window._clearApprovalWatchdog = () => clearTimeout(_approvalWatchdog);
+      window._clearApprovalWatchdog = () => {};
 
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       const wsUrl = `${proto}://${location.host}/ws`;
@@ -118,10 +111,9 @@
 
 
   <!-- Connection screen (covers body until approved) -->
-  <div id="connect-screen" onclick="if(!window._phoneApproved) { if(!pairCode) { window.manualCodeEntry(); } else { console.log('[ui] Manual reset triggered'); window._wsHeadStart?.reset(); } }">
+  <div id="connect-screen">
     <div id="connect-status">CONNECTING...</div>
     <div id="connect-timer" style="font-size: 10px; margin-top: 10px; opacity: 0.7;">(<span id="timer-seconds">0</span>s)</div>
-    <div id="safari-hint" style="font-size: 9px; margin-top: 20px; opacity: 0.4; letter-spacing: 1px;">TAP SCREEN TO RETRY</div>
     <div id="debug-status" style="font-size: 7px; margin-top: 30px; opacity: 0.2; color: #fff;"></div>
   </div>
 
