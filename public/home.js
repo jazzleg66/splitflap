@@ -544,14 +544,17 @@ codeConnectBtn.addEventListener('click', () => {
 // ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
 // CSS container queries (cqi/cqh) have cross-browser inconsistencies when the
 // tile height comes from aspect-ratio. ResizeObserver gives exact pixel values.
+let boardGridEl = null;
 function syncTileSizing() {
   const tile = tileEls[0]?.[0];
   if (!tile) return;
   const h = tile.getBoundingClientRect().height;
   if (h === 0) return;
-  const grid = document.getElementById('board-grid');
-  grid.style.setProperty('--tile-fs', h + 'px');
-  grid.style.setProperty('--tile-ty', (h / 4) + 'px');
+  if (!boardGridEl) {
+    boardGridEl = document.getElementById('board-grid');
+  }
+  boardGridEl.style.setProperty('--tile-fs', h + 'px');
+  boardGridEl.style.setProperty('--tile-ty', (h / 4) + 'px');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
