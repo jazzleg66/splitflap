@@ -262,6 +262,22 @@ function getLanHost(req) {
 // Sockets watching the live counter from the homepage (no session created)
 const counterWatchers = new Set();
 
+// Track active sessions to provide O(1) count instead of O(N) traversals
+const activeSessions = new Set();
+
+function updateActiveCount(session) {
+  if (!session) return;
+  const isActive = session.state === 'active' &&
+                   session.tvSocket?.readyState === WebSocket.OPEN &&
+                   session.phoneSocket?.readyState === WebSocket.OPEN;
+
+  if (isActive) {
+    activeSessions.add(session.id);
+  } else {
+    activeSessions.delete(session.id);
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function send(socket, obj) {
   if (socket && socket.readyState === WebSocket.OPEN) {
@@ -270,27 +286,25 @@ function send(socket, obj) {
 }
 
 function broadcastLiveCount() {
-  let count = 0;
+  // Use the O(1) count from PR #8
+  const count = activeSessions.size;
+  
+  // Use the optimized single-pass gathering from PR #5
   const tvSockets = [];
   for (const s of sessions.values()) {
-    if (
-      s.state === 'active' &&
-      s.tvSocket?.readyState === WebSocket.OPEN &&
-      s.phoneSocket?.readyState === WebSocket.OPEN
-    ) {
-      count++;
-    }
     if (s.tvSocket) {
       tvSockets.push(s.tvSocket);
     }
   }
 
+  // Use the cached payload object from PR #5
   const payload = { type: 'boards_live', count };
 
   // Broadcast to board TVs
   for (let i = 0; i < tvSockets.length; i++) {
     send(tvSockets[i], payload);
   }
+  
   // Broadcast to homepage counter watchers
   for (const sock of counterWatchers) {
     send(sock, payload);
@@ -323,15 +337,7 @@ wss.on('connection', socket => {
         if (msg.type === 'counter_watch') {
           counterWatchers.add(socket);
           // Send current count immediately
-          let count = 0;
-          for (const s of sessions.values()) {
-            if (
-              s.state === 'active' &&
-              s.tvSocket?.readyState === WebSocket.OPEN &&
-              s.phoneSocket?.readyState === WebSocket.OPEN
-            ) count++;
-          }
-          send(socket, { type: 'boards_live', count });
+          send(socket, { type: 'boards_live', count: activeSessions.size });
           return;
         }
 
@@ -364,6 +370,7 @@ wss.on('connection', socket => {
             }
           }
           touch(session);
+          updateActiveCount(session);
           console.log(`[pair] tv_hello → session=${session.id} code=${session.pairCode} resumed=${!!existing}`);
           console.log(`[pair] Sending tv_paired response...`);
           send(socket, { type: 'tv_paired', sessionId: session.id, pairCode: session.pairCode });
@@ -397,6 +404,7 @@ wss.on('connection', socket => {
             found.phoneSocket.close();
             found.phoneSocket = socket;
             touch(found);
+            updateActiveCount(found);
             send(socket, { type: 'phone_approved' });
             broadcastLiveCount();
             console.log(`[pair] phone_approved sent (${Date.now()-t0}ms)`);
@@ -411,6 +419,7 @@ wss.on('connection', socket => {
           if (found.state === 'active') {
             found.phoneSocket = socket;
             touch(found);
+            updateActiveCount(found);
             send(socket, { type: 'phone_approved' });
             broadcastLiveCount();
             console.log(`[pair] phone_approved sent (${Date.now()-t0}ms)`);
@@ -427,6 +436,7 @@ wss.on('connection', socket => {
           found.phoneSocket = socket;
           found.state = 'active'; // Skip 'pending_approval' — the QR scan is our security token
           touch(found);
+          updateActiveCount(found);
 
           // Notify BOTH parties immediately to save a full round-trip (TV auto-approval was slow over WAN)
           send(found.tvSocket, { type: 'phone_approved' });
@@ -447,6 +457,7 @@ wss.on('connection', socket => {
       if (role === 'tv') {
         if (msg.type === 'tv_approve') {
           updateState(session, 'active');
+          updateActiveCount(session);
           send(session.phoneSocket, { type: 'phone_approved' });
           send(session.tvSocket,    { type: 'phone_approved' });
           broadcastLiveCount();
@@ -455,6 +466,7 @@ wss.on('connection', socket => {
           send(session.phoneSocket, { type: 'phone_rejected' });
           session.phoneSocket?.close();
           session.phoneSocket = null;
+          updateActiveCount(session);
         }
       }
 
@@ -504,6 +516,7 @@ wss.on('connection', socket => {
       // Reset session so next phone_hello gets board_offline
       session.state = 'waiting';
       session.phoneSocket = null;
+      updateActiveCount(session);
     } else if (role === 'phone') {
       console.log(`[pair] Phone socket closed for session ${session.id}`);
       session.phoneSocket = null;
@@ -512,6 +525,7 @@ wss.on('connection', socket => {
         updateState(session, 'waiting');
         send(session.tvSocket, { type: 'disconnected' });
       }
+      updateActiveCount(session);
     }
     broadcastLiveCount();
   });
