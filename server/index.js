@@ -67,8 +67,14 @@ function preloadHtmlCache() {
   for (const filePath of filesToCache) {
     try {
       let data = fs.readFileSync(filePath, 'utf8');
-      data = data.replace(/var sentryDsn = 'YOUR_SENTRY_DSN_HERE';?/g, `var sentryDsn = '${sentryDsn}';`);
-      data = data.replace(/var phKey = 'YOUR_POSTHOG_KEY_HERE';?/g, `var phKey = '${phKey}';`);
+      // Safely stringify and escape variables before injection to prevent XSS and broken JS.
+      // We also escape '<' as '\u003c' and '>' as '\u003e' to prevent </script> tag breakout,
+      // and use a replacement function to avoid special regex patterns like '$&'.
+      const safeSentryDsn = JSON.stringify(sentryDsn).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+      const safePhKey = JSON.stringify(phKey).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+
+      data = data.replace(/var sentryDsn = 'YOUR_SENTRY_DSN_HERE';?/g, () => `var sentryDsn = ${safeSentryDsn};`);
+      data = data.replace(/var phKey = 'YOUR_POSTHOG_KEY_HERE';?/g, () => `var phKey = ${safePhKey};`);
       htmlCache[filePath] = data;
     } catch (err) {
       console.error(`[server] Error preloading HTML file ${filePath}:`, err.message);
@@ -280,14 +286,28 @@ function send(socket, obj) {
 }
 
 function broadcastLiveCount() {
+  // Use the O(1) count from PR #8
   const count = activeSessions.size;
-  // Broadcast to board TVs
+  
+  // Use the optimized single-pass gathering from PR #5
+  const tvSockets = [];
   for (const s of sessions.values()) {
-    send(s.tvSocket, { type: 'boards_live', count });
+    if (s.tvSocket) {
+      tvSockets.push(s.tvSocket);
+    }
   }
+
+  // Use the cached payload object from PR #5
+  const payload = { type: 'boards_live', count };
+
+  // Broadcast to board TVs
+  for (let i = 0; i < tvSockets.length; i++) {
+    send(tvSockets[i], payload);
+  }
+  
   // Broadcast to homepage counter watchers
   for (const sock of counterWatchers) {
-    send(sock, { type: 'boards_live', count });
+    send(sock, payload);
   }
 }
 

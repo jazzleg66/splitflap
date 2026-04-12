@@ -51,7 +51,6 @@ ws.onClose(() => {
 });
 
 ws.onMessage(msg => {
-  console.log('%c[ws] Message received: ' + msg.type, 'color: #0f0; font-weight: bold;', msg);
 
 
   switch (msg.type) {

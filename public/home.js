@@ -554,37 +554,6 @@ function syncTileSizing() {
   grid.style.setProperty('--tile-ty', (h / 4) + 'px');
 }
 
-// ── Rotating headline word ────────────────────────────────────────────────────
-// Cycles the animated word in #word-strip with a split-flap style transition:
-// current word falls out downward, next drops in from above.
-(function initWordRotation() {
-  const words = [...document.querySelectorAll('.rotating-word')];
-  if (!words.length) return;
-
-  let activeIdx = words.findIndex(w => w.classList.contains('active'));
-  if (activeIdx === -1) { words[0].classList.add('active'); activeIdx = 0; }
-
-  setInterval(() => {
-    const nextIdx = (activeIdx + 1) % words.length;
-
-    // Exit current
-    words[activeIdx].classList.remove('active');
-    words[activeIdx].classList.add('exiting');
-
-    // Reset next to top (no transition), then animate in
-    words[nextIdx].classList.remove('exiting');
-    // Force style recalc so the snap-to-top is applied before adding active
-    void words[nextIdx].offsetHeight;
-    words[nextIdx].classList.add('active');
-
-    // Clean up exiting class after its transition ends (~380ms)
-    const prev = activeIdx;
-    setTimeout(() => words[prev].classList.remove('exiting'), 420);
-
-    activeIdx = nextIdx;
-  }, 2400);
-}());
-
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.fonts.ready.then(() => {
   buildGrid();
