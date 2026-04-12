@@ -271,20 +271,29 @@ function send(socket, obj) {
 
 function broadcastLiveCount() {
   let count = 0;
+  const tvSockets = [];
   for (const s of sessions.values()) {
     if (
       s.state === 'active' &&
       s.tvSocket?.readyState === WebSocket.OPEN &&
       s.phoneSocket?.readyState === WebSocket.OPEN
-    ) count++;
+    ) {
+      count++;
+    }
+    if (s.tvSocket) {
+      tvSockets.push(s.tvSocket);
+    }
   }
+
+  const payload = { type: 'boards_live', count };
+
   // Broadcast to board TVs
-  for (const s of sessions.values()) {
-    send(s.tvSocket, { type: 'boards_live', count });
+  for (let i = 0; i < tvSockets.length; i++) {
+    send(tvSockets[i], payload);
   }
   // Broadcast to homepage counter watchers
   for (const sock of counterWatchers) {
-    send(sock, { type: 'boards_live', count });
+    send(sock, payload);
   }
 }
 
