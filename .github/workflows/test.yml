@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   test:
@@ -25,7 +24,7 @@ jobs:
 
     - run: npm ci
 
-    - name: Run tests
+    - name: Run tests with coverage
       run: npm test
 
     - name: Check for security vulnerabilities

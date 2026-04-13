@@ -10,6 +10,8 @@ jest.mock('../public/shared/wsClient.js', () => {
 });
 
 import { displayRows, snapDisplay } from '../public/board/board.js';
+import fs from 'fs';
+import path from 'path';
 
 describe('Connected Board Display Module', () => {
   let initialRAF;

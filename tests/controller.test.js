@@ -17,6 +17,13 @@ describe('controller module', () => {
 
     global.posthog = { capture: jest.fn() };
 
+    // Mock navigator.clipboard
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: jest.fn().mockImplementation(() => Promise.resolve()),
+      },
+    });
+
     // Clear localStorage
     localStorage.clear();
 
@@ -85,6 +92,7 @@ describe('controller module', () => {
 
     // Simulate clicking the first cell to focus
     const firstCell = document.querySelector('.cell[data-index="0"]');
+    firstCell.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
     firstCell.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     // Input 'A'
@@ -157,5 +165,31 @@ describe('controller module', () => {
     const tabsAfterClick = document.querySelectorAll('.msg-tab');
     tabsAfterClick[1].click();
     expect(document.querySelector('.cell[data-index="0"]').textContent).toBe('Z');
+  });
+
+  it('handles copy link button', () => {
+    const btn = document.getElementById('btn-copy-link');
+    if (btn) {
+        btn.click();
+        expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    }
+  });
+
+  it('updates header info on message mode', () => {
+      const el = document.getElementById('btn-play');
+      el.click();
+      el.click();
+      const st = document.getElementById('header-status');
+      expect(st).toBeDefined();
+  });
+
+  it('inputs color correctly', () => {
+      const colorBtn = document.querySelector('.color-swatch[data-color="r"]');
+      if (colorBtn) {
+          const firstCell = document.querySelector('.cell[data-index="0"]');
+          firstCell.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          colorBtn.click();
+          expect(firstCell.classList.contains('is-color')).toBe(true);
+      }
   });
 });

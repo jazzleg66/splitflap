@@ -28,3 +28,4 @@ Thumbs.db
 # Development assets (not needed in repo)
 references/
 colors/
+coverage/
