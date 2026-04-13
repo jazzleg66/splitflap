@@ -1,12 +1,13 @@
 module.exports = {
   presets: [
-    ['@babel/preset-env', {targets: {node: 'current'}}],
+    ['@babel/preset-env', { targets: { node: 'current' } }]
   ],
   plugins: [
     ['module-resolver', {
-      root: ['./'],
+      root: ['./public'],
       alias: {
-        '/shared': './public/shared',
+        '^/shared/(.*?)(?:\\?.*)?$': './public/shared/\\1',
+        '^/assets/(.*)$': './assets/\\1'
       }
     }]
   ]
