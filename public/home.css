@@ -727,6 +727,7 @@ body {
   #cta-secondary,
   #cta-enter-code {
     text-align: center;
+    height: 2.8rem;
   }
 
   #how-it-works {
