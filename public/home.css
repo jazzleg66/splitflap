@@ -151,7 +151,10 @@ body {
 }
 
 #cta-primary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
   background: var(--about-text);
   color: var(--about-bg);
   font-family: var(--rht);
@@ -166,7 +169,10 @@ body {
 #cta-primary:hover { background: #333333; }
 
 #cta-secondary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
   border: 1px solid #cccccc;
   color: var(--about-dim);
   font-family: var(--rht);
@@ -184,7 +190,10 @@ body {
 }
 
 #cta-enter-code {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
   background: transparent;
   border: 1px solid #cccccc;
   color: var(--about-dim);
@@ -608,6 +617,13 @@ body {
 #hero:fullscreen #hero-header,
 #hero:-webkit-full-screen #hero-header,
 #hero.pseudo-fullscreen #hero-header {
+  display: none;
+}
+
+/* Hide demo controls in fullscreen — only show close button */
+#hero:fullscreen #demo-controls,
+#hero:-webkit-full-screen #demo-controls,
+#hero.pseudo-fullscreen #demo-controls {
   display: none;
 }
 
