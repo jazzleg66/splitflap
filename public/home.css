@@ -344,6 +344,10 @@ body {
 }
 
 #demo-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
   background: transparent;
   border: 1px solid #3a3a3a;
   color: var(--dim);
@@ -368,7 +372,10 @@ body {
 }
 
 #btn-connect {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
   border: 1px solid var(--about-text);
   color: var(--about-text);
   font-family: var(--rht);
@@ -386,7 +393,10 @@ body {
 }
 
 #demo-enter-code {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
   border: 1px solid var(--about-text);
   color: var(--about-text);
   font-family: var(--rht);
