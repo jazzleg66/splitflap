@@ -337,26 +337,30 @@ body {
 
 /* ── Demo controls + Connect Board ──────────────────────────────────────────── */
 #demo-controls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  padding: 0.75rem 10px 0;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 #demo-controls button {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.2rem;
+  height: 2rem;
   line-height: 1;
   background: transparent;
   border: 1px solid #3a3a3a;
   color: var(--dim);
   font-family: var(--rht);
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
-  padding: 0 0.9rem;
+  letter-spacing: 0.04em;
+  padding: 0 0.4rem;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
@@ -376,16 +380,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.2rem;
+  height: 2rem;
   line-height: 1;
   text-align: center;
   border: 1px solid var(--about-text);
   color: var(--about-text);
   font-family: var(--rht);
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
-  padding: 0 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 0 0.4rem;
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
@@ -399,16 +403,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.2rem;
+  height: 2rem;
   line-height: 1;
   text-align: center;
   border: 1px solid var(--about-text);
   color: var(--about-text);
   font-family: var(--rht);
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
-  padding: 0 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 0 0.4rem;
   background: transparent;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
