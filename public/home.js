@@ -303,6 +303,10 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
   toggleFullscreen(document.getElementById('hero'));
 });
 
+document.getElementById('btn-exit-fullscreen').addEventListener('click', () => {
+  toggleFullscreen(document.getElementById('hero'));
+});
+
 ['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
   document.addEventListener(evt, () => {
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.getElementById('hero').classList.contains('pseudo-fullscreen'));
@@ -541,6 +545,31 @@ codeConnectBtn.addEventListener('click', () => {
   }
 });
 
+// ── Animated word strip ──────────────────────────────────────────────────────
+let currentWordIndex = 0;
+const words = Array.from(document.querySelectorAll('#word-strip .rotating-word'));
+const WORD_HOLD_MS = 3500;
+let wordTimer = null;
+
+function rotateWord() {
+  if (words.length === 0) return;
+
+  const current = words[currentWordIndex];
+  const next = words[(currentWordIndex + 1) % words.length];
+
+  // Start exit animation on current word
+  current.classList.remove('active');
+  current.classList.add('exiting');
+
+  // Start entry animation on next word
+  next.classList.remove('exiting');
+  next.classList.add('active');
+
+  currentWordIndex = (currentWordIndex + 1) % words.length;
+
+  wordTimer = setTimeout(rotateWord, WORD_HOLD_MS);
+}
+
 // ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
 // CSS container queries (cqi/cqh) have cross-browser inconsistencies when the
 // tile height comes from aspect-ratio. ResizeObserver gives exact pixel values.
@@ -564,4 +593,5 @@ document.fonts.ready.then(() => {
   new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
   ws.connect(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
   startDemo();
+  wordTimer = setTimeout(rotateWord, WORD_HOLD_MS);
 });

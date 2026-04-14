@@ -556,6 +556,33 @@ body {
   max-width: 100%;
 }
 
+/* ── Exit fullscreen button ──────────────────────────────────────────────────── */
+#btn-exit-fullscreen {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #7a6e54;
+  font-size: 1.5rem;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  z-index: 10000;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+#btn-exit-fullscreen:hover {
+  color: #E8D5A3;
+}
+
+#hero:fullscreen #btn-exit-fullscreen,
+#hero:-webkit-full-screen #btn-exit-fullscreen,
+#hero.pseudo-fullscreen #btn-exit-fullscreen {
+  display: block;
+}
+
 /* ── Fullscreen — 100vw wide, centered with 2vh gap top and bottom ───────────── */
 #hero:fullscreen,
 #hero:-webkit-full-screen,
