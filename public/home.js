@@ -561,6 +561,9 @@ function rotateWord() {
   current.classList.remove('active');
   current.classList.add('exiting');
 
+  // Force reflow to ensure Edge applies both transitions properly
+  void current.offsetHeight;
+
   // Start entry animation on next word
   next.classList.remove('exiting');
   next.classList.add('active');
