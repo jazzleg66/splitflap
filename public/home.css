@@ -118,12 +118,12 @@ body {
 
 .rotating-word.active {
   transform: translateY(0);
-  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.52s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .rotating-word.exiting {
   transform: translateY(110%);
-  transition: transform 0.38s cubic-bezier(0.55, 0, 1, 0.45);
+  transition: transform 0.38s cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 /* Description */
