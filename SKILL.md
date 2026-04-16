@@ -191,6 +191,18 @@ The modal is triggered by a fixed-position button (bottom-right).
 Clicking a feature in the list renders the detail pane with annotated code.
 A "jump to section" link in the detail pane closes the modal and scrolls the explainer to context.
 
+**Modal centering:** The modal must be centered within the content area (right of the nav), not the full viewport:
+```css
+#explorer-modal {
+  left: calc(200px + (100vw - 200px) / 2);
+  transform: translateX(-50%) translateY(12px) scale(0.97); /* closed state */
+}
+#explorer-modal.visible {
+  transform: translateX(-50%) translateY(0) scale(1);        /* open state */
+}
+```
+Without this, the modal overlaps the left nav. The `200px` offset must match the nav width.
+
 ### Feature Data Structure
 
 Each feature in the `FEATURES[]` array follows this schema:
@@ -217,11 +229,12 @@ Written so a PM with no code background can follow it.`,
       code: [
         { t: 'cm', v: '// comment — use for section headers and explanations' },
         { t: 'hl', v: 'highlighted line — the key line the reader must understand' },
-        { t: 'kw', v: 'const ' },       // keyword: purple
-        { t: 'fn', v: 'functionName' }, // function name: yellow
-        { t: 'nm', v: 'varName' },      // variable/property: blue
-        { t: 'st', v: '\'string\'' },   // string literal: orange
-        { t: 'vl', v: '42' },           // value/number: green
+        { t: 'kw', v: 'const ' },       // keyword: purple  (#B888E8)
+        { t: 'fn', v: 'functionName' }, // function name: yellow (#F0C070)
+        { t: 'nm', v: 'varName' },      // variable/property: blue (#5FC1D5)
+        { t: 'st', v: '\'string\'' },   // string literal: orange (#E8A870)
+        { t: 'vl', v: '42' },           // value/number: green (#90D870)
+        { t: 'tp', v: 'TypeName' },     // type/class name: pink (#E88890)
         { t: '',   v: 'plain code\n' }, // uncoloured, must end with \n
       ],
       callouts: [
@@ -294,7 +307,7 @@ To adapt for any project, change only these variables:
   /* Surfaces — dark theme derived from brand dark neutrals */
   --surface:      #000000;   /* page background — pure black */
   --card:         #092301;   /* card background — deepest primary green */
-  --card2:        #3B3D3A;   /* elevated card / hover state — dark neutral */
+  --card2:        #263B10;   /* elevated card / hover state — mid-dark green */
   --border:       #495D3D;   /* default border — mid tertiary green */
   --border-light: #678357;   /* hover border — lighter tertiary green */
 
@@ -303,6 +316,11 @@ To adapt for any project, change only these variables:
   --text-strong:  #C9CFC8;   /* subheadings and important body copy */
   --text:         #A3A8A2;   /* body copy */
   --muted:        #5C5E5B;   /* metadata, labels, disabled states */
+
+  /* UI tokens */
+  --radius:       10px;                          /* default card border-radius */
+  --seam:         #000;                          /* tile seam line color */
+  --transition:   0.3s cubic-bezier(0.4,0,0.2,1); /* standard ease-in-out */
 }
 ```
 
@@ -316,13 +334,36 @@ To adapt for any project, change only these variables:
 | Quaternary warm | Highlights, notifications, badges | `#F5D3BA` `#E6A461` `#B6814B` `#885F36` `#5C4022` `#342310` `#190F05` |
 | Neutrals | Text, borders, UI chrome | `#EFF1EE` `#C9CFC8` `#A3A8A2` `#7E827E` `#5C5E5B` `#3B3D3A` `#1D1E1D` |
 
+**Code Explorer hardcoded backgrounds** (do not use CSS vars — these are the darkest tones in the UI):
+
+| Element | Color | Notes |
+|---|---|---|
+| Modal background | `#131B0F` | Darkest green-tinted surface |
+| Feature list (left column) | `#0D110A` | One step darker than modal |
+| Annotated code block body | `#060A10` | Near-black blue-tinted |
+| Annotated code block header | `#0A0E18` | Slightly lighter blue-tinted |
+
 **Typography:**
-- All text: `Roboto Mono Variable` (Google Fonts, `family=Roboto+Mono:wght@300..700`) — headings, body, labels, buttons, and code blocks
-- Fallback stack: `'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace`
-- Heading scale: H1 48px/Bold, H2 36px/Bold, H3 30px/Bold, H4 24px/Bold, H5 20px/Bold
-- Body scale: Large 18px/1.5, Base 15px/1.5, Small 14px/1.5, Extra Small 12px/1.5
+- All text: `Roboto Mono Variable` (Google Fonts, `family=Roboto+Mono:ital,wght@0,300..700;1,300..700`) — headings, body, labels, buttons, and code blocks
+- Fallback stack: `'SF Mono', 'Fira Code', monospace`
+- Heading scale: `h1: 3rem/700`, `h2: 1.85rem/700`, `h3: 1.05rem/600`, `h4: 0.9rem/600`
+- Body: `p` at default size, `line-height: 1.6` on body; section body copy typically `0.82rem–0.88rem`
+- `em` elements: `color: var(--accent); font-style: normal` — used for inline emphasis without italics
+- `strong` elements: `color: var(--white)` — white for maximum contrast
 - Available weights: Light (300), Regular (400), Medium (500), Semi Bold (600), Bold (700)
 - No project-specific display fonts in UI chrome (keep those only for content demos)
+
+**Page layout — fixed left nav:**
+- `nav`: `position: fixed; left: 0; top: 0; bottom: 0; width: 200px; background: var(--card)`
+- `body`: `margin-left: 200px` to leave room for the nav
+- Nav contains: `.logo` (project name + accent dot) at top, then `<a>` links with `border-left` active indicator
+- Active link: `color: var(--accent); border-left: 2px solid var(--accent); background: rgba(83,189,29,0.06)`
+- **Responsive**: shrinks to 160px at 860px; collapses to a horizontal top bar (sticky, `height: auto`, `flex-direction: row`, `overflow-x: auto`) at 640px — body `margin-left` goes to 0
+
+**Scroll progress bar:**
+- `position: fixed; top: 0; left: 200px; height: 2px; background: var(--accent); z-index: 200`
+- Must use `left: 200px` (not 0) so it starts after the nav sidebar, not behind it
+- Width driven by a `scroll` event handler: `el.style.width = (scrollY / (scrollH - innerH) * 100) + '%'`
 
 **Button variants** (use for CTAs and interactive controls):
 - **Primary** — `background: #53BD1D` (brand green), white text — main actions
@@ -338,15 +379,20 @@ To adapt for any project, change only these variables:
 |---|---|---|
 | Section label | `.section-label` | Small uppercase category above h2 |
 | Stat box | `.stat-box`, `.stat-num`, `.stat-label` | Key numbers in hero / sections |
-| Card | `.card`, `.card-accent/.green/.red/.blue` | Content grouping |
-| Tag pill | `.tag` | Tech stack labels |
-| Flow diagram | `.flow`, `.flow-node`, `.flow-arrow` | Left-to-right sequence |
-| WS step | `.ws-step`, `.ws-step-num`, `.ws-step-msg`, `.ws-step-desc` | Numbered comms flow |
-| Timeline | `.timeline`, `.timeline-item.feat/.fix/.perf` | Git history |
-| Bug card | `.bug-card`, `.bug-header`, `.bug-badge`, `.fix-badge`, `.bug-fix` | Bug log entries |
-| Highlight box | `.highlight-box` | Important callout block |
-| Tab strip | `.tabs`, `.tab-btn`, `.tab-panel` | Multi-view sections |
-| Grid layouts | `.grid-2`, `.grid-3`, `.grid-4` | Responsive column layouts |
+| Card | `.card`, `.card-accent/.green/.red/.blue` | Content grouping with colored top border |
+| Tag pill | `.tag` | Tech stack labels (pill shape, `border-radius: 20px`) |
+| Highlight box | `.highlight-box` | Accent-tinted callout: `rgba(83,189,29,0.06)` bg + green border |
+| Flow diagram | `.flow`, `.flow-node`, `.flow-arrow` | Left-to-right sequence; node variants: `.highlight`, `.server`, `.phone` |
+| WS step | `.ws-step`, `.ws-step-num.tv/.phone/.server`, `.ws-step-msg`, `.ws-step-desc` | Numbered comms flow with color-coded actor circles |
+| Timeline | `.timeline`, `.timeline-item.feat/.fix/.perf` | Vertical git history with color-coded dots |
+| Bug card | `.bug-card`, `.bug-header`, `.bug-badge`, `.fix-badge`, `.bug-title`, `.bug-body`, `.bug-fix` | Bug log entries |
+| Tab strip | `.tabs`, `.tab-btn[data-tab]`, `.tab-panel` | Multi-view sections; JS scoped to nearest section ancestor |
+| Grid layouts | `.grid-2`, `.grid-3`, `.grid-4` | Responsive columns (collapse to 1 col at 700px) |
+| Arch diagram box | `.arch-box.tv/.phone/.server/.db` | Color-coded component boxes for architecture diagrams |
+| Panel diagram | `.panel-diagram`, `.panel-tile`, `.panel-half.top/.bottom`, `.layer-label` | Split-flap tile cross-section diagrams |
+| Color swatch row | `.color-row`, `.cswatch` | Inline row of colored swatches (32×32px, rounded) |
+| `pre` code block | `pre .comment/.key/.val/.fn/.str/.kw` | Syntax-highlighted static code snippets |
+| Footer | `footer` | Centered, muted, `border-top: 1px solid var(--border)` |
 
 ---
 
