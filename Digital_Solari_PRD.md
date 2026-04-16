@@ -1,4 +1,4 @@
-# 📑 Production PRD: Digital Solari (v1.1)
+# 📑 Production PRD: Split Flap Display (v1.1)
 
 > Source of truth for the Digital Solari split-flap display system.
 > All decisions in this document were finalized through the Gemini design conversation and supersede any earlier drafts.
