@@ -46,7 +46,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.2",
-    "babel-jest": "^30.3.0",
+    "babel-jest": "^30.4.1",
     "babel-plugin-module-resolver": "^5.0.3",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
