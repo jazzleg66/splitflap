@@ -1,8 +1,11 @@
 name: Claude
 
 # Responds when you mention @claude in an issue or pull request comment/review.
-# Requires the Claude GitHub App installed on the repo and an ANTHROPIC_API_KEY
-# repository secret (Settings → Secrets and variables → Actions).
+# Requires the Claude GitHub App installed on the repo and a
+# CLAUDE_CODE_OAUTH_TOKEN repository secret (Settings → Secrets and variables →
+# Actions). Generate the token with `claude setup-token` (Claude Pro/Max).
+# To bill against the Anthropic API instead, swap the auth input below for:
+#   anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 on:
   issue_comment:
     types: [created]
@@ -40,4 +43,6 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Claude Pro/Max subscription auth (no API billing). Generate with
+          # `claude setup-token`. For API-key billing, use anthropic_api_key instead.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
