@@ -18,12 +18,19 @@ on:
 
 jobs:
   claude:
-    # Only run when "@claude" actually appears in the triggering text.
+    # Authorization: only the repo owner (jazzleg66) may invoke the bot, AND only
+    # when "@claude" appears in the triggering text. github.actor is the login of
+    # whoever created the comment/issue/review that fired this run — so anyone
+    # else mentioning @claude on this public repo is ignored (prevents strangers
+    # from spending the subscription or abusing write access). To allow more
+    # people later, add their logins to the actor check.
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      github.actor == 'jazzleg66' && (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
