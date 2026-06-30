@@ -67,14 +67,15 @@ To move from `A` to `D`, the tile must render `B` then `C` as intermediate frame
 
 Each tile uses a **4-panel CSS 3D card-flip** architecture:
 
-| Panel | Class | State at rest | Contents at rest |
-|---|---|---|---|
-| Top front | `.tf` | `rotateX(0°)` — visible | Current character (top half) |
-| Top back | `.tb` | `rotateX(-180°)` — hidden | Pre-loaded: next character (top half) |
-| Bottom front | `.bf` | `rotateX(0°)` — visible | Current character (bottom half) |
-| Bottom back | `.bb` | `rotateX(180°)` — hidden | Pre-loaded: next character (bottom half) |
+| Panel        | Class | State at rest             | Contents at rest                         |
+| ------------ | ----- | ------------------------- | ---------------------------------------- |
+| Top front    | `.tf` | `rotateX(0°)` — visible   | Current character (top half)             |
+| Top back     | `.tb` | `rotateX(-180°)` — hidden | Pre-loaded: next character (top half)    |
+| Bottom front | `.bf` | `rotateX(0°)` — visible   | Current character (bottom half)          |
+| Bottom back  | `.bb` | `rotateX(180°)` — hidden  | Pre-loaded: next character (bottom half) |
 
 **Flip sequence per step:**
+
 1. Set `.tb` and `.bb` content to the next character.
 2. Add `.flipping` class — triggers the CSS animations.
 3. Front panels sweep away (`.tf`: `0°→-90°`, `.bf`: `0°→90°`).
@@ -105,6 +106,7 @@ The board starts animating immediately on load. The demo is **muted by default**
 3. `SCAN THE QRCODE AND TRY YOURSELF`
 
 **Demo controls:**
+
 - `[SKIP]` — Immediately advances to the next design **and enables audio** (satisfies browser autoplay restriction via user gesture).
 - `[MUTE]` / `[UNMUTE]` — Toggles audio after it has been unlocked.
 - `[FULLSCREEN]` — Enters/exits browser fullscreen mode.
@@ -116,12 +118,14 @@ A "CLICK TO START" overlay is visible on load to communicate audio is available 
 The QR code and manual code are displayed as a **full-screen overlay** on top of the running demo (the demo is still visible and running behind it).
 
 **Layout (top to bottom):**
+
 1. "SCAN TO CONNECT" label
 2. QR code image — encodes the controller URL with the pair code embedded (`/controller?code=XXXXXX`), so scanning bypasses the manual entry screen entirely
 3. "OR ENTER CODE MANUALLY" hint
 4. 6-digit pair code — displayed with a dash separator (e.g., `XJ9-4L2`)
 
 **Code generation rules:**
+
 - 6 alphanumeric characters
 - Excludes ambiguous characters: `0` (zero), `O` (letter O), `1` (one), `I` (letter I)
 - Code remains active as long as the TV browser tab is open; refreshing generates a new code
@@ -142,13 +146,13 @@ REJECT?  [ESC]
 
 ### 4.5 Session & Presence States
 
-| Board state | Display |
-|---|---|
-| Demo (no phone connected) | Demo loop running |
-| Phone request pending | Approval overlay visible |
-| Phone approved / active | `DEVICE CONNECTED` (row 3, centered) |
-| Phone socket dropped / screen locked | `DISCONNECTED` (row 3, centered) |
-| Hard Reset received | Board blanks to Eerie Black, then demo restarts after 500ms |
+| Board state                          | Display                                                     |
+| ------------------------------------ | ----------------------------------------------------------- |
+| Demo (no phone connected)            | Demo loop running                                           |
+| Phone request pending                | Approval overlay visible                                    |
+| Phone approved / active              | `DEVICE CONNECTED` (row 3, centered)                        |
+| Phone socket dropped / screen locked | `DISCONNECTED` (row 3, centered)                            |
+| Hard Reset received                  | Board blanks to Eerie Black, then demo restarts after 500ms |
 
 **Hijack protection:** If a board already has an active phone connection and a second phone tries to connect with the same code, the second phone receives `"BOARD OCCUPIED — TRY AGAIN LATER"`. The active session is not disturbed.
 
@@ -164,21 +168,21 @@ REJECT?  [ESC]
 
 Positioned at the top of the screen — stays visible as the user scrolls.
 
-| Element | Connected state | Disconnected state |
-|---|---|---|
-| 6-digit code (with dash) | `XJ9-4L2` (static) | `XJ9-4L2` (static) |
-| Status dot | 🟢 Green | 🔴 Red |
-| Status text box | Green, "CONNECTED" | Red, "DISCONNECTED" |
+| Element                  | Connected state    | Disconnected state  |
+| ------------------------ | ------------------ | ------------------- |
+| 6-digit code (with dash) | `XJ9-4L2` (static) | `XJ9-4L2` (static)  |
+| Status dot               | 🟢 Green           | 🔴 Red              |
+| Status text box          | Green, "CONNECTED" | Red, "DISCONNECTED" |
 
 ### 5.2 Persistent Footer (always visible, sticky)
 
 Three fixed buttons at the bottom of the screen:
 
-| Button | Behavior |
-|---|---|
-| `[PLAY]` | Starts the message loop. Becomes `[STOP]` while playing. Disabled in Clock Mode. |
-| `[NEXT]` | Skips the current hold timer and immediately flips to the next message. Only active while playing. **Spam-protected:** locked for ~1.5 seconds after each tap. |
-| `[RESET]` | **Hard Reset** — clears TV to blank Eerie Black and resets phone UI to "HELLO WORLD" defaults. |
+| Button    | Behavior                                                                                                                                                       |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[PLAY]`  | Starts the message loop. Becomes `[STOP]` while playing. Disabled in Clock Mode.                                                                               |
+| `[NEXT]`  | Skips the current hold timer and immediately flips to the next message. Only active while playing. **Spam-protected:** locked for ~1.5 seconds after each tap. |
+| `[RESET]` | **Hard Reset** — clears TV to blank Eerie Black and resets phone UI to "HELLO WORLD" defaults.                                                                 |
 
 ### 5.3 Mode Toggle
 
@@ -198,22 +202,25 @@ Switching from Clock → Message Mode: instantly flips the board to the `DEVICE 
 ### 5.5 Message Mode
 
 **Color picker row:**
+
 - Label: `"Type below."`
 - 7 emoji buttons: 🔴 🟠 🟡 🟢 🔵 🟣 ⚪ — clicking inserts the corresponding color character (`r`, `o`, `y`, `g`, `b`, `p`, `w`) at the cursor position in the focused input.
 
 **Message list:**
+
 - Default message on first load (no saved drafts):
   - Row 1: `HELLO WORLD`
-  - Row 2: *(empty)*
+  - Row 2: _(empty)_
   - Row 3: `HOPE YOU ENJOY`
   - Row 4: `CHEERS`
-  - Rows 5–6: *(empty)*
+  - Rows 5–6: _(empty)_
 - Each message is a block of 6 row inputs.
 - **Add Message** button: creates a new blank message block. Turns **gray (disabled)** when 10 messages are reached.
 - Each message block has an **× (delete) icon** — hidden when only 1 message remains.
 - Maximum: **10 messages per session**.
 
 **Input constraints:**
+
 - System keyboard (not a custom built one).
 - `maxLength = 22` enforced by the DOM.
 - All keystrokes forced to uppercase in real-time via JS.
@@ -221,6 +228,7 @@ Switching from Clock → Message Mode: instantly flips the board to the `DEVICE 
 - Color characters can only be inserted via the emoji picker buttons (not by typing).
 
 **Loop timer:**
+
 - Default: **7 seconds** hold per message before advancing.
 - Adjustable via a slider: **5s – 60s**.
 
@@ -232,11 +240,11 @@ When Clock Mode is active:
 - The board updates every second automatically.
 - **Only the tiles whose characters change** (i.e., the digits of the seconds counter) perform a mechanical flip — the rest of the board remains static.
 - Board layout:
-  - Row 1: *(blank)*
+  - Row 1: _(blank)_
   - Row 2: `DAY MONTH DATE` (e.g., `TUESDAY APRIL 1`)
   - Row 3: `HH:MM:SS AM/PM` (e.g., ` 3:07:42 PM`)
   - Row 4: `YEAR` (e.g., `2026`, centered)
-  - Rows 5–6: *(blank)*
+  - Rows 5–6: _(blank)_
 
 ### 5.7 Persistence
 
@@ -262,38 +270,42 @@ When Clock Mode is active:
 ### 6.3 WebSocket Message Protocol
 
 **TV → Server:**
-| Message | Purpose |
-|---|---|
+
+| Message                            | Purpose                                                     |
+| ---------------------------------- | ----------------------------------------------------------- |
 | `{ type: 'tv_hello', sessionId? }` | Register as a board; resume existing session if ID provided |
-| `{ type: 'tv_approve' }` | Approve pending phone connection |
-| `{ type: 'tv_reject' }` | Reject pending phone connection |
+| `{ type: 'tv_approve' }`           | Approve pending phone connection                            |
+| `{ type: 'tv_reject' }`            | Reject pending phone connection                             |
 
 **Phone → Server:**
-| Message | Purpose |
-|---|---|
-| `{ type: 'phone_hello', pairCode }` | Connect using 6-digit code |
-| `{ type: 'phone_send', payload: { rows, mode } }` | Push message rows to TV |
-| `{ type: 'phone_next' }` | Signal board to advance (currently handled via phone_send) |
-| `{ type: 'phone_reset' }` | Hard reset board |
+
+| Message                                           | Purpose                                                    |
+| ------------------------------------------------- | ---------------------------------------------------------- |
+| `{ type: 'phone_hello', pairCode }`               | Connect using 6-digit code                                 |
+| `{ type: 'phone_send', payload: { rows, mode } }` | Push message rows to TV                                    |
+| `{ type: 'phone_next' }`                          | Signal board to advance (currently handled via phone_send) |
+| `{ type: 'phone_reset' }`                         | Hard reset board                                           |
 
 **Server → Client:**
-| Message | Recipient | Purpose |
-|---|---|---|
-| `{ type: 'tv_paired', sessionId, pairCode }` | TV | Session created or resumed |
-| `{ type: 'phone_request' }` | TV | Phone wants to connect |
-| `{ type: 'phone_approved' }` | Phone | Connection accepted |
-| `{ type: 'phone_rejected' }` | Phone | Connection denied by TV |
-| `{ type: 'board_occupied' }` | Phone | Board already has active controller |
-| `{ type: 'not_found' }` | Phone | Invalid pair code |
-| `{ type: 'display_update', rows }` | TV | New content to display |
-| `{ type: 'hard_reset' }` | TV | Blank board, restart demo |
-| `{ type: 'disconnected' }` | TV | Phone socket closed |
-| `{ type: 'boards_live', count }` | TV + homepage watchers | Live session count |
+
+| Message                                      | Recipient              | Purpose                             |
+| -------------------------------------------- | ---------------------- | ----------------------------------- |
+| `{ type: 'tv_paired', sessionId, pairCode }` | TV                     | Session created or resumed          |
+| `{ type: 'phone_request' }`                  | TV                     | Phone wants to connect              |
+| `{ type: 'phone_approved' }`                 | Phone                  | Connection accepted                 |
+| `{ type: 'phone_rejected' }`                 | Phone                  | Connection denied by TV             |
+| `{ type: 'board_occupied' }`                 | Phone                  | Board already has active controller |
+| `{ type: 'not_found' }`                      | Phone                  | Invalid pair code                   |
+| `{ type: 'display_update', rows }`           | TV                     | New content to display              |
+| `{ type: 'hard_reset' }`                     | TV                     | Blank board, restart demo           |
+| `{ type: 'disconnected' }`                   | TV                     | Phone socket closed                 |
+| `{ type: 'boards_live', count }`             | TV + homepage watchers | Live session count                  |
 
 **Homepage (no session):**
-| Message | Direction | Purpose |
-|---|---|---|
-| `{ type: 'counter_watch' }` | Homepage → Server | Subscribe to live count updates |
+
+| Message                          | Direction         | Purpose                            |
+| -------------------------------- | ----------------- | ---------------------------------- |
+| `{ type: 'counter_watch' }`      | Homepage → Server | Subscribe to live count updates    |
 | `{ type: 'boards_live', count }` | Server → Homepage | Pushed on any session state change |
 
 ### 6.4 Scalability
@@ -306,9 +318,9 @@ When Clock Mode is active:
 
 ## 7. Routing
 
-| URL | Page |
-|---|---|
-| `/` | Homepage (demo + about + CTA) |
-| `/board` | Display board (demo → pair → active display) |
+| URL                       | Page                                         |
+| ------------------------- | -------------------------------------------- |
+| `/`                       | Homepage (demo + about + CTA)                |
+| `/board`                  | Display board (demo → pair → active display) |
 | `/controller?code=XXXXXX` | Mobile controller (requires valid pair code) |
-| `/qr/:sessionId` | QR code PNG (generated server-side) |
+| `/qr/:sessionId`          | QR code PNG (generated server-side)          |
