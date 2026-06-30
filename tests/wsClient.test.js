@@ -10,16 +10,16 @@ describe('wsClient module', () => {
       send: jest.fn(),
       close: jest.fn(),
       addEventListener: jest.fn((event, cb) => {
-          if (event === 'open') {
-              mockWebSocket.onopen = cb;
-          } else if (event === 'message') {
-              mockWebSocket.onmessage = cb;
-          } else if (event === 'close') {
-              mockWebSocket.onclose = cb;
-          } else if (event === 'error') {
-              mockWebSocket.onerror = cb;
-          }
-      })
+        if (event === 'open') {
+          mockWebSocket.onopen = cb;
+        } else if (event === 'message') {
+          mockWebSocket.onmessage = cb;
+        } else if (event === 'close') {
+          mockWebSocket.onclose = cb;
+        } else if (event === 'error') {
+          mockWebSocket.onerror = cb;
+        }
+      }),
     };
 
     global.WebSocket = jest.fn(() => mockWebSocket);
@@ -94,51 +94,51 @@ describe('wsClient module', () => {
   });
 
   it('calls onClose callback and tries to reconnect when closed', () => {
-      jest.useFakeTimers();
+    jest.useFakeTimers();
 
-      const onClose = jest.fn();
-      wsClient.onClose(onClose);
-      wsClient.connect('ws://localhost/ws');
+    const onClose = jest.fn();
+    wsClient.onClose(onClose);
+    wsClient.connect('ws://localhost/ws');
 
-      mockWebSocket.onclose();
+    mockWebSocket.onclose();
 
-      expect(onClose).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
 
-      // Fast forward past delay
-      jest.advanceTimersByTime(1000);
+    // Fast forward past delay
+    jest.advanceTimersByTime(1000);
 
-      expect(global.WebSocket).toHaveBeenCalledTimes(2);
+    expect(global.WebSocket).toHaveBeenCalledTimes(2);
 
-      jest.useRealTimers();
+    jest.useRealTimers();
   });
 
   it('handles error gracefully', () => {
-      wsClient.connect('ws://localhost/ws');
-      mockWebSocket.onerror();
-      expect(wsClient._isConnecting).toBe(false);
+    wsClient.connect('ws://localhost/ws');
+    mockWebSocket.onerror();
+    expect(wsClient._isConnecting).toBe(false);
   });
 
   it('handles timeout correctly', () => {
-      jest.useFakeTimers();
+    jest.useFakeTimers();
 
-      wsClient.connect('ws://localhost/ws');
-      mockWebSocket.readyState = 0; // CONNECTING
+    wsClient.connect('ws://localhost/ws');
+    mockWebSocket.readyState = 0; // CONNECTING
 
-      // Fast forward past timeout
-      jest.advanceTimersByTime(6000);
+    // Fast forward past timeout
+    jest.advanceTimersByTime(6000);
 
-      expect(mockWebSocket.close).toHaveBeenCalled();
-      expect(wsClient._isConnecting).toBe(false);
+    expect(mockWebSocket.close).toHaveBeenCalled();
+    expect(wsClient._isConnecting).toBe(false);
 
-      jest.useRealTimers();
+    jest.useRealTimers();
   });
 
   it('reset closes socket', () => {
-      wsClient.connect('ws://localhost/ws');
-      mockWebSocket.readyState = 1;
+    wsClient.connect('ws://localhost/ws');
+    mockWebSocket.readyState = 1;
 
-      wsClient.reset();
+    wsClient.reset();
 
-      expect(mockWebSocket.close).toHaveBeenCalled();
+    expect(mockWebSocket.close).toHaveBeenCalled();
   });
 });

@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **Digital Solari** is a web-based split-flap display system. It has two components:
+
 - **Display Board (Receiver):** TV/browser showing a 6×22 animated character grid
 - **Mobile Controller (Sender):** Phone-friendly remote for sending messages to the display
 
@@ -17,6 +18,7 @@ Full spec is in `Digital_Solari_PRD.md`.
 **Communication:** WebSocket only. TV and phone pair via a 6-digit alphanumeric code (no O, 0, I, 1). QR code on TV encodes the pairing URL. One phone per board (hijack protection).
 
 **Two frontend pages:**
+
 - `index.html` (or `/board`) — Display board, auto-starts demo loop on load
 - `controller.html` (or `/controller?code=XXXXXX`) — Mobile UI
 
@@ -27,9 +29,11 @@ Full spec is in `Digital_Solari_PRD.md`.
 These constraints are non-negotiable and must be preserved exactly:
 
 **Character Spool** — tiles cycle sequentially through this exact array, never randomly:
+
 ```js
 const SPOOL = ` ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+=;:'"%,.?/°roygbpw`;
 ```
+
 Color characters are stored as **lowercase** (`roygbpw`) so they don't collide with the uppercase letter set. `isColorChar(ch)` checks `'roygbpw'.includes(ch)`.
 
 **Animation:** All changing tiles flip simultaneously at constant velocity (no easing). To go from `A` to `D`, the tile must render `B` then `C` as intermediate frames.
@@ -37,6 +41,7 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 **Audio:** Single `split-flap.wav` loop — starts when the first flap moves, stops when the last flap settles (exactly when the last CSS flip animation completes, tracked via `pendingFlips` counter).
 
 **Color characters (ROYGBPW):** Render as full solid-color tiles, not text. Color palette (defined in `public/shared/spool.js` `COLOR_MAP`):
+
 - `r` Red `#B34444`
 - `o` Orange `#CC8F52`
 - `y` Yellow `#F2D046`
@@ -70,6 +75,7 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 - Switching from Clock → Message Mode snaps board to `DEVICE CONNECTED` standby
 
 **Controller UI layout:**
+
 - `#mirror-section` — `position: sticky; top: 50px` — contains `#preview-label` bar (status dot + code) above `#preview-wrapper`. Has rounded bottom corners and side margin for a card look. Scales to fill the viewport width (`fitPreview()` has no cap — `scale = wrapper.clientWidth / grid.offsetWidth`).
 - `#preview-label` — bar at top of mirror showing "LIVE ON BOARD [CODE]" + a `.preview-dot` (green when connected, dim otherwise). Updated by `updateHeader()`.
 - `#scroll-body` — scrollable area below the mirror; contains mode tabs, message nav, color picker, row inputs, and loop timer.
@@ -78,6 +84,7 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 - `renderMsgTabs()` is called by `renderMessageList()` and `updatePlayingHighlight()`.
 
 **Cell grid message input architecture:**
+
 - A 22×6 CSS Grid of individually-rendered `<div class="cell">` elements replaces the textarea. Each cell is one character position.
 - Keyboard input is captured by a hidden off-screen `<input id="grid-capture">` (fixed positioning, opacity 0). Tapping any cell focuses this input → triggers virtual keyboard on iOS/Android.
 - `renderMessageGrid()`: builds 132 cell divs with `data-index`, populates from `messages[activeMessageIndex].rows`, attaches click (move cursor) and pointerdown (long-press drag) handlers.
@@ -89,6 +96,7 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 - Drag-to-swap: 320ms long-press on a cell activates drag mode. `onDragPointerMove` highlights cells under pointer. `onDragPointerUp` executes move (empty target) or swap (filled target). `cleanupDrag()` removes all classes and event listeners.
 
 **Color picker:**
+
 - `#emoji-picker` contains 7 `.color-swatch` buttons (was emoji buttons) with inline `style="background: #XXXXXX"` using exact `COLOR_MAP` hex values. Order: white, red, orange, yellow, green, blue, purple.
 - Click handler: `e.target.closest('.color-swatch')` → `insertColorChar(btn.dataset.color)`.
 - Color cells render as solid-color fills (no text) via `.char-cell.is-color { background: var(--cell-color) }` and `cell.textContent = ''`.
@@ -108,6 +116,7 @@ Color characters are stored as **lowercase** (`roygbpw`) so they don't collide w
 ## Demo Mode (Display Board)
 
 On load, cycles through:
+
 1. `"IMPOSSIBLE IS NOTHING" - ADIDAS`
 2. `"IN REAL LIFE, I ASSURE YOU, THERE IS NO SUCH THING AS ALGEBRA." - FRAN LEBOWITZ`
 3. `SCAN THE QRCODE AND TRY YOURSELF`
@@ -130,7 +139,7 @@ Demo controls: [Skip], [Mute/Unmute], [Fullscreen], [Connect Board →]. Live co
 
 ## Pending Tasks
 
-_(none)_
+- Run `/project-explainer` with Sonnet (spawn subagent with `model: "sonnet"`) to generate `digital-solari-explainer-sonnet.html` and compare output quality against the existing `digital-solari-explainer-haiku.html`.
 
 ## Workflow Notes
 
@@ -147,6 +156,7 @@ _(none)_
 **Space character rendering:** Always set `textContent = ''` (empty string) for space characters — use the `renderChar` helper in `board.js`: `const renderChar = ch => (ch === ' ' ? '' : ch);`
 
 **Character sizing:**
+
 - Tile: `width: 2.2rem; height: 4.3rem` (base CSS in `splitflap.css`; overridden to `width: 100%; aspect-ratio: 2.2/4.3` on both homepage and board page for responsive scaling)
 - Each panel (`.tile-top`, `.tile-bottom`): `height: 50%`
 - `font-size` = full tile height (`h`) — set via `--tile-fs` CSS variable by a `ResizeObserver` in JS (`syncTileSizing`). Both pages set `--tile-fs = h` (full tile height), not panel height. This fills the tile with large Doto characters.
@@ -154,6 +164,7 @@ _(none)_
 - **Do not use percentage-based translateY** — the correct value is always `h / 4` as an absolute px value set by JS
 
 **4-panel CSS 3D flip architecture:**
+
 - `.top-half-static` (z:1) — static background, holds current char top half; updated after flip settles
 - `.bottom-flap-animating` (z:2) — incoming char top, pre-rotated edge-on (-90°); unfolds during flip
 - `.top-flap-animating` (z:3) — current char top, flat at rest; folds down (90°) during flip

@@ -1,0 +1,29 @@
+# One-command self-host:  docker compose up -d
+# Copy .env.example to .env first to customize configuration (optional —
+# the app runs with sensible defaults if no .env is present).
+services:
+  digital-solari:
+    build: .
+    image: digital-solari
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    # Load optional configuration (Supabase, pairing mode, content filter, etc.).
+    # required:false → compose still starts if there is no .env file.
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://127.0.0.1:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3

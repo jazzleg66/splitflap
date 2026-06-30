@@ -18,6 +18,21 @@ const getStoredCode = () => {
 let pairCode = getParamCode() || getStoredCode() || '';
 pairCode = pairCode.replace(/-/g, '').toUpperCase();
 
+// ── Resume token ──────────────────────────────────────────────────────────────
+// Issued by the server on successful pairing. Lets us reconnect after the
+// short-lived pair code has rotated, without the code being a durable key.
+const TOKEN_KEY = 'solari_phone_token';
+const getToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } };
+const setToken = (t) => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} };
+
+// Send the pairing/resume handshake using whatever credentials we have.
+function sendHello() {
+  const token = getToken();
+  if (!pairCode && !token) return;
+  ws.send({ type: 'phone_hello', pairCode, token });
+}
+window.sendHello = sendHello;
+
 // Initial header state: show the code if we have it, even if not yet connected
 document.addEventListener('DOMContentLoaded', () => {
   if (pairCode) updateHeader(false, pairCode);
@@ -33,7 +48,7 @@ function manualCodeEntry() {
     pairCode = code.replace(/-/g, '').toUpperCase();
     console.log('[ui] Manual code entered:', pairCode);
     updateHeader(false, pairCode);
-    ws.send({ type: 'phone_hello', pairCode });
+    sendHello();
     const statusEl = document.getElementById('connect-status');
     if (statusEl) statusEl.textContent = 'WAITING FOR APPROVAL...';
   }
@@ -45,16 +60,16 @@ window.manualCodeEntry = manualCodeEntry;
 let ws = window._wsHeadStart;
 if (!ws) {
   ws = new WsClient(() => {
-    if (!pairCode) {
-      console.warn('[ws] No pairCode, waiting for manual entry');
+    if (!pairCode && !getToken()) {
+      console.warn('[ws] No pairCode/token, waiting for manual entry');
       return;
     }
     console.log('[ws] Socket connected, sending phone_hello for pairCode:', pairCode);
-    ws.send({ type: 'phone_hello', pairCode });
+    sendHello();
     const statusEl = document.getElementById('connect-status');
-    if (statusEl) statusEl.textContent = ''; 
+    if (statusEl) statusEl.textContent = '';
   });
-  if (pairCode) {
+  if (pairCode || getToken()) {
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
     console.log('[ws] Attempting connection to:', url);
     ws.connect(url);
@@ -133,6 +148,7 @@ ws.onMessage(msg => {
   switch (msg.type) {
     case 'phone_approved': {
       console.log('[ws] phone_approved message received');
+      if (msg.token) setToken(msg.token);
       if (!phoneApproved) transitionToApproved();
 
       // Ensure grid is rendered even on reconnect (done inside transitionToApproved now, 
@@ -169,8 +185,67 @@ ws.onMessage(msg => {
       document.getElementById('connect-status').textContent = '';
       break;
 
-    case 'not_found':
-      document.getElementById('connect-status').textContent = '';
+    case 'not_found': {
+      const s = document.getElementById('connect-status');
+      if (s) s.textContent = 'CODE NOT FOUND';
+      break;
+    }
+
+    case 'code_expired': {
+      // The pair code rotated before we paired — ask for a fresh scan/code.
+      setToken('');
+      const s = document.getElementById('connect-status');
+      if (s) s.textContent = 'CODE EXPIRED — RESCAN THE QR ON THE BOARD';
+      break;
+    }
+
+    case 'board_locked': {
+      const s = document.getElementById('connect-status');
+      if (s) s.textContent = 'BOARD LOCKED BY OWNER';
+      break;
+    }
+
+    case 'awaiting_approval': {
+      // Approve-mode: waiting for the board owner to confirm.
+      const s = document.getElementById('connect-status');
+      if (s) s.textContent = 'WAITING FOR BOARD OWNER TO APPROVE…';
+      break;
+    }
+
+    case 'kicked': {
+      // Owner ejected us, or another device took over.
+      setToken('');
+      phoneApproved = false;
+      const ui = document.getElementById('controller-ui');
+      if (ui) { ui.hidden = true; ui.style.display = 'none'; }
+      const cs = document.getElementById('connect-screen');
+      if (cs) {
+        cs.hidden = false;
+        cs.style.display = 'flex';
+        const s = document.getElementById('connect-status');
+        if (s) s.textContent = msg.reason === 'owner'
+          ? 'DISCONNECTED BY BOARD OWNER'
+          : 'ANOTHER DEVICE TOOK CONTROL';
+      }
+      updateHeader(false, pairCode);
+      break;
+    }
+
+    case 'content_rejected': {
+      // Server blocked the message (profanity filter). Surface it briefly.
+      const s = document.getElementById('connect-status') || document.getElementById('debug-status');
+      if (s) s.textContent = 'MESSAGE BLOCKED BY CONTENT FILTER';
+      console.warn('[ws] message blocked by content filter');
+      break;
+    }
+
+    case 'rate_limited':
+      // Sending too fast — silently back off (server dropped this one).
+      console.warn('[ws] rate limited');
+      break;
+
+    case 'board_cleared':
+      console.log('[ws] board cleared by owner');
       break;
 
     case 'board_offline': {

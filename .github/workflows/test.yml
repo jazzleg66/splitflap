@@ -1,32 +1,53 @@
-name: Tests
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
 
+env:
+  # Puppeteer is dev-only (screenshots); don't download Chromium in CI.
+  PUPPETEER_SKIP_DOWNLOAD: '1'
+
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: 'npm'
+      - run: npm ci
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier (server + tests)
+        run: npm run format:check
+      - name: Type-check (checkJs)
+        run: npm run typecheck
+
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x, 20.x, 22.x]
-
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run tests with coverage
+        run: npm run test:coverage
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=high || true
+        continue-on-error: true
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v6
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-
-    - run: npm ci
-
-    - name: Run tests with coverage
-      run: npm test
-
-    - name: Check for security vulnerabilities
-      run: npm audit --audit-level=high || true
-      continue-on-error: true
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build Docker image
+        run: docker build -t digital-solari:ci .

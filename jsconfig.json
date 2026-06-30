@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true,
+    "maxNodeModuleJsDepth": 0,
+    "strict": false
+  },
+  "//": "Scoped to the pure-logic modules. index.js carries Express/ws framework friction that JS type-checking flags noisily; it is excluded from the gate but still benefits from editor IntelliSense.",
+  "include": ["server/config.js", "server/contentFilter.js", "server/sessionManager.js"],
+  "exclude": ["node_modules", "tests", "public", "coverage"]
+}
