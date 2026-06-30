@@ -16,9 +16,9 @@ Characters cycle through a fixed spool exactly like physical hardware. No random
 > Pair codes are **short-lived and rotate** (default 10 min), and the board owner
 > has **lock / kick / clear** controls. For public placement you can require
 > owner approval before a phone takes over. See
-> [Pairing & control](#-pairing--control-security) and [SECURITY.md](SECURITY.md).
+> [Pairing & control](#pairing--control-security) and [SECURITY.md](SECURITY.md).
 
-## ✨ Features
+## Features
 
 - **6×22 tile grid** — 132 characters, each with a CSS 3D flip animation
 - **Sequential spool** — characters advance through `A→Z→0→9→symbols→colors` like real hardware
@@ -33,7 +33,7 @@ Characters cycle through a fixed spool exactly like physical hardware. No random
 - **Content safety** — server-side character whitelist + configurable profanity filter
 - **Accessible** — honors `prefers-reduced-motion`; board content exposed to screen readers via `aria-live`
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone the repo
@@ -70,9 +70,9 @@ The container exposes a `/health` endpoint used by its built-in `HEALTHCHECK`.
 1. Open the homepage → click **Connect Board**
 2. Scan the QR code with your phone (same Wi-Fi network)
 3. Type a message on the phone controller → hit **Play**
-4. Watch the board flip ✨
+4. Watch the board flip
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐     WebSocket      ┌─────────────┐
@@ -100,10 +100,10 @@ uses a per-phone resume token, not the (rotating) code. All state is per-process
 in memory; Supabase, when configured, is a write-through backup for restart
 recovery only.
 
-## 🔐 Pairing & control (security)
+## Pairing & control (security)
 
 Digital Solari favors low-friction pairing while giving the board owner real
-control. Configure it via environment variables (see [Configuration](#️-configuration)):
+control. Configure it via environment variables (see [Configuration](#configuration)):
 
 - **Short-lived pair codes** — a code is valid for `PAIR_CODE_TTL_MIN` (default
   10 min). The board auto-rotates the QR before expiry, so a photographed code
@@ -130,7 +130,7 @@ While a controller is connected, the board responds to keyboard shortcuts:
 | `K` | Kick the current controller and rotate the pair code |
 | `X` | Clear the board content                              |
 
-## 🛡️ Content safety
+## Content safety
 
 - A **server-side character whitelist** (always on) accepts only the characters
   on the spool; anything else (emoji, unsupported unicode) is silently dropped.
@@ -141,14 +141,14 @@ While a controller is connected, the board responds to keyboard shortcuts:
 
 See [PRIVACY.md](PRIVACY.md) for exactly what is stored and for how long.
 
-## ♿ Accessibility
+## Accessibility
 
 - Respects the OS **reduce-motion** setting — the board snaps to content instantly
   (no flip animation, no audio) when set.
 - The flip tiles are visual-only; current board text is mirrored into an
   `aria-live` region so screen readers announce updates.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── server/
@@ -177,7 +177,7 @@ See [PRIVACY.md](PRIVACY.md) for exactly what is stored and for how long.
 └── CLAUDE.md                 # AI coding context / architecture guide
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 All configuration is via environment variables. Copy `.env.example` to `.env`:
 
@@ -206,7 +206,7 @@ All configuration is via environment variables. Copy `.env.example` to `.env`:
 
 The app works without any external services — Supabase, Sentry, and PostHog are all optional.
 
-## 🧪 Testing & quality
+## Testing & quality
 
 ```bash
 npm test            # Jest (jsdom) unit + integration tests
@@ -219,7 +219,7 @@ npm run typecheck   # TypeScript checkJs on the logic modules
 CI runs lint, format check, type-check, the test matrix (Node 18/20/22), and a
 Docker build on every push and pull request.
 
-## 📈 Capacity / scaling
+## Capacity / scaling
 
 State is in-memory per process, so one instance is bounded by Node's WebSocket
 fan-out and event loop. As a **rough reference**, a single modest instance
@@ -230,7 +230,7 @@ on update frequency and hardware; **benchmark your own deployment** before relyi
 on a figure. To scale horizontally you'd need a shared session store / pub-sub
 (e.g. Redis) since sockets and session state are currently node-local.
 
-## 🚢 Deployment
+## Deployment
 
 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for full instructions. The project includes configs for:
 
@@ -239,7 +239,7 @@ See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for full instructions. The projec
 
 Both platforms auto-detect Node.js and deploy with `npm start`.
 
-## 🗺️ Roadmap
+## Roadmap
 
 Planned / under consideration (contributions welcome — see an issue or open one):
 
@@ -248,7 +248,7 @@ Planned / under consideration (contributions welcome — see an issue or open on
 - UI internationalization (i18n) — separate from the fixed display character set
 - Optional JSDoc type coverage across the server (`index.js`)
 
-## 🤝 Contributing
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Please also read our
 [Code of Conduct](CODE_OF_CONDUCT.md). To report a vulnerability, see
@@ -258,12 +258,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Please also read our
 > volunteer basis. Issues and PRs are reviewed when time allows — please be
 > patient, and feel free to fork.
 
-## ⚖️ Trademarks
+## Trademarks
 
 "Solari", "Vestaboard", and other split-flap display brands are trademarks of
 their respective owners. This project is an independent, unaffiliated work and
 is not endorsed by or associated with them.
 
-## 📄 License
+## License
 
 [MIT](LICENSE) © jazzleg66
