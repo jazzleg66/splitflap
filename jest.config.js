@@ -21,6 +21,8 @@ module.exports = {
   collectCoverageFrom: [
     'public/shared/spool.js',
     'server/sessionManager.js',
+    'server/config.js',
+    'server/contentFilter.js',
     'public/controller/controller.js',
   ],
   coveragePathIgnorePatterns: ['/node_modules/'],
