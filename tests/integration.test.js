@@ -31,18 +31,34 @@ beforeAll((done) => {
   }
 });
 
-afterAll((done) => {
-  server.close(done);
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Close a client socket and resolve once it's fully closed, so the server-side
+// 'close' handler runs while the test environment is still alive (otherwise its
+// logging trips Jest's "cannot log after tests are done" guard → exit 1).
+function gracefulClose(ws) {
+  return new Promise((resolve) => {
+    if (ws.readyState === WebSocket.CLOSED) return resolve();
+    ws.removeAllListeners('message');
+    ws.once('close', resolve);
+    try {
+      ws.close();
+    } catch (_) {
+      resolve();
+    }
+    setTimeout(resolve, 500); // safety net
+  });
+}
+
+afterEach(async () => {
+  await Promise.all(openSockets.splice(0).map(gracefulClose));
+  // Give the server's socket-close handlers a tick to flush before teardown.
+  await delay(50);
 });
 
-afterEach(() => {
-  while (openSockets.length) {
-    const ws = openSockets.pop();
-    try {
-      ws.removeAllListeners();
-      ws.terminate();
-    } catch (_) {}
-  }
+afterAll(async () => {
+  await new Promise((resolve) => server.close(resolve));
+  await delay(50);
 });
 
 function open() {
