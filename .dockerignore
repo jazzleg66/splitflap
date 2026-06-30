@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.github
+.env
+.env.*
+!.env.example
+coverage
+tests
+temporary screenshots
+.screenshots
+*.md
+!README.md
+benchmark*.js
+zoom-buttons.js
+explainer.html
+digital-solari-explainer-*.html

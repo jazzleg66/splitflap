@@ -1,6 +1,6 @@
 {
   "name": "digital-solari",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Web-based split-flap display system — turn any screen into a mechanical departure board",
   "main": "server/index.js",
   "scripts": {
@@ -9,7 +9,13 @@
     "screenshot": "node scripts/screenshot.js",
     "screenshot:board": "node scripts/screenshot.js board",
     "screenshot:controller": "node scripts/screenshot.js controller",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"server/**/*.js\" \"tests/**/*.js\" \"*.{js,json,md}\"",
+    "format:check": "prettier --check \"server/**/*.js\" \"tests/**/*.js\"",
+    "typecheck": "tsc -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -46,12 +52,21 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.2",
+    "@eslint/js": "^9.39.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.0.1",
+    "@types/ws": "^8.18.1",
     "babel-jest": "^30.3.0",
     "babel-plugin-module-resolver": "^5.0.3",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "globals": "^15.15.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jsdom": "^29.0.2",
     "nodemon": "^3.1.0",
-    "puppeteer": "^24.40.0"
+    "prettier": "^3.9.4",
+    "puppeteer": "^24.40.0",
+    "typescript": "^5.9.3"
   }
 }
