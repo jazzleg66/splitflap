@@ -47,9 +47,13 @@
     <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
   </header>
 
-  <main id="board-container">
-    <!-- 6×22 tile grid injected by board.js -->
+  <main id="board-container" aria-hidden="true">
+    <!-- 6×22 tile grid injected by board.js (visual only; see #board-sr for a11y) -->
   </main>
+
+  <!-- Screen-reader mirror of the board's current text content. The flip tiles
+       are visual-only (aria-hidden); this live region announces updates. -->
+  <div id="board-sr" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <div id="demo-controls">
     <button id="btn-skip">SKIP</button>

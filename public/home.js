@@ -429,7 +429,7 @@ codeBoxes.forEach((box, index) => {
     }
 
     // Printable characters
-    if (char.length === 1 && /[A-Z0-9\-]/.test(char)) {
+    if (char.length === 1 && /[A-Z0-9-]/.test(char)) {
       e.preventDefault();
 
       // Skip dashes

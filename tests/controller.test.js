@@ -6,7 +6,10 @@ describe('controller module', () => {
     // Reset document
     document.fonts = { ready: Promise.resolve() };
 
-    const html = fs.readFileSync(path.resolve(__dirname, '../public/controller/index.html'), 'utf8');
+    const html = fs.readFileSync(
+      path.resolve(__dirname, '../public/controller/index.html'),
+      'utf8'
+    );
     document.body.innerHTML = html;
 
     global.ResizeObserver = class {
@@ -30,7 +33,7 @@ describe('controller module', () => {
     // Re-import module - jest re-imports need to be isolated or we clear cache
     jest.resetModules();
     await import('../public/controller/controller.js');
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
   it('should initialize successfully', () => {
@@ -170,26 +173,26 @@ describe('controller module', () => {
   it('handles copy link button', () => {
     const btn = document.getElementById('btn-copy-link');
     if (btn) {
-        btn.click();
-        expect(navigator.clipboard.writeText).toHaveBeenCalled();
+      btn.click();
+      expect(navigator.clipboard.writeText).toHaveBeenCalled();
     }
   });
 
   it('updates header info on message mode', () => {
-      const el = document.getElementById('btn-play');
-      el.click();
-      el.click();
-      const st = document.getElementById('header-status');
-      expect(st).toBeDefined();
+    const el = document.getElementById('btn-play');
+    el.click();
+    el.click();
+    const st = document.getElementById('header-status');
+    expect(st).toBeDefined();
   });
 
   it('inputs color correctly', () => {
-      const colorBtn = document.querySelector('.color-swatch[data-color="r"]');
-      if (colorBtn) {
-          const firstCell = document.querySelector('.cell[data-index="0"]');
-          firstCell.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-          colorBtn.click();
-          expect(firstCell.classList.contains('is-color')).toBe(true);
-      }
+    const colorBtn = document.querySelector('.color-swatch[data-color="r"]');
+    if (colorBtn) {
+      const firstCell = document.querySelector('.cell[data-index="0"]');
+      firstCell.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      colorBtn.click();
+      expect(firstCell.classList.contains('is-color')).toBe(true);
+    }
   });
 });

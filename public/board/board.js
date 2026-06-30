@@ -203,7 +203,34 @@ function animLoop(timestamp) {
   requestAnimationFrame(animLoop);
 }
 
+// Accessibility: honor the OS "reduce motion" setting. When set, the board
+// snaps to the target text instantly (no flip animation, no audio) instead of
+// stepping through intermediate characters.
+const prefersReducedMotion = () =>
+  typeof matchMedia === 'function' &&
+  matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Mirror the board's text into the aria-live region for screen readers.
+function updateSrMirror(targetRows) {
+  const el = document.getElementById('board-sr');
+  if (!el) return;
+  const text = targetRows
+    .map(row => [...String(row)].filter(ch => !isColorChar(ch)).join('').trimEnd())
+    .filter(Boolean)
+    .join('. ');
+  el.textContent = text;
+}
+
 export function displayRows(targetRows, onSettled) {
+  updateSrMirror(targetRows);
+
+  // Reduced-motion: snap instantly and skip the animated flip + audio.
+  if (prefersReducedMotion()) {
+    snapDisplay(targetRows);
+    if (onSettled) onSettled();
+    return;
+  }
+
   setTargets(grid, targetRows);
   let anyWork = false;
   for (let r = 0; r < ROWS && !anyWork; r++)
@@ -218,6 +245,7 @@ export function displayRows(targetRows, onSettled) {
 }
 
 export function snapDisplay(targetRows) {
+  updateSrMirror(targetRows);
   setTargets(grid, targetRows);
   snapToTargets(grid);
   animRunning = false;
@@ -341,21 +369,65 @@ function hideQrScreen() {
 // ── WebSocket client ──────────────────────────────────────────────────────────
 let lastPairCode = null;
 
+// Pair-code auto-refresh: while the QR is showing and no phone is connected,
+// rotate the code shortly before it expires so a stale photo can't be used.
+let codeRefreshTimer = null;
+function scheduleCodeRefresh(ttlMs) {
+  if (codeRefreshTimer) clearTimeout(codeRefreshTimer);
+  if (!ttlMs || ttlMs <= 0) return;
+  // Refresh at 90% of the TTL.
+  codeRefreshTimer = setTimeout(() => {
+    ws.send({ type: 'tv_refresh_code' });
+  }, Math.max(5000, ttlMs * 0.9));
+}
+function stopCodeRefresh() {
+  if (codeRefreshTimer) { clearTimeout(codeRefreshTimer); codeRefreshTimer = null; }
+}
+
 ws.onMessage(msg => {
   switch (msg.type) {
     case 'tv_paired':
       sessionId = msg.sessionId;
       lastPairCode = msg.pairCode;
       showQrScreen(msg.pairCode, msg.sessionId);
+      scheduleCodeRefresh(msg.ttl);
+      break;
+
+    case 'code_rotated':
+      // Code refreshed while still on the QR screen — update the displayed code + QR.
+      lastPairCode = msg.pairCode;
+      showQrScreen(msg.pairCode, sessionId);
+      scheduleCodeRefresh(msg.ttl);
+      break;
+
+    case 'session_reset':
+      // Owner kicked the controller — return to a fresh QR screen.
+      lastPairCode = msg.pairCode;
+      stopDemo();
+      showQrScreen(msg.pairCode, sessionId);
+      document.getElementById('conn-dot').className = 'disconnected';
       break;
 
     case 'phone_request':
-      // Auto-approve — QR code itself is the security token
+      // Legacy auto-approve path (instant mode handled server-side now).
       unlockAudio();
       ws.send({ type: 'tv_approve' });
       break;
 
+    case 'pairing_request':
+      // Approve-mode (B): show the owner approval overlay.
+      unlockAudio();
+      document.getElementById('approval-overlay').hidden = false;
+      break;
+
+    case 'lock_state': {
+      const dot = document.getElementById('conn-dot');
+      if (dot) dot.setAttribute('data-locked', msg.locked ? 'true' : 'false');
+      break;
+    }
+
     case 'phone_approved':
+      stopCodeRefresh();
       document.getElementById('approval-overlay').hidden = true;
       hideQrScreen();
       stopDemo();
@@ -402,6 +474,24 @@ window.addEventListener('keydown', e => {
   if (document.getElementById('approval-overlay').hidden) return;
   if (e.key === 'Enter') approveConnection();
   if (e.key === 'Escape') rejectConnection();
+});
+
+// ── Owner controls (board is the owner surface) ───────────────────────────────
+// Active only while a controller is connected. Documented in the README.
+//   L → lock/unlock (block new devices)   K → kick controller   X → clear board
+let boardLocked = false;
+window.addEventListener('keydown', e => {
+  if (!document.body.classList.contains('board-active')) return;
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'l') {
+    boardLocked = !boardLocked;
+    ws.send({ type: boardLocked ? 'tv_lock' : 'tv_unlock' });
+  } else if (k === 'k') {
+    ws.send({ type: 'tv_kick' });
+  } else if (k === 'x') {
+    ws.send({ type: 'tv_clear' });
+  }
 });
 
 document.getElementById('btn-approve').addEventListener('click', approveConnection);

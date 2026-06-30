@@ -181,6 +181,28 @@
   to   { transform: rotateX(  0deg); }
 }
 
+/* ── Accessibility ──────────────────────────────────────────────────────────
+ * Honor "reduce motion": collapse the flip animation to an instant change.
+ * board.js also snaps content (and skips audio) when this is set, but this
+ * keeps any in-flight CSS flip from animating. */
+@media (prefers-reduced-motion: reduce) {
+  .tile.flipping .top-flap-animating,
+  .tile.flipping .bottom-flap-animating {
+    animation-duration: 0.001ms !important;
+  }
+}
+
+/* Visually-hidden but available to screen readers (board text mirror). */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 
 /* ── Color tile overrides ─────────────────────────────────────────────────── */
 .tile.color-tile .tile-top,
