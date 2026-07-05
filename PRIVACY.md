@@ -15,6 +15,7 @@ to control it. It applies to the reference implementation in this repository.
 | **IP addresses**                                     | Standard HTTP/WebSocket connection metadata              | Not stored by the app; may appear in your host/reverse-proxy logs | Networking                                        |
 | **Error reports**                                    | Sentry, **only if `SENTRY_DSN` is set**                  | Per your Sentry retention                                         | Debugging                                         |
 | **Product analytics**                                | PostHog, **only if `VITE_POSTHOG_KEY` is set**           | Per your PostHog retention                                        | Usage metrics                                     |
+| **Font/CDN requests**                                | Google Fonts; optional Sentry/PostHog CDNs               | Per those providers                                               | Fonts and optional telemetry                      |
 
 ## Message persistence — "display and discard" vs. stored
 
@@ -28,10 +29,22 @@ to control it. It applies to the reference implementation in this repository.
 ## Logging
 
 - The server logs pairing/connection events (no message text) by default.
+- Pair codes are treated as short-lived credentials and are not intentionally
+  printed in server or browser logs.
 - **Content is only logged if you set `AUDIT_LOG=true`** — intended for public
   boards that need a moderation trail. It logs the session ID and the readable
   message text. Leave it off if you don't need it.
 - Review your reverse proxy / hosting logs separately; they may record IPs.
+
+## Optional telemetry
+
+- Sentry and PostHog browser scripts are loaded only when their keys are
+  configured by the server.
+- Controller URLs scrub the `code` query parameter from the address bar after
+  reading it, before optional telemetry initializes.
+- Sentry events are scrubbed for `code=` query parameters before upload.
+- PostHog is initialized with autocapture and automatic pageview/pageleave
+  capture disabled; the app sends only explicit product events.
 
 ## Data subject controls
 

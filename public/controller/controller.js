@@ -7,7 +7,7 @@ import WsClient from '/shared/wsClient.js?v=2';
 function addDebugMessage(text) { console.log('[debug]', text); }
 
 // ── Pair Code Extraction ──────────────────────────────────────────────────────
-const getParamCode = () => new URLSearchParams(location.search).get('code');
+const getParamCode = () => window.__initialPairCode || new URLSearchParams(location.search).get('code');
 const getStoredCode = () => {
   try {
     const drafts = JSON.parse(localStorage.getItem('solari_drafts') || '{}');
@@ -46,7 +46,7 @@ function manualCodeEntry() {
   const code = prompt('ENTER BOARD CODE (e.g. CZQ-UHE):');
   if (code) {
     pairCode = code.replace(/-/g, '').toUpperCase();
-    console.log('[ui] Manual code entered:', pairCode);
+    console.log('[ui] Manual code entered');
     updateHeader(false, pairCode);
     sendHello();
     const statusEl = document.getElementById('connect-status');
@@ -64,7 +64,7 @@ if (!ws) {
       console.warn('[ws] No pairCode/token, waiting for manual entry');
       return;
     }
-    console.log('[ws] Socket connected, sending phone_hello for pairCode:', pairCode);
+    console.log('[ws] Socket connected, sending phone_hello');
     sendHello();
     const statusEl = document.getElementById('connect-status');
     if (statusEl) statusEl.textContent = '';

@@ -498,9 +498,7 @@ wss.on('connection', (socket) => {
           }
           touch(session);
           updateActiveCount(session);
-          console.log(
-            `[pair] tv_hello → session=${session.id} code=${session.pairCode} resumed=${!!existing}`
-          );
+          console.log(`[pair] tv_hello → session=${session.id} resumed=${!!existing}`);
           console.log(`[pair] Sending tv_paired response...`);
           send(socket, {
             type: 'tv_paired',
@@ -547,13 +545,13 @@ wss.on('connection', (socket) => {
 
           // ── Path 2: fresh pairing via short-lived code ─────────────────────
           if (typeof msg.pairCode !== 'string' || !PAIR_RE.test(msg.pairCode)) {
-            console.log(`[pair] phone_hello code=${msg.pairCode} INVALID FORMAT`);
+            console.log('[pair] phone_hello invalid pair code format');
             send(socket, { type: 'not_found' });
             socket.close();
             return;
           }
           const found = getByCode(msg.pairCode);
-          console.log(`[pair] phone_hello code=${msg.pairCode} found=${!!found}`);
+          console.log(`[pair] phone_hello found=${!!found}`);
           if (!found) {
             send(socket, { type: 'not_found' });
             socket.close();
@@ -562,7 +560,7 @@ wss.on('connection', (socket) => {
 
           // Expired code — the board has (or will) rotate to a new QR.
           if (!isPairCodeValid(found)) {
-            console.log(`[pair] phone_hello code=${msg.pairCode} EXPIRED`);
+            console.log('[pair] phone_hello expired pair code');
             send(socket, { type: 'code_expired' });
             socket.close();
             return;
@@ -675,7 +673,7 @@ wss.on('connection', (socket) => {
           if (!session.phoneSocket || session.phoneSocket.readyState !== WebSocket.OPEN) {
             const newCode = rotatePairCode(session);
             send(session.tvSocket, { type: 'code_rotated', pairCode: newCode });
-            console.log(`[pair] code refreshed for ${session.id}: ${newCode}`);
+            console.log(`[pair] code refreshed for ${session.id}`);
           }
         }
       }
