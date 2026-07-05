@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
 const { createClient } = require('@supabase/supabase-js');
 const { PAIR_CODE_TTL_MS, SESSION_IDLE_MS } = require('./config');
 
@@ -38,7 +37,7 @@ function generatePhoneToken() {
 }
 
 async function createSession() {
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const pairCode = generatePairCode();
   const session = {
     id,

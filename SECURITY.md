@@ -39,9 +39,17 @@ it** — pairing is intentionally low-friction. Hardening that exists:
   the clear on your network.
 - For public placement, prefer `PAIRING_MODE=approve` and consider `AUDIT_LOG=true`.
 - Keep dependencies patched (`npm audit`).
+- Treat write-capable automation (for example AI assistant workflows) as
+  maintainer-only. The bundled Claude workflow is guarded by GitHub author
+  association checks and should remain restricted if enabled.
 
 ### Known limitations
 
 - There is **no per-user authentication or accounts** — control is by possession
   of a valid, unexpired pair code (or resume token). This is by design.
 - In-memory state means a single instance; see the README on scaling.
+
+## Dependency checks
+
+CI runs `npm audit --audit-level=high` as a blocking check. Moderate findings are
+reviewed during routine dependency maintenance.

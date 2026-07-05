@@ -206,6 +206,16 @@ All configuration is via environment variables. Copy `.env.example` to `.env`:
 
 The app works without any external services — Supabase, Sentry, and PostHog are all optional.
 
+### Production checklist
+
+For an internet-facing deployment, set these before sharing the URL:
+
+- `APP_URL` to the exact public HTTPS origin used for QR code generation.
+- `ALLOWED_ORIGINS` to the same allowed browser origin(s), comma-separated.
+- TLS/HTTPS at your host or reverse proxy.
+- `PAIRING_MODE=approve` for public or unsupervised boards.
+- `AUDIT_LOG=false` unless you have told users that submitted text is logged.
+
 ## Testing & quality
 
 ```bash
@@ -267,3 +277,6 @@ is not endorsed by or associated with them.
 ## License
 
 [MIT](LICENSE) © jazzleg66
+
+Bundled asset and optional service notices are listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
