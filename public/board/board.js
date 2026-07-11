@@ -362,8 +362,8 @@ function showQrScreen(pairCode, sessionId) {
 function hideQrScreen() {
   document.getElementById('qr-screen').classList.add('hidden');
   document.body.classList.add('board-active');
-  // Trigger ResizeObserver so tile sizing recalculates for the new board dimensions
-  syncTileSizing();
+  // The available height changes when the QR overlay and page chrome disappear.
+  fitBoardSizing();
 }
 
 // ── WebSocket client ──────────────────────────────────────────────────────────
@@ -542,8 +542,44 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
   });
 });
 
-// ── Tile sizing — sync font-size and translateY to actual rendered tile height ─
+// ── Board sizing — fit the full 22×6 grid inside both viewport axes ────────────
 let boardGridCached = null;
+
+function fitBoardSizing() {
+  const gridEl = boardGridCached || document.getElementById('board-grid');
+  const container = document.getElementById('board-container');
+  if (!gridEl || !container) return;
+  boardGridCached = gridEl;
+
+  const containerStyle = getComputedStyle(container);
+  const gridStyle = getComputedStyle(gridEl);
+  const availableWidth = container.clientWidth
+    - parseFloat(containerStyle.paddingLeft)
+    - parseFloat(containerStyle.paddingRight);
+  const availableHeight = container.clientHeight
+    - parseFloat(containerStyle.paddingTop)
+    - parseFloat(containerStyle.paddingBottom);
+
+  const gridPaddingX = parseFloat(gridStyle.paddingLeft) + parseFloat(gridStyle.paddingRight);
+  const gridPaddingY = parseFloat(gridStyle.paddingTop) + parseFloat(gridStyle.paddingBottom);
+  const columnGap = parseFloat(gridStyle.columnGap) || 0;
+  const rowGap = parseFloat(gridStyle.rowGap) || 0;
+  const tileRatio = 4.3 / 2.2;
+
+  const tileWidthByWidth = (
+    Math.min(availableWidth, 1200) - gridPaddingX - columnGap * (COLS - 1)
+  ) / COLS;
+  const tileWidthByHeight = (
+    availableHeight - gridPaddingY - rowGap * (ROWS - 1)
+  ) / ROWS / tileRatio;
+  const tileWidth = Math.max(0, Math.min(tileWidthByWidth, tileWidthByHeight));
+  const fittedWidth = tileWidth * COLS + gridPaddingX + columnGap * (COLS - 1);
+
+  gridEl.style.width = `${Math.floor(fittedWidth)}px`;
+  syncTileSizing();
+}
+
+// Sync font-size and translateY to the fitted tile height.
 function syncTileSizing() {
   const tile = tileEls[0]?.[0];
   if (!tile) return;
@@ -566,7 +602,8 @@ document.getElementById('btn-show-code').addEventListener('click', () => {
 
 document.fonts.ready.then(() => {
   buildGrid();
-  syncTileSizing();
+  fitBoardSizing();
+  new ResizeObserver(fitBoardSizing).observe(document.getElementById('board-container'));
   new ResizeObserver(syncTileSizing).observe(document.getElementById('board-grid'));
   // Board starts hidden behind #qr-screen; demo only runs after phone approval
 });
