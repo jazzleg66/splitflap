@@ -259,8 +259,8 @@ body.pseudo-fullscreen #board-container {
 }
 
 /* When board-active (phone connected), demo-controls are hidden (~40px lost).
- * Compensate with matching bottom padding so the board sits identically to
- * the homepage fullscreen, which retains its demo-controls as the bottom gap. */
+ * Preserve the original portrait/fullscreen spacing; landscape overrides this
+ * below when it switches to viewport-fill mode. */
 body.board-active:fullscreen #board-container,
 body.board-active:-webkit-full-screen #board-container,
 body.board-active.pseudo-fullscreen #board-container {
@@ -293,6 +293,31 @@ body.pseudo-fullscreen #demo-controls button:hover {
 #board-grid .tile .tile-char        { font-size: var(--tile-fs, 3rem); }
 #board-grid .tile-top .tile-char    { transform: translateY(var(--tile-ty, 0.75rem)); }
 #board-grid .tile-bottom .tile-char { transform: translateY(calc(var(--tile-ty, 0.75rem) * -1)); }
+
+/* Connected landscape boards fill every available pixel with all 22×6 tiles. */
+@media (orientation: landscape) {
+  body.board-active #board-container,
+  body.board-active:fullscreen #board-container,
+  body.board-active:-webkit-full-screen #board-container,
+  body.board-active.pseudo-fullscreen #board-container {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  body.board-active #board-grid {
+    width: 100vw;
+    max-width: none;
+    height: 100%;
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body.board-active #board-grid .tile {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+}
 
 /* ── Demo controls — below board ─────────────────────────────────────────────── */
 #demo-controls {
