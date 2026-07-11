@@ -560,6 +560,17 @@ function fitBoardSizing() {
     - parseFloat(containerStyle.paddingTop)
     - parseFloat(containerStyle.paddingBottom);
 
+  const isLandscapeBoard = document.body.classList.contains('board-active')
+    && matchMedia('(orientation: landscape)').matches;
+  if (isLandscapeBoard) {
+    gridEl.style.width = `${Math.floor(availableWidth)}px`;
+    gridEl.style.height = `${Math.floor(availableHeight)}px`;
+    syncTileSizing();
+    return;
+  }
+
+  gridEl.style.height = '';
+
   const gridPaddingX = parseFloat(gridStyle.paddingLeft) + parseFloat(gridStyle.paddingRight);
   const gridPaddingY = parseFloat(gridStyle.paddingTop) + parseFloat(gridStyle.paddingBottom);
   const columnGap = parseFloat(gridStyle.columnGap) || 0;
