@@ -83,7 +83,7 @@ let rawAudio    = null;
 let audioMuted  = false;
 let audioUnlocked = false;
 
-fetch('/assets/audio/split-flap.wav')
+fetch('/assets/audio/split-flap.wav?v=20260403')
   .then(r => r.arrayBuffer())
   .then(buf => { rawAudio = buf; })
   .catch(() => {});
