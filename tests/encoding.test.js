@@ -8,7 +8,7 @@ const TEXT_EXTENSIONS = new Set(['.css', '.html', '.js', '.json', '.svg', '.txt'
 const MOJIBAKE_PATTERN = /[鈥鈹馃脳鈫鉁鈻锟�]|Ã|Â|â€|ðŸ/u;
 
 function publicTextFiles(dir = PUBLIC_DIR) {
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) return publicTextFiles(fullPath);
     return TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase()) ? [fullPath] : [];
@@ -18,8 +18,8 @@ function publicTextFiles(dir = PUBLIC_DIR) {
 describe('published text encoding', () => {
   test('contains no known mojibake markers', () => {
     const corruptedFiles = publicTextFiles()
-      .filter(file => MOJIBAKE_PATTERN.test(fs.readFileSync(file, 'utf8')))
-      .map(file => path.relative(PUBLIC_DIR, file));
+      .filter((file) => MOJIBAKE_PATTERN.test(fs.readFileSync(file, 'utf8')))
+      .map((file) => path.relative(PUBLIC_DIR, file));
 
     expect(corruptedFiles).toEqual([]);
   });
