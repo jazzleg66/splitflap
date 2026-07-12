@@ -72,7 +72,7 @@
         const elapsed = performance.now() - startTime;
         console.log('[head-start] Socket open after', elapsed.toFixed(0), 'ms');
 
-        // 鈹€鈹€ Safari Stability: Wait 300ms before sending the first hello 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ── Safari Stability: Wait 300ms before sending the first hello ──
         // This allows Safari's socket buffer and message loop to stabilize
         // before we start the bi-directional pairing handshake.
         setTimeout(() => {
@@ -100,7 +100,7 @@
 
 <body>
 
-  <!-- Persistent header 鈥?always visible, shows connection state -->
+  <!-- Persistent header — always visible, shows connection state -->
   <header id="ctrl-header">
     <div id="header-code">------</div>
     <div id="header-status">
@@ -116,7 +116,7 @@
   </div>
 
   <script>
-    // Show elapsed time while connecting 鈥?helps diagnose connection issues
+    // Show elapsed time while connecting — helps diagnose connection issues
     let elapsedSeconds = 0;
     const timerEl = document.getElementById('timer-seconds');
     setInterval(() => {
@@ -128,7 +128,7 @@
   <!-- Main UI (hidden until phone_approved) -->
   <div id="controller-ui" hidden>
 
-    <!-- PART A: Live mirror 鈥?sticky, full-width board preview -->
+    <!-- PART A: Live mirror — sticky, full-width board preview -->
     <div id="mirror-section">
       <div id="preview-label">
         <span id="preview-live-text">LIVE ON BOARD</span>
@@ -140,7 +140,7 @@
       </div>
     </div>
 
-    <!-- PART B: Controls 鈥?scrollable -->
+    <!-- PART B: Controls — scrollable -->
     <div id="scroll-body">
 
       <!-- Mode selector -->
@@ -179,13 +179,13 @@
         </div>
       </div>
 
-      <!-- Active message row inputs 鈥?injected by JS -->
+      <!-- Active message row inputs — injected by JS -->
       <div id="message-list"></div>
 
-      <!-- Artwork picker 鈥?shown in ARTWORK mode, injected by JS -->
+      <!-- Artwork picker — shown in ARTWORK mode, injected by JS -->
       <div id="artwork-section" hidden></div>
 
-      <!-- Hidden off-screen input 鈥?keyboard capture shim for the cell grid.
+      <!-- Hidden off-screen input — keyboard capture shim for the cell grid.
            Focused when user taps the grid; triggers virtual keyboard on iOS/Android. -->
       <input id="grid-capture" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters"
         spellcheck="false" inputmode="text"

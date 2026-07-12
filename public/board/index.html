@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <base href="/board/">
-  <title>Split Flap 鈥?Board</title>
+  <title>Split Flap — Board</title>
   <meta name="robots" content="noindex, follow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +21,7 @@
 
 <body>
 
-  <!-- 鈹€鈹€ QR pairing screen 鈥?shown until a phone connects 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ -->
+  <!-- ── QR pairing screen — shown until a phone connects ── -->
   <div id="qr-screen">
     <div id="qr-inner">
       <p id="qr-label">SCAN TO CONNECT</p>
@@ -39,16 +39,16 @@
     </div>
   </div>
 
-  <!-- 鈹€鈹€ Connection status dot 鈥?always top-left 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ -->
+  <!-- ── Connection status dot — always top-left ── -->
   <div id="conn-dot" class="disconnected" aria-label="Disconnected"></div>
 
-  <!-- 鈹€鈹€ Board (hidden until phone pairs) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ -->
+  <!-- ── Board (hidden until phone pairs) ── -->
   <header id="board-header">
-    <div id="boards-live">馃煝 <span id="live-count">0</span> BOARDS LIVE</div>
+    <div id="boards-live">🟢 <span id="live-count">0</span> BOARDS LIVE</div>
   </header>
 
   <main id="board-container" aria-hidden="true">
-    <!-- 6脳22 tile grid injected by board.js (visual only; see #board-sr for a11y) -->
+    <!-- 6×22 tile grid injected by board.js (visual only; see #board-sr for a11y) -->
   </main>
 
   <!-- Screen-reader mirror of the board's current text content. The flip tiles
@@ -66,7 +66,7 @@
     <div id="approval-inner">
       <p id="approval-title">CONNECTION REQUEST</p>
       <div id="approval-btns">
-        <button id="btn-approve">APPROVE <kbd>鈫?/kbd></button>
+        <button id="btn-approve">APPROVE <kbd>↵</kbd></button>
         <button id="btn-reject">REJECT <kbd>ESC</kbd></button>
       </div>
     </div>
