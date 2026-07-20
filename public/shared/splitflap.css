@@ -1,4 +1,14 @@
 /* ── Tile base ────────────────────────────────────────────────────────────── */
+/* The display font is served from this origin so TV browsers never fall back
+ * to a system serif face when Google Fonts is unreachable. */
+@font-face {
+  font-family: 'Digital Solari Doto';
+  src: url('/assets/fonts/Doto-ROND-wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
 .tile {
   position: relative;
   width: 2.2rem;
@@ -141,7 +151,7 @@
  * translateY offsets remain panel_height/2 = 0.75rem for seam alignment.
  */
 .tile-char {
-  font-family: "Doto", 'Courier New', monospace;
+  font-family: 'Digital Solari Doto', monospace;
   font-size: 1.5rem;
   font-weight: 700;
   font-style: normal;

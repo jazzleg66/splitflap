@@ -90,7 +90,7 @@ body {
 
 .word-sizer,
 .rotating-word {
-  font-family: "Doto", monospace;
+  font-family: 'Digital Solari Doto', monospace;
   font-weight: 700;
   font-optical-sizing: auto;
   font-variation-settings: "ROND" 0;
@@ -476,7 +476,7 @@ body {
 }
 
 #code-modal-label {
-  font-family: "Doto", monospace;
+  font-family: 'Digital Solari Doto', monospace;
   font-size: 1.2rem;
   font-weight: 700;
   color: #E8D5A3;
@@ -506,7 +506,7 @@ body {
   border: 2px solid rgba(232, 213, 163, 0.4);
   border-radius: 4px;
   color: #E8D5A3;
-  font-family: "Doto", monospace;
+  font-family: 'Digital Solari Doto', monospace;
   font-size: 2rem;
   font-weight: 700;
   text-align: center;
