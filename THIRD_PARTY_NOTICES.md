@@ -7,7 +7,7 @@ runtime assets and third-party services that operators may enable.
 
 - `assets/audio/split-flap.wav` is a procedurally generated mechanical click
   loop created for this project. It is covered by the repository's MIT License.
-- The app loads Google Fonts (`Doto`, `Red Hat Text`, and `Roboto Mono`) from
+- The app bundles `Doto` and loads `Red Hat Text` and `Roboto Mono` from
   Google Fonts at runtime.
 
 ## Optional Services
